@@ -29,9 +29,10 @@ class LocExtractor(BaseFeaturesExtractor):
         C, H, W = observation_space["map"].shape
         nv = observation_space["vec"].shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv2d(C, 32, 5, stride=2, padding=2), nn.ReLU(),
+            # ~1.3 M MAC per sample (CPU budget): 64 -> 16 -> 8 -> 4
+            nn.Conv2d(C, 16, 4, stride=4), nn.ReLU(),
+            nn.Conv2d(16, 32, 3, stride=2, padding=1), nn.ReLU(),
             nn.Conv2d(32, 64, 3, stride=2, padding=1), nn.ReLU(),
-            nn.Conv2d(64, 64, 3, stride=2, padding=1), nn.ReLU(),
             nn.Flatten(),
         )
         with torch.no_grad():

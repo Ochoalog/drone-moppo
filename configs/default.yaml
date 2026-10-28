@@ -83,3 +83,7 @@ eval:
   split: test
   workers: 8
   bootstrap: 2000
+
+calibration:                 # sequence-level tempering of beta (see DECISIONS.md)
+  episodes: 200
+  workers: 6

@@ -1,0 +1,28 @@
+{
+ "passed": true,
+ "best_descriptor": "hand",
+ "thresholds": {
+  "greedy": 0.6,
+  "lawnmower": 0.4
+ },
+ "per_descriptor": {
+  "cnn": {
+   "passed": true,
+   "s0": {
+    "greedy": 1.0,
+    "lawnmower": 0.995
+   },
+   "mean_greedy": 0.785
+  },
+  "hand": {
+   "passed": true,
+   "s0": {
+    "greedy": 1.0,
+    "lawnmower": 1.0
+   },
+   "mean_greedy": 0.8216666666666667
+  }
+ },
+ "episodes": 200,
+ "split": "train"
+}
