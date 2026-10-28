@@ -1,0 +1,85 @@
+# Default configuration. Other configs inherit with `base: default.yaml`.
+data:
+  aoi: {lon0: -51.95, lon1: -51.875, lat0: -29.33, lat1: -29.12}
+  cell_m: 50.0
+  split_lat: -29.26          # train = north (lat > split), test = south
+  split_margin_m: 60.0       # half-footprint (50 m) + jitter (10 m): footprints never cross the line
+  overview_factor: 4         # 0.305 m * 4 = 1.22 m/px
+  thumb_factor: 16           # 4.88 m/px thumbnails for figures
+  margin_m: 150.0            # extra raster read around the AOI (footprint + jitter + rotation)
+  valid_min: 0.9
+  cloud_max: 0.1
+  cloud_v: 200
+  cloud_s: 40
+  cloud_raw_dilate_px: 7     # raw HSV detector (used only to check the numbers in the spec)
+  cloud_open_px: 15          # opening removes white roofs (small) but keeps clouds (large)
+  cloud_dilate_px: 41        # ~50 m halo for soft cloud edges
+  align_tiles: 60
+  align_apply_min_m: 2.0
+  sources:
+    post: https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/66426b996049ef00013b8598/2/66426b996049ef00013b859b.tif
+    pre_mar23: https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/66429adb6049ef00013b85c6/1/66429adb6049ef00013b85c8.tif
+    pre_oct23: https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/66425c606049ef00013b8586/4/66425c606049ef00013b858b.tif
+
+scenarios:          # map date -> observation date (always `post`)
+  S0: post
+  S1: pre_mar23
+  S2: pre_oct23
+
+features:
+  footprint_m: 150.0
+  crop_px: 128
+  obs_variants: 2            # K
+  jitter_m: 10.0
+  rot_deg: 5.0
+  photo_gain: 0.1            # +-10 % contrast/brightness
+  photo_noise: 3.0           # gaussian sigma (DN)
+  seed: 1234
+  descriptors: [hand, cnn]
+
+filter:
+  window: 64
+  blur_sigma: 0.5
+  slip_prob: 0.1
+  success_mass: 0.9
+  success_radius: 2          # cells (100 m)
+  max_steps: 80
+  beta: null                 # null -> use calibrated value from data/features/beta.json
+  min_window_valid: 0.7
+
+env:
+  scenario: S0
+  descriptor: cnn
+  split: train
+  step_cost: 0.01
+  border_penalty: 0.1
+  success_reward: 1.0
+  false_loc_penalty: 1.0
+  distinct_radius: [3, 5]    # annulus (cells) for map distinctiveness
+  pca_components: 4
+
+ppo:
+  total_timesteps: 2000000
+  n_envs: 8
+  n_steps: 256
+  batch_size: 2048
+  n_epochs: 10
+  learning_rate: 3.0e-4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.01
+  vf_coef: 0.5
+  features_dim: 256
+  seed: 0
+  checkpoints: 10            # number of checkpoints over training
+
+greedy:
+  samples: 32
+
+eval:
+  episodes: 1000
+  seed: 2024
+  split: test
+  workers: 8
+  bootstrap: 2000

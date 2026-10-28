@@ -1,0 +1,33 @@
+[project]
+name = "dal"
+version = "0.1.0"
+description = "Active global localization of a GNSS-denied drone with RL on outdated maps (PoC)"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy",
+  "scipy",
+  "rasterio",
+  "pyproj",
+  "opencv-python-headless",
+  "torch",
+  "torchvision",
+  "gymnasium",
+  "stable-baselines3",
+  "pandas",
+  "matplotlib",
+  "pytest",
+  "pyyaml",
+  "tqdm",
+  "tensorboard",
+]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = ["data: requires downloaded data in data/ (skipped otherwise)"]
+testpaths = ["tests"]
