@@ -238,9 +238,6 @@ def main() -> None:
         export_stats(cfg, RESULTS / "data_stats.json")
 
 
-if __name__ == "__main__":
-    main()
-
 
 def export_stats(cfg: dict, out: Path) -> None:
     """Data facts used by the report (copied into results/ so REPORT numbers come from there)."""
@@ -254,3 +251,7 @@ def export_stats(cfg: dict, out: Path) -> None:
              dates={k: dict(masks=masks[k], align=align[k]) for k in d["sources"]})
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(s, indent=1))
+
+
+if __name__ == "__main__":
+    main()

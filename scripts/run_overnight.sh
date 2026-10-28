@@ -6,11 +6,13 @@
 set -uo pipefail
 source "$(dirname "$0")/env.sh"
 log() { echo "[$(date '+%F %T')] $*"; }
-CFG=configs/overnight.yaml
-ROOT_RUNS=runs/overnight
+CFG=${DAL_CFG:-configs/overnight.yaml}           # overridable for dry runs
+ROOT_RUNS=${DAL_RUNS:-runs/overnight}
+RES=${DAL_RESULTS:-results}
+REPORT=${DAL_REPORT:-REPORT.md}
 mkdir -p "$ROOT_RUNS"
 DESC=$($PY scripts/best_descriptor.py) || { log "sanity gate failed: no RL training (see REPORT.md)"; exit 2; }
-log "descriptor: $DESC; config: $CFG; timesteps: $($PY -c "from dal.config import load_config;print(load_config('$CFG')['ppo']['total_timesteps'])")"
+log "descriptor: $DESC; config: $CFG; timesteps: $($PY -c "from dal.config import load_config;p=load_config('$CFG')['ppo'];print(p['total_timesteps'], p.get('timesteps_by_scenario'))")"
 FAILED=()
 for SEED in 0 1 2; do          # seed-major order: every scenario gets seed 0 first
   for SCEN in S0 S1 S2; do
@@ -29,10 +31,15 @@ done
 log "training finished; failed: ${FAILED[*]:-none}"
 log "evaluation on the TEST region (all methods, 1000 paired episodes)"
 $PY -m dal.evaluate --config $CFG --descriptor "$DESC" --runs "$ROOT_RUNS" --split test \
-  --out results/episodes_test.csv || log "test evaluation FAILED"
+  --out $RES/episodes_test.csv || log "test evaluation FAILED"
 log "evaluation on the TRAIN region (H3)"
 $PY -m dal.evaluate --config $CFG --descriptor "$DESC" --runs "$ROOT_RUNS" --split train \
   --episodes "$($PY -c "from dal.config import load_config;print(load_config('$CFG')['eval']['train_episodes'])")" \
-  --methods ppo greedy lawnmower straight random --save-traj 0 --out results/episodes_train.csv || log "train evaluation FAILED"
-$PY -m dal.report --config $CFG --results results --runs "$ROOT_RUNS" --out REPORT.md || log "report FAILED"
+  --methods ppo greedy lawnmower straight random --save-traj 0 --out $RES/episodes_train.csv || log "train evaluation FAILED"
+if [ "$RES" != results ]; then
+  mkdir -p "$RES/figs"
+  for f in data_stats.json retrieval.csv gate.json gate.csv; do cp "results/$f" "$RES/" 2>/dev/null; done
+  cp results/figs/data_overview.png "$RES/figs/" 2>/dev/null
+fi
+$PY -m dal.report --config $CFG --results "$RES" --runs "$ROOT_RUNS" --out "$REPORT" || log "report FAILED"
 log "all done"

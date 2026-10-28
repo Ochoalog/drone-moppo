@@ -127,9 +127,12 @@ def main() -> None:
         ov["env"]["descriptor"] = a.descriptor
     if a.seed is not None:
         ov["ppo"]["seed"] = a.seed
-    if a.timesteps:
-        ov["ppo"]["total_timesteps"] = a.timesteps
     cfg = load_config(a.config, ov)
+    by_scen = cfg["ppo"].get("timesteps_by_scenario") or {}
+    if cfg["env"]["scenario"] in by_scen:
+        cfg["ppo"]["total_timesteps"] = int(by_scen[cfg["env"]["scenario"]])
+    if a.timesteps:
+        cfg["ppo"]["total_timesteps"] = a.timesteps
     root = Path(a.out) if a.out else RUNS / Path(a.config).stem
     train(cfg, root)
 

@@ -1,0 +1,6 @@
+scenario,method,vs,n,success_diff,success_diff_lo,success_diff_hi,pen_steps_ref,pen_steps_other,wilcoxon_p,ref_better_steps
+S0,ppo,greedy,50,0.0,0.0,0.0,1.0,1.0,1.0,False
+S0,ppo,greedy_map,50,0.0,0.0,0.0,1.0,1.0,1.0,False
+S0,ppo,lawnmower,50,0.0,0.0,0.0,1.0,1.0,1.0,False
+S0,ppo,random,50,0.0,0.0,0.0,1.0,1.0,1.0,False
+S0,ppo,straight,50,0.0,0.0,0.0,1.0,1.0,1.0,False

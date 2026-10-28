@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import matplotlib
@@ -167,20 +168,28 @@ def fig_training(run_roots: list[Path], path: Path) -> bool:
 
 
 def fig_trajectories(traj_dir: Path, cfg: dict, split: str, path: Path, methods=("ppo", "greedy", "lawnmower"),
-                     episode: int = 0) -> list[str]:
+                     episode: int | None = None) -> list[str]:
+    """One figure per scenario; rows = methods, columns = belief at t = 0, T/2, T. By default the
+    saved episode with the longest mean trajectory across methods is shown (more informative)."""
     from .data import load_date
     from .grid import Grid
     from .viz import thumb_extent_km
 
     d = cfg["data"]
     grid = Grid.from_aoi(**d["aoi"], cell=d["cell_m"])
-    scens = [s for s in ("S0", "S1", "S2") if list(traj_dir.glob(f"{split}_{s}_*_ep{episode}.npz"))]
     made = []
     W = cfg["filter"]["window"]
-    for scen in scens:
+    for scen in ("S0", "S1", "S2"):
+        eps: dict[int, list[int]] = {}
+        for f in traj_dir.glob(f"{split}_{scen}_*_ep*.npz"):
+            if f.name.split("_")[2].rstrip("0123456789") in methods:
+                eps.setdefault(int(f.stem.rsplit("_ep", 1)[1]), []).append(len(np.load(f)["traj"]))
+        if not eps:
+            continue
+        ep_i = episode if episode is not None else max(eps, key=lambda e: (len(eps[e]), np.mean(eps[e])))
         files = []
         for m in methods:
-            c = sorted(traj_dir.glob(f"{split}_{scen}_{m}*_ep{episode}.npz"))
+            c = sorted(traj_dir.glob(f"{split}_{scen}_{m}*_ep{ep_i}.npz"))
             c = [f for f in c if f.name.split("_")[2].rstrip("0123456789") == m]
             if c:
                 files.append((m, c[0]))
@@ -218,7 +227,8 @@ def fig_trajectories(traj_dir: Path, cfg: dict, split: str, path: Path, methods=
                 if i == len(files) - 1:
                     ax.set_xlabel("km east")
         axes[0][0].legend(fontsize=7, loc="lower left")
-        fig.suptitle(f"{scen} ({split} episode {episode}): belief (magma) over the map thumbnail, trajectory (cyan)")
+        fig.suptitle(f"{scen} ({split} episode {ep_i}): belief (magma, normalized to max) over the map thumbnail, "
+                     "trajectory (cyan)")
         fig.tight_layout()
         out = path.with_name(f"{path.stem}_{scen}.png")
         fig.savefig(out, dpi=100)
@@ -228,9 +238,26 @@ def fig_trajectories(traj_dir: Path, cfg: dict, split: str, path: Path, methods=
 
 
 # ============================================================================ hypotheses
+CEILING = 0.98
+
+
+def ceiling_scenarios(summ: pd.DataFrame) -> list[str]:
+    """Degenerate scenarios: every simple baseline succeeds >= CEILING with median <= 2 steps, so no
+    policy can be shown better in success or steps (excluded from H1/H3)."""
+    out = []
+    for scen, g in summ.groupby("scenario"):
+        g = g[g.method.isin(SIMPLE)]
+        if len(g) and g.success.min() >= CEILING and g.steps_median.max() <= 2:
+            out.append(scen)
+    return out
+
+
 def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame | None, tests_train: pd.DataFrame | None,
              alpha: float = 0.05, competitive_pp: float = 0.05) -> dict[str, tuple[str, str]]:
     out = {}
+    ceil = ceiling_scenarios(summ)
+    ceil_note = (f"\n\nExcluded as degenerate (all simple baselines ≥ {CEILING:.2f} success in ≤ 2 steps): "
+                 f"{', '.join(ceil)}." if ceil else "")
     if tests.empty or "ppo" not in set(summ.method):
         msg = "No trained PPO policy was evaluated."
         return {"H1": ("inconclusive", msg), "H2": ("inconclusive", msg), "H3": ("inconclusive", msg)}
@@ -239,12 +266,18 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
     # ---- H1
     lines, per = [], []
     for scen in sorted(summ.scenario.unique()):
+        if scen in ceil:
+            continue
         beats = []
         for m in SIMPLE:
             if (scen, m) not in T.index:
                 continue
             r = T.loc[(scen, m)]
-            ok = r.success_diff_lo > 0 and r.wilcoxon_p < alpha and r.ref_better_steps
+            steps_ok = r.wilcoxon_p < alpha and r.ref_better_steps
+            if S.loc[(scen, m)].success >= CEILING:  # baseline at the success ceiling: compare speed
+                ok = r.success_diff >= -0.01 and steps_ok
+            else:
+                ok = r.success_diff_lo > 0 and steps_ok
             beats.append(ok)
             lines.append(f"{scen}: PPO vs {m}: Δsuccess = {r.success_diff:+.3f} [{r.success_diff_lo:+.3f}, "
                          f"{r.success_diff_hi:+.3f}], Wilcoxon p = {r.wilcoxon_p:.2g} → {'better' if ok else 'not better'}")
@@ -257,10 +290,13 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
                          f"{r.success_diff_hi:+.3f}] (competitive if ≥ −{competitive_pp:.2f}: {'yes' if comp else 'no'}); "
                          f"decision time greedy/PPO = {speed:.1f}×")
         per.append(all(beats) and len(beats) == len(SIMPLE) and bool(comp))
-    v = "supported" if all(per) else "not supported" if not any(per) else "inconclusive"
+    v = ("inconclusive" if not per else "supported" if all(per) else "not supported" if not any(per)
+         else "inconclusive")
     out["H1"] = (v, "Criterion (per scenario): PPO beats every simple baseline (paired-bootstrap CI of Δsuccess > 0, "
-                    "Wilcoxon p < 0.05 on penalized steps, PPO median not worse) AND Δsuccess vs greedy ≥ −5 pp. "
-                    f"Holds in {sum(per)}/{len(per)} scenarios.\n\n" + "\n".join(f"- {l}" for l in lines))
+                    "Wilcoxon p < 0.05 on penalized steps, PPO median not worse; against a baseline already at ≥ 0.98 "
+                    "success: Δsuccess ≥ −1 pp and significantly fewer steps) AND Δsuccess vs greedy ≥ −5 pp. "
+                    f"Holds in {sum(per)}/{len(per)} discriminative scenarios." + ceil_note + "\n\n"
+                 + "\n".join(f"- {l}" for l in lines))
     # ---- H2: advantage over the best simple baseline grows S0 < S1 < S2
     adv = {}
     for scen in ("S0", "S1", "S2"):
@@ -288,6 +324,8 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
     Tt = tests_train.set_index(["scenario", "vs"])
     lines, per = [], []
     for scen in sorted(set(summ.scenario) & set(summ_train.scenario)):
+        if scen in ceil:
+            continue
         if (scen, "ppo") not in St.index or (scen, "greedy") not in St.index:
             continue
         gap_tr = St.loc[(scen, "ppo")].success - St.loc[(scen, "greedy")].success
@@ -305,7 +343,7 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
     v = ("supported" if per and all(per) else "not supported" if per and not any(per) else "inconclusive")
     out["H3"] = (v, "Criterion (per scenario): in the unseen south region PPO still beats the best simple baseline "
                     "(CI > 0) and its gap to the training-free greedy reference shrinks by at most 5 pp relative "
-                    "to the north (training) region.\n\n" + "\n".join(f"- {l}" for l in lines))
+                    "to the north (training) region." + ceil_note + "\n\n" + "\n".join(f"- {l}" for l in lines))
     return out
 
 
@@ -333,7 +371,7 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
     fc = cfg["filter"]
     ms = int(fc["max_steps"])
     nb = int(cfg["eval"]["bootstrap"])
-    rel = lambda p: Path(p).resolve().relative_to(out_md.parent.resolve()).as_posix()  # noqa: E731
+    rel = lambda p: Path(os.path.relpath(Path(p).resolve(), out_md.parent.resolve())).as_posix()  # noqa: E731
     md = [f"# REPORT: active global localization of a drone with RL on outdated maps\n",
           "*Generated automatically by `python -m dal.report`. Every number below is read from files in "
           f"`{rel(results)}/`.*{title_note}\n"]
@@ -359,9 +397,12 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
         r = pd.read_csv(rp)
         md.append("## 2. Descriptor retrieval (train windows 64×64)\n")
         md.append("Fraction of observations whose true cell ranks top-k among the valid map cells of the window. "
-                  "`top1_within1`: the best match is within 1 cell. β is the calibrated likelihood temperature.\n")
-        md.append(md_table(r, ["descriptor", "scenario", "top1", "top5", "top1_within1", "chance_top1", "beta",
-                               "loglik_true", "loglik_uniform"]))
+                  "`top1_within1`: the best match is within 1 cell. `beta1`: single-observation maximum-likelihood "
+                  "temperature; `kappa`: sequence-level tempering chosen on train episodes; `beta` = kappa·beta1 is "
+                  "what the filter uses. `loglik_*`: mean log-probability of the true cell (β₁) vs uniform.\n")
+        cols = [c for c in ["descriptor", "scenario", "top1", "top5", "top1_within1", "chance_top1", "beta1", "kappa",
+                            "beta", "loglik_true", "loglik_uniform"] if c in r.columns]
+        md.append(md_table(r, cols))
     # ---------------- gate
     gp = results / "gate.json"
     if gp.exists():

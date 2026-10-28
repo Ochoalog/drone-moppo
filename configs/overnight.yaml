@@ -1,7 +1,10 @@
 # Overnight runs: {S0,S1,S2} x seeds {0,1,2}; descriptor from results/gate.json.
+# Budget (measured): PPO ~470-485 fps with 8 envs on this CPU -> 2M steps x 9 runs did not fit in ~8 h.
+# S0 is degenerate (every method localizes in 1 step), so it gets a short run; S1/S2 get the rest.
 base: default.yaml
 ppo:
-  total_timesteps: 2000000   # adjusted from the smoke-test throughput (see DECISIONS.md)
+  total_timesteps: 1400000
+  timesteps_by_scenario: {S0: 300000}
   n_envs: 8
 eval:
   episodes: 1000

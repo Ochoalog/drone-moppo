@@ -91,8 +91,9 @@ class ScenarioData:
             beta = json.loads((DATA / "beta.json").read_text())[f"{descriptor}_{scenario}"]["beta"]
         return cls(
             name=f"{descriptor}_{scenario}",
-            map_desc=np.load(p / f"map_{date}.npy", mmap_mode="r"),
-            obs_desc=np.load(p / "obs_post.npy", mmap_mode="r"),
+            # float32 in RAM once: per-episode float16 -> float32 slicing dominated reset time
+            map_desc=np.load(p / f"map_{date}.npy").astype(np.float32),
+            obs_desc=np.load(p / "obs_post.npy").astype(np.float32),
             map_ok=masks[f"{date}_ok"],
             obs_ok=masks["post_ok"],
             distinct=aux["distinct"],
@@ -127,7 +128,7 @@ def distinctiveness(m: np.ndarray, ok: np.ndarray, r_in: float, r_out: float) ->
 
 
 def build_cache(cfg: dict, descriptor: str) -> None:
-    """Standardized float16 descriptors (memory-mappable) + distinctiveness/PCA channels."""
+    """Standardized float16 descriptors (converted to float32 on load) + distinctiveness/PCA channels."""
     from .features import load_descriptors
     from .grid import Grid
 
