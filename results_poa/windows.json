@@ -1,0 +1,19 @@
+{
+ "n_windows": {
+  "ilhas_P0": 10334,
+  "ilhas_P1": 10334,
+  "ilhas_P2": 10334,
+  "centro_P0": 3780,
+  "centro_P1": 3780,
+  "centro_P2": 829
+ },
+ "min_windows": 20,
+ "evaluated": [
+  "ilhas_P0",
+  "ilhas_P1",
+  "ilhas_P2",
+  "centro_P0",
+  "centro_P1",
+  "centro_P2"
+ ]
+}

@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+data_poa/
+runs_poa/
+results_poa/traj/
+results_poa/smoke/traj/

@@ -1,0 +1,21 @@
+{
+ "passed": true,
+ "threshold": 0.9,
+ "episodes": 200,
+ "success": {
+  "centro": {
+   "lawnmower": 1.0,
+   "random": 0.995,
+   "straight": 1.0
+  },
+  "ilhas": {
+   "lawnmower": 1.0,
+   "random": 0.985,
+   "straight": 0.99
+  }
+ },
+ "false_loc": {
+  "centro": 0.0,
+  "ilhas": 0.01
+ }
+}

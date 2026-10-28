@@ -1,0 +1,165 @@
+{
+ "passed": true,
+ "rows": [
+  {
+   "check": "valid_km2 poa_post",
+   "expected": 117.5,
+   "measured": 116.15,
+   "rel_diff": -0.011,
+   "ok": true
+  },
+  {
+   "check": "valid_km2 poa_pre_feb24",
+   "expected": 117.5,
+   "measured": 116.13,
+   "rel_diff": -0.012,
+   "ok": true
+  },
+  {
+   "check": "valid_km2 poa_pre_dec22",
+   "expected": 89.1,
+   "measured": 87.38,
+   "rel_diff": -0.019,
+   "ok": true
+  },
+  {
+   "check": "overlap_km2 poa_pre_feb24",
+   "expected": 116.5,
+   "measured": 116.11,
+   "rel_diff": -0.003,
+   "ok": true
+  },
+  {
+   "check": "overlap_km2 poa_pre_dec22",
+   "expected": 88.2,
+   "measured": 87.36,
+   "rel_diff": -0.01,
+   "ok": true
+  },
+  {
+   "check": "align poa_pre_feb24 (m)",
+   "expected": "<= 10.0",
+   "measured": 2.83,
+   "rel_diff": null,
+   "ok": true
+  },
+  {
+   "check": "align poa_pre_dec22 (m)",
+   "expected": "<= 10.0",
+   "measured": 0.68,
+   "rel_diff": null,
+   "ok": true
+  }
+ ],
+ "masks": {
+  "poa_post": {
+   "valid_km2": 116.15128964185715,
+   "aoi_valid_frac": 0.9997699759041615,
+   "cloud_raw_frac": 0.14747079940448873,
+   "cloud_frac_of_valid": 0.08035064640878754,
+   "cloud_poc_detector_frac": 0.07791242527644554,
+   "water_frac_of_valid": 0.3930467963218689,
+   "cells_ok_frac": 0.8841038223140496,
+   "res_m": 1.220703125
+  },
+  "poa_pre_feb24": {
+   "valid_km2": 116.13323241472244,
+   "aoi_valid_frac": 0.9996145486713428,
+   "cloud_raw_frac": 0.11934327702712542,
+   "cloud_frac_of_valid": 0.0029949050430590255,
+   "cloud_poc_detector_frac": 0.011987819239639019,
+   "water_frac_of_valid": 0.2330995351076126,
+   "cells_ok_frac": 0.9914342286501377,
+   "res_m": 1.220703125,
+   "overlap_km2": 116.106516122818
+  },
+  "poa_pre_dec22": {
+   "valid_km2": 87.37966120243073,
+   "aoi_valid_frac": 0.7521187413780244,
+   "cloud_raw_frac": 0.04667790641727526,
+   "cloud_frac_of_valid": 0.001794711816939497,
+   "cloud_poc_detector_frac": 0.002483394383765018,
+   "water_frac_of_valid": 0.03933606669306755,
+   "cells_ok_frac": 0.7428977272727273,
+   "res_m": 1.220703125,
+   "overlap_km2": 87.35535144805908
+  }
+ },
+ "align": {
+  "poa_post": {
+   "dx_m": 0.0,
+   "dy_m": 0.0,
+   "norm_m": 0.0,
+   "applied": false
+  },
+  "poa_pre_feb24": {
+   "dx_m": -0.4363292487683835,
+   "dy_m": 2.8003795951733226,
+   "norm_m": 2.8341681478687684,
+   "mad_m": [
+    1.3587233368591787,
+    0.6794137622635235
+   ],
+   "n_tiles": 60,
+   "n_used": 56,
+   "resp_median": 0.2066237976074219,
+   "applied": true,
+   "norm_m_strong_half": 2.8117857817884158
+  },
+  "poa_pre_dec22": {
+   "dx_m": 0.39953973047620467,
+   "dy_m": -0.549660880918585,
+   "norm_m": 0.6795285720565347,
+   "mad_m": [
+    0.9659504648119183,
+    0.5573270693786693
+   ],
+   "n_tiles": 60,
+   "n_used": 48,
+   "resp_median": 0.14845143438720704,
+   "applied": false,
+   "norm_m_strong_half": 0.53505477868604
+  }
+ },
+ "regions": {
+  "regions": [
+   "ilhas",
+   "centro"
+  ],
+  "overlap_cells": 7467,
+  "overlap_km2": 18.667500000000004,
+  "area_km2": {
+   "ilhas": 79.20000000000002,
+   "centro": 40.16250000000001
+  },
+  "slices": {
+   "ilhas": {
+    "rows": [
+     0,
+     220
+    ],
+    "cols": [
+     0,
+     144
+    ]
+   },
+   "centro": {
+    "rows": [
+     89,
+     242
+    ],
+    "cols": [
+     87,
+     192
+    ]
+   }
+  }
+ },
+ "grid": {
+  "x0": 472050.0,
+  "y1": 6686700.0,
+  "nrows": 242,
+  "ncols": 192,
+  "cell": 50.0
+ }
+}

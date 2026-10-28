@@ -1,0 +1,11 @@
+kappa,n,concentrated,false_loc,success,mean_steps,false_given_conc,utility,region,scenario,calibrated_on
+1.0,200,66,43,23,64.235,0.6515151515151515,-0.1,ilhas,P2,centro
+0.7,200,38,28,10,71.64,0.7368421052631579,-0.09,ilhas,P2,centro
+0.5,200,23,20,3,75.085,0.8695652173913043,-0.085,ilhas,P2,centro
+0.35,200,10,8,2,78.135,0.8,-0.03,ilhas,P2,centro
+0.25,200,6,5,1,78.88,0.8333333333333334,-0.02,ilhas,P2,centro
+0.18,200,1,1,0,79.875,1.0,-0.005,ilhas,P2,centro
+0.125,200,0,0,0,80.0,0.0,0.0,ilhas,P2,centro
+0.09,200,0,0,0,80.0,0.0,0.0,ilhas,P2,centro
+0.06,200,0,0,0,80.0,0.0,0.0,ilhas,P2,centro
+0.04,200,0,0,0,80.0,0.0,0.0,ilhas,P2,centro
