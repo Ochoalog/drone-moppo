@@ -1,4 +1,4 @@
-# DECISIONS_POA (Porto Alegre test battery) — in progress
+# DECISIONS_POA (Porto Alegre test battery)
 
 | # | Decision | Reason | Discarded alternative |
 |---|---|---|---|
@@ -10,3 +10,11 @@
 | 6 | Zero-shot β per scenario: P0←S0, P1←S1, P2←S2, shared by all methods | keeps episodes paired across methods | per-model β |
 | 7 | Regions overlap 18.7 km²; recalibration on the other region is therefore not fully disjoint | 64×64 windows do not fit in the non-overlapping centro part | disjoint calibration |
 | 8 | greedy (privileged) omitted; trajectories saved for zero-shot, PPO seed 0 | time/disk (1.9 GB free) | all variants/seeds |
+| 9 | Optional experiment (§6, PPO trained on ilhas P1) **not run** | user instruction on 2026-10-28: "sem treinar nas ilhas por enquanto" | train 3 seeds |
+| 10 | 500 paired episodes per (region × scenario × variant × method); P2 kept in both regions (centro has 829 valid windows ≥ 20) | smoke: 1600 episodes in 62 s → full run ≈ 1 h, fits | 300 episodes |
+| 11 | Recalibrated β₁ for P0 hits the top of the PoC β grid (300) in both regions | the grid (1–300) is the PoC one; P0 is the control and is at ceiling anyway | extend the grid only for POA |
+| 12 | Long POA jobs always run under `systemd-inhibit --what=sleep:idle` | the machine suspended 15:46–17:32 during the β recalibration (it then finished normally) | rely on power settings |
+| 13 | PPO channels: Taquari S1 models get the pre_mar23 PCA, S2 models the pre_oct23 PCA (each model's own training transform) | keeps each policy's input transform identical to training | one PCA for all models |
+| 14 | Hypothesis rules fixed before the full run (smoke numbers not used to tune them): HP1 kept/broken/unclear per region with a −5 pp non-inferiority margin and paired Δdistance CI; HP2 (a) Spearman < 0 and Q1−Q5 CI > 0 for ≥ 75 % of methods, (b) centro − ilhas CI > 0 for ≥ 75 %; HP3 (a) every method better in centro, (b) active advantage over best simple baseline larger in ilhas (CI) for PPO S2 and greedy_map | pre-registered, explicit in REPORT_POA.md | ad-hoc reading |
+| 15 | Change index quintiles pool P1 and P2 episodes of both regions (zero-shot); per-region quintiles also reported | widest range of change; region confounding shown via `share_ilhas` | P1 only |
+| 16 | Descriptor standardization reference = cells with valid_frac ≥ 0.9 of that date (PoC used all train cells, ~97 % valid) | `poa_pre_dec22` covers only ~75 % of the box | all cells |
