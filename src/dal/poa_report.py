@@ -34,6 +34,10 @@ MAIN_COLS = ["region", "scenario", "variant", "method", "episodes", "model_seeds
              "false_loc", "steps (median [IQR])", "distance_mean_m", "decision_ms"]
 
 
+TEST_COLS = ["region", "scenario", "variant", "ref", "vs", "n", "success_diff", "success_diff_lo", "success_diff_hi",
+             "distance_diff_m", "distance_diff_lo", "distance_diff_hi", "pen_steps_ref", "pen_steps_other", "wilcoxon_p"]
+
+
 def _order(s: pd.Series) -> pd.Series:
     return s.map({m: i for i, m in enumerate(ORDER)}).fillna(99)
 
@@ -97,7 +101,7 @@ def paired_tests(df: pd.DataFrame, max_steps: int, n_boot: int, seed: int = 1) -
                                  distance_diff_m=float(dd.mean()), distance_diff_lo=dlo, distance_diff_hi=dhi,
                                  pen_steps_ref=float(np.median(pa)), pen_steps_other=float(np.median(pb)),
                                  wilcoxon_p=p))
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=TEST_COLS)
 
 
 def quintile_table(pe: pd.DataFrame, col: str, n_boot: int, seed: int = 2, q: int = 5) -> pd.DataFrame:
@@ -300,24 +304,28 @@ def fig_trajectories(cfg: dict, traj_dir: Path, scen: str, path: Path, methods=(
 
 # ============================================================================ verdicts
 def verdict_hp1(tests: pd.DataFrame, tq: pd.DataFrame) -> tuple[str, list[str]]:
+    """Per region: `kept` (Δsuccess CI lo >= -5 pp and Δdistance CI < 0), `broken` (PPO significantly
+    worse in success, CI hi < 0, or not significantly shorter), otherwise `unclear`."""
     lines = []
     t = tests[(tests.scenario == "P1") & (tests.variant == "zeroshot") & (tests.vs == "straight")]
-    ok_by = {}
+    status = {}
     for ref in ("ppo_S2", "ppo_S1"):
         for _, r in t[t.ref == ref].iterrows():
-            ok = r.success_diff_lo >= -0.05 and r.distance_diff_hi < 0
+            st = ("kept" if r.success_diff_lo >= -0.05 and r.distance_diff_hi < 0 else
+                  "broken" if r.success_diff_hi < 0 or r.distance_diff_hi >= 0 else "unclear")
             if ref == "ppo_S2":
-                ok_by[r.region] = ok
+                status[r.region] = st
             lines.append(f"- {r.region} P1, {LABEL[ref]} − straight: Δsuccess = {r.success_diff:+.3f} "
                          f"[{r.success_diff_lo:+.3f}, {r.success_diff_hi:+.3f}], Δdistance = {r.distance_diff_m:+.0f} m "
-                         f"[{r.distance_diff_lo:+.0f}, {r.distance_diff_hi:+.0f}] → "
-                         f"{'relation kept' if ok else 'relation not kept'}{'' if ref == 'ppo_S2' else ' (secondary)'}")
+                         f"[{r.distance_diff_lo:+.0f}, {r.distance_diff_hi:+.0f}] → relation {st}"
+                         f"{'' if ref == 'ppo_S2' else ' (secondary)'}")
     for _, r in tq.iterrows():
         lines.append(f"- Taquari {r.scenario} (reference, test split): PPO − straight Δsuccess = {r.success_diff:+.3f} "
                      f"[{r.success_diff_lo:+.3f}, {r.success_diff_hi:+.3f}], distance PPO {r.distance_ppo_m:.0f} m vs "
                      f"straight {r.distance_straight_m:.0f} m")
-    n = sum(ok_by.values())
-    v = "inconclusive" if not ok_by else "supported" if n == len(ok_by) else "not supported" if n == 0 else "inconclusive"
+    vals = list(status.values())
+    v = ("supported" if vals and all(x == "kept" for x in vals) else
+         "not supported" if vals and all(x == "broken" for x in vals) else "inconclusive")
     return v, lines
 
 
@@ -564,8 +572,9 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
     v3, l3 = verdict_hp3(contrast)
     md.append(f"### HP1 (transfer): **{v1}**\n\nCriterion: in P1 with the zero-shot β, PPO (Taquari S2) keeps the "
               "Taquari S2 relation to the straight baseline: Δsuccess CI lower bound ≥ −5 pp (≈ tie or better) AND "
-              "significantly less distance (paired CI of Δdistance < 0). Supported if it holds in both regions, not "
-              "supported if in neither.\n\n" + "\n".join(l1) + "\n")
+              "significantly less distance (paired CI of Δdistance < 0) → `kept`; PPO significantly worse in success "
+              "(CI < 0) or not significantly shorter → `broken`; otherwise `unclear`. Supported if `kept` in both "
+              "regions, not supported if `broken` in both, otherwise inconclusive.\n\n" + "\n".join(l1) + "\n")
     md.append(f"### HP2 (difficulty grows with change): **{v2}**\n\nCriterion: (a) for ≥ 75 % of methods, success "
               "falls with the window change index (Spearman ρ < 0 and success(Q1) − success(Q5) CI > 0); (b) in P1 "
               "ilhas are harder than centro (centro − ilhas CI > 0) for ≥ 75 % of methods. Supported if both, not "

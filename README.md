@@ -106,3 +106,17 @@ Observações que valem para o artigo:
 1. **S0 é degenerado**: todos os métodos localizam em 1 passo, então serve só como controle.
 2. A **gulosa** tem muita localização falsa em S2 (27,5% no treino), porque persegue reduções de entropia vindas de casamentos espúrios. A reta é a baseline mais forte em S1/S2.
 3. A ResNet18 pré-treinada casa pior entre datas do que o descritor "hand" (top-1 em S1: 10% vs 41%).
+
+## Testes Porto Alegre
+
+Bateria de testes *zero-shot* dos modelos do Taquari em Porto Alegre (ilhas do Delta do Jacuí e Centro, enchente de
+maio/2024), na branch `poa-tests`. Relatório: [`REPORT_POA.md`](REPORT_POA.md); decisões: [`DECISIONS_POA.md`](DECISIONS_POA.md).
+Tudo fica em `configs_poa/`, `data_poa/`, `results_poa/` e `runs_poa/`; os arquivos do Taquari só são lidos
+(manifesto `../checkpoints/taquari_2026-10-28.sha256`).
+
+- Smoke: `bash scripts/smoke_poa.sh` (~70 s).
+- Execução completa (retomável, sem treino):
+  `nohup systemd-inhibit --what=sleep:idle bash scripts/run_poa_overnight.sh > runs_poa/poa_$(date +%F).log 2>&1 &`
+- Acompanhar: `tail -f runs_poa/poa_*.log` (linhas `[poa-eval] k/N tasks`); `ps aux | grep dal.poa`.
+- Resultados: `results_poa/episodes.csv`, `summary.csv`, `paired_tests.csv`, `change_quintiles*.csv`,
+  `water_*.csv`, `region_contrast_P1.csv`, `hypotheses.json`, `traj/`, `figs/` e o `REPORT_POA.md` regenerado no fim.

@@ -272,6 +272,24 @@ def retrieval_table(cfg: dict, units: list[tuple[str, str]], n_windows_: int = 3
     return df
 
 
+def beta_table(cfg: dict, units: list[tuple[str, str]]) -> pd.DataFrame:
+    """beta per (region, scenario, variant) as used by the filter -> results_poa/beta.csv."""
+    p = paths(cfg)["data"] / "beta_recal.json"
+    rec = json.loads(p.read_text()) if p.exists() else {}
+    rows = []
+    for region, scen in units:
+        t = taquari_beta(cfg, scen)
+        rows.append(dict(region=region, scenario=scen, variant="zeroshot", source=f"Taquari {cfg['taquari_beta'][scen]}",
+                         beta1=t["beta1"], kappa=t["kappa"], beta=t["beta"]))
+        r = rec.get(f"{region}_{scen}")
+        if r:
+            rows.append(dict(region=region, scenario=scen, variant="recal", source=f"POA {r['calibrated_on']}",
+                             beta1=r["beta1"], kappa=r["kappa"], beta=r["beta"]))
+    df = pd.DataFrame(rows)
+    df.to_csv(paths(cfg)["results"] / "beta.csv", index=False)
+    return df
+
+
 def beta_for(cfg: dict, region: str, scen: str, variant: str) -> float | None:
     if variant == "zeroshot":
         return float(taquari_beta(cfg, scen)["beta"])
@@ -432,7 +450,7 @@ def sanity_gate(cfg: dict, episodes: int = 200, workers: int = 8) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs_poa/poa.yaml")
-    ap.add_argument("--step", choices=["features", "cache", "units", "gate", "calib", "eval"], required=True)
+    ap.add_argument("--step", choices=["features", "cache", "units", "gate", "calib", "beta", "eval"], required=True)
     ap.add_argument("--episodes", type=int)
     ap.add_argument("--methods", nargs="*", default=["straight", "lawnmower", "random", "greedy_map", "ppo"])
     ap.add_argument("--variants", nargs="*", default=["zeroshot", "recal"])
@@ -459,6 +477,9 @@ def main() -> None:
         units = eval_units(cfg)
         retrieval_table(cfg, units)
         recalibrate(cfg, units)
+        beta_table(cfg, units)
+    elif a.step == "beta":
+        print(beta_table(cfg, eval_units(cfg)))
     elif a.step == "eval":
         units = [u for u in eval_units(cfg) if not a.scenarios or u[1] in a.scenarios]
         evaluate(cfg, units, a.methods, a.variants, a.episodes or cfg["eval"]["episodes"],
