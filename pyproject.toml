@@ -31,3 +31,5 @@ where = ["src"]
 [tool.pytest.ini_options]
 markers = ["data: requires downloaded data in data/ (skipped otherwise)"]
 testpaths = ["tests"]
+# The host shell exports ROS PYTHONPATH entries whose pytest plugins fail to import.
+addopts = "-p no:launch_testing -p no:launch_ros -p no:ament_copyright -p no:ament_xmllint -p no:ament_pep257 -p no:ament_flake8 -p no:ament_lint"

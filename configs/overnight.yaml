@@ -1,0 +1,8 @@
+# Overnight runs: {S0,S1,S2} x seeds {0,1,2}; descriptor from results/gate.json.
+base: default.yaml
+ppo:
+  total_timesteps: 2000000   # adjusted from the smoke-test throughput (see DECISIONS.md)
+  n_envs: 8
+eval:
+  episodes: 1000
+  train_episodes: 300        # north-region evaluation for H3

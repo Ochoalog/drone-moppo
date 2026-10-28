@@ -1,0 +1,11 @@
+# End-to-end pipeline check: tiny PPO run on S0, short evaluation.
+base: default.yaml
+env:
+  scenario: S0
+ppo:
+  total_timesteps: 20000
+  n_envs: 2
+  batch_size: 512          # rollout = n_steps * n_envs = 512 < 2048
+  seed: 0
+eval:
+  episodes: 50

@@ -224,7 +224,7 @@ def load_masks() -> dict[str, np.ndarray]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/default.yaml")
-    ap.add_argument("--step", choices=["download", "masks", "all"], default="all")
+    ap.add_argument("--step", choices=["download", "masks", "stats", "all"], default="all")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
     cfg = load_config(a.config)
@@ -232,7 +232,25 @@ def main() -> None:
         download(cfg, a.force)
     if a.step in ("masks", "all"):
         build_masks(cfg)
+    if a.step == "stats":
+        from .config import RESULTS
+
+        export_stats(cfg, RESULTS / "data_stats.json")
 
 
 if __name__ == "__main__":
     main()
+
+
+def export_stats(cfg: dict, out: Path) -> None:
+    """Data facts used by the report (copied into results/ so REPORT numbers come from there)."""
+    d = cfg["data"]
+    grid = Grid.from_aoi(**d["aoi"], cell=d["cell_m"])
+    train, test = grid.split_rows(d["split_lat"], d["split_margin_m"])
+    masks = json.loads((DATA / "masks_stats.json").read_text())
+    align = json.loads((DATA / "align.json").read_text())
+    s = dict(grid=grid.to_dict(), train_rows=[int(train.min()), int(train.max())],
+             test_rows=[int(test.min()), int(test.max())],
+             dates={k: dict(masks=masks[k], align=align[k]) for k in d["sources"]})
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(s, indent=1))
