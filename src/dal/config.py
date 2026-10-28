@@ -2,23 +2,28 @@
 from __future__ import annotations
 
 import copy
+import os
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
-RUNS = ROOT / "runs"
-RESULTS = ROOT / "results"
+# Overridable by environment variable (read at import time); defaults are the Taquari PoC folders.
+DATA = Path(os.environ.get("DAL_DATA_DIR", ROOT / "data"))
+RUNS = Path(os.environ.get("DAL_RUNS_DIR", ROOT / "runs"))
+RESULTS = Path(os.environ.get("DAL_RESULTS_DIR", ROOT / "results"))
 FIGS = RESULTS / "figs"
 
 
 def deep_merge(a: dict, b: dict) -> dict:
-    """Return a copy of `a` updated recursively with `b`."""
+    """Return a copy of `a` updated recursively with `b`. A dict in `b` carrying `__replace__: true`
+    replaces the inherited dict instead of being merged into it."""
     out = copy.deepcopy(a)
     for k, v in b.items():
-        if isinstance(v, dict) and isinstance(out.get(k), dict):
+        if isinstance(v, dict) and v.get("__replace__"):
+            out[k] = {kk: copy.deepcopy(vv) for kk, vv in v.items() if kk != "__replace__"}
+        elif isinstance(v, dict) and isinstance(out.get(k), dict):
             out[k] = deep_merge(out[k], v)
         else:
             out[k] = copy.deepcopy(v)
@@ -41,3 +46,16 @@ def load_config(path: str | Path, overrides: dict | None = None) -> dict[str, An
 
 def default_config() -> dict[str, Any]:
     return load_config(ROOT / "configs" / "default.yaml")
+
+
+def paths(cfg: dict) -> dict[str, Path]:
+    """Output folders of a config (`paths:` block, relative to ROOT); defaults are DATA/RUNS/RESULTS."""
+    p = cfg.get("paths") or {}
+
+    def get(key: str, default: Path) -> Path:
+        v = p.get(key)
+        return default if v is None else (Path(v) if Path(v).is_absolute() else ROOT / v)
+
+    out = dict(data=get("data", DATA), runs=get("runs", RUNS), results=get("results", RESULTS))
+    out["figs"] = out["results"] / "figs"
+    return out

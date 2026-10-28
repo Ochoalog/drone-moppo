@@ -1,0 +1,73 @@
+# Porto Alegre test battery (zero-shot evaluation of the Taquari models). Inherits the PoC pipeline;
+# every output goes to data_poa/, results_poa/, runs_poa/ (never to the Taquari folders).
+base: ../configs/default.yaml
+
+paths:
+  data: data_poa
+  results: results_poa
+  runs: runs_poa
+  report: REPORT_POA.md
+  taquari_data: data            # read-only: Taquari descriptors (for the PCA), beta.json
+  taquari_runs: runs/overnight  # read-only: the 9 trained models
+  taquari_results: results      # read-only: summary_test.csv for the comparison
+
+data:
+  aoi: {lon0: -51.29, lon1: -51.19, lat0: -30.06, lat1: -29.95}
+  split_lat: null
+  sources:
+    __replace__: true
+    poa_post: https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/664ffe0149dd860001fae172/1/664ffe0149dd860001fae174.tif
+    poa_pre_feb24: https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/66426b996049ef00013b8598/1/66426b996049ef00013b859a.tif
+    poa_pre_dec22: https://oin-hotosm-temp.s3.us-east-1.amazonaws.com/66426b996049ef00013b8598/5/66426b996049ef00013b859e.tif
+  obs_date: poa_post
+  # values measured by hand before this battery (data gate: +-30 %)
+  expected:
+    valid_km2: {poa_post: 117.5, poa_pre_feb24: 117.5, poa_pre_dec22: 89.1}
+    overlap_km2: {poa_pre_feb24: 116.5, poa_pre_dec22: 88.2}
+  align_max_m: 10.0
+
+regions:
+  ilhas: {lon0: -51.29, lon1: -51.215, lat0: -30.05, lat1: -29.95}
+  centro: {lon0: -51.245, lon1: -51.19, lat0: -30.06, lat1: -29.99}
+
+scenarios:          # map date -> observation is always poa_post
+  __replace__: true
+  P0: poa_post
+  P1: poa_pre_feb24
+  P2: poa_pre_dec22
+
+# zero-shot: which Taquari scenario provides beta (with kappa) for each POA scenario
+taquari_beta: {P0: S0, P1: S1, P2: S2}
+# PPO models evaluated zero-shot (Taquari scenario -> its map date gives the PCA transform)
+taquari_models: {S1: pre_mar23, S2: pre_oct23}
+
+features:
+  descriptors: [hand]
+
+env:
+  descriptor: hand
+
+cloud_poa:               # POA-only cloud detector (see DECISIONS_POA.md); Taquari detector unchanged
+  v_bright: 200
+  s_bright: 40
+  v_haze: 150
+  s_haze: 50
+  haze_std_max: 14.0
+  std_win: 15
+  open_px: 41             # 50 m: removes urban white roofs
+  dilate_px: 101          # ~120 m halo
+
+water:
+  texture_win: 9          # px (1.22 m/px) for the local gray std
+  texture_max: 8.0        # DN: homogeneous
+  dark_v: 70              # V below -> dark water
+  brown_h: [0, 32]        # OpenCV hue (0-180): brown / reddish sediment-laden water
+  brown_s_min: 40
+  brown_v_max: 190
+  open_px: 9
+
+eval:
+  episodes: 500
+  workers: 8
+  save_traj: 10
+  min_windows: 20          # fewer valid 64x64 windows than this -> (region, scenario) skipped
