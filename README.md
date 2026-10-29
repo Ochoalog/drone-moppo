@@ -120,3 +120,23 @@ Tudo fica em `configs_poa/`, `data_poa/`, `results_poa/` e `runs_poa/`; os arqui
 - Acompanhar: `tail -f runs_poa/poa_*.log` (linhas `[poa-eval] k/N tasks`); `ps aux | grep dal.poa`.
 - Resultados: `results_poa/episodes.csv`, `summary.csv`, `paired_tests.csv`, `change_quintiles*.csv`,
   `water_*.csv`, `region_contrast_P1.csv`, `hypotheses.json`, `traj/`, `figs/` e o `REPORT_POA.md` regenerado no fim.
+
+## Política multiobjetivo (à la AMOR)
+
+Extensão com política condicionada em pesos treinada com MOPPO (AMOR, Alegre et al., SIGGRAPH 2025) e memória curta de ações (ANL, Chaplot et al., ICLR 2018), na branch `amor-mo`.
+Relatório: [`REPORT_MO.md`](REPORT_MO.md); decisões: [`DECISIONS_MO.md`](DECISIONS_MO.md).
+Saídas exclusivas em `configs_mo/`, `results_mo/`, `runs_mo/`, `src/dal/mo_*.py`, `scripts/*_mo*.sh` e `tests/test_mo_*.py`.
+
+### Acompanhar a execução noturna
+```bash
+tail -f runs_mo/mo_*.log                               # log geral com progresso, rollouts e gates
+tail -n 5 runs_mo/moppo_S2_hand_s0/progress.csv        # métricas de treino (FPS, perdas, entropia)
+ps aux | grep mo_pipeline                              # verificar processo em execução
+ls -lh runs_mo/*/final_model.pt                        # modelos concluídos
+ls -lh results_mo/figs/                                # figuras da fronteira de Pareto e adaptação
+cat REPORT_MO.md                                       # relatório consolidado com vereditos H4-H7
+```
+- **Retomável:** O script pula modelos que já possuem `final_model.pt` com timesteps completos.
+- **Gates automatizados:** Avaliados aos 25% de treino e registrados no log e em `runs_mo/moppo_S2_hand_s0/gate_check_25pct.json`.
+- **Integridade:** Ao final, os manifestos de Taquari e Porto Alegre são verificados automaticamente via sha256sum.
+
