@@ -118,10 +118,21 @@ def run_pipeline(
     print(f"STAGE 1: TRAINING ({'SMOKE' if smoke else 'FULL OVERNIGHT'})")
     print("=" * 60)
 
+    def is_trained(model_dir: Path, min_steps: int) -> bool:
+        pt = model_dir / "final_model.pt"
+        meta = model_dir / "train_meta.json"
+        if not pt.exists() or not meta.exists():
+            return False
+        try:
+            m = json.loads(meta.read_text())
+            return int(m.get("total_timesteps", 0)) >= min_steps
+        except Exception:
+            return False
+
     # (a) MO com memória, seed 0
     dir_mo_mem = runs_mo / "moppo_S2_hand_s0"
-    if (dir_mo_mem / "final_model.pt").exists():
-        print(f"[pipeline] Found existing trained model at {dir_mo_mem}/final_model.pt -> SKIPPING TRAINING")
+    if is_trained(dir_mo_mem, t_mo):
+        print(f"[pipeline] Found existing trained model at {dir_mo_mem} (>= {t_mo} steps) -> SKIPPING TRAINING")
     else:
         print(f"[pipeline] Training MOPPO com memória seed 0 ({t_mo} timesteps)...")
         train_moppo(cfg, dir_mo_mem, memory=True, total_timesteps=t_mo, seed=0)
@@ -129,8 +140,8 @@ def run_pipeline(
     # (b) MO sem memória (ablação), seed 0 (only in full run)
     dir_mo_nomem = runs_mo / "moppo_nomem_S2_hand_s0"
     if not smoke:
-        if (dir_mo_nomem / "final_model.pt").exists():
-            print(f"[pipeline] Found existing ablation model at {dir_mo_nomem} -> SKIPPING TRAINING")
+        if is_trained(dir_mo_nomem, t_nomem):
+            print(f"[pipeline] Found existing ablation model at {dir_mo_nomem} (>= {t_nomem} steps) -> SKIPPING TRAINING")
         else:
             print(f"[pipeline] Training MOPPO sem memória seed 0 ({t_nomem} timesteps)...")
             train_moppo(cfg, dir_mo_nomem, memory=False, total_timesteps=t_nomem, seed=0)
@@ -140,15 +151,15 @@ def run_pipeline(
     dir_fixed_safe = runs_mo / "ppo_fixed_safe_s0"
     if not smoke:
         w_fast = np.array([0.15, 0.55, 0.15, 0.15], dtype=np.float32)
-        if (dir_fixed_fast / "final_model.pt").exists():
-            print(f"[pipeline] Found existing fixed model at {dir_fixed_fast} -> SKIPPING TRAINING")
+        if is_trained(dir_fixed_fast, t_fixed):
+            print(f"[pipeline] Found existing fixed model at {dir_fixed_fast} (>= {t_fixed} steps) -> SKIPPING TRAINING")
         else:
             print(f"[pipeline] Training PPO fixo rápido seed 0 ({t_fixed} timesteps)...")
             train_moppo(cfg, dir_fixed_fast, memory=True, default_w=w_fast, total_timesteps=t_fixed, seed=0)
 
         w_safe = np.array([0.15, 0.15, 0.15, 0.55], dtype=np.float32)
-        if (dir_fixed_safe / "final_model.pt").exists():
-            print(f"[pipeline] Found existing fixed model at {dir_fixed_safe} -> SKIPPING TRAINING")
+        if is_trained(dir_fixed_safe, t_fixed):
+            print(f"[pipeline] Found existing fixed model at {dir_fixed_safe} (>= {t_fixed} steps) -> SKIPPING TRAINING")
         else:
             print(f"[pipeline] Training PPO fixo seguro seed 0 ({t_fixed} timesteps)...")
             train_moppo(cfg, dir_fixed_safe, memory=True, default_w=w_safe, total_timesteps=t_fixed, seed=0)
