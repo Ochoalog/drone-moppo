@@ -105,20 +105,41 @@ A política treinada exclusivamente em Taquari S2 foi submetida a um teste cego 
 
 > **Veredito H7:** Nas ilhas de Porto Alegre, o preset seguro do MOPPO obteve a **menor taxa de falsa localização de todos os métodos** (19.7% vs 21.3% da PPO-S2 e 22.0% da reta), com economia expressiva de distância (voou 1028 m contra 2160 m da reta). O custo da transferência direta foi a taxa de sucesso moderada (49%), explicada pela severa inundação que alterou o contorno das ilhas.
 
+### Vídeos e Animações em Porto Alegre:
+
+#### 1. Ilhas do Delta do Jacuí (Episódio 4):
+O drone parte da várzea alagada e converge com **86.4% de pico** ao alcançar as margens habitadas do canal fluvial próximo à ponte da BR-290:
+
+![MOPPO Seguro nas Ilhas de Porto Alegre](results_mo/videos/poa_ilhas_mo_safe.gif)
+
+*Comparação Lado a Lado nas Ilhas (MOPPO vs Linha Reta vs Zigue-zague):*
+
+![Comparação nas Ilhas de Porto Alegre](results_mo/videos/poa_comparison_ilhas_mo_vs_straight_vs_zigzag.gif)
+
+#### 2. Centro Histórico e Parque da Redenção (Episódio 1):
+O drone navega pela malha urbana de Porto Alegre sobrevoando o Parque da Redenção e converge com **77.0% de certeza** em 35 passos, poupando mais de 2.3 km de voo em relação ao Zigue-zague:
+
+![MOPPO Seguro no Centro de Porto Alegre](results_mo/videos/poa_centro_mo_safe.gif)
+
+*Comparação Lado a Lado no Centro (MOPPO vs Linha Reta vs Zigue-zague):*
+
+![Comparação no Centro de Porto Alegre](results_mo/videos/poa_comparison_centro_mo_vs_straight_vs_zigzag.gif)
+
 ---
 
 ## 5. Estrutura dos Arquivos de Vídeo e Scripts
 
-Para reproduzir ou gerar novos vídeos, utilize o script automatizado:
+Para reproduzir ou gerar novos vídeos, utilize os scripts automatizados:
 
 ```bash
-# Gerar todos os vídeos e animações em results_mo/videos/
+# Gerar vídeos do Vale do Taquari
 bash scripts/generate_mo_videos.sh
+
+# Gerar vídeos de Porto Alegre (Centro e Ilhas)
+.venv/bin/python -u -m src.dal.mo_poa_video
 ```
 
 Os arquivos gerados estão disponíveis em:
-- `results_mo/videos/episode_0_mo_fast.mp4` (vídeo individual de convergência)
-- `results_mo/videos/comparison_ep0_mo_vs_straight_vs_zigzag.mp4` (comparação lado a lado Ep 0)
-- `results_mo/videos/comparison_ep2_mo_vs_straight_vs_zigzag.mp4` (comparação lado a lado Ep 2)
-- `results_mo/videos/pareto_frontier_explainer.mp4` (explanação da fronteira de Pareto)
+- **Taquari:** `results_mo/videos/episode_0_mo_fast.mp4`, `comparison_ep0_mo_vs_straight_vs_zigzag.mp4`, `pareto_frontier_explainer.mp4`
+- **Porto Alegre:** `results_mo/videos/poa_ilhas_mo_safe.mp4`, `poa_comparison_ilhas_mo_vs_straight_vs_zigzag.mp4`, `poa_centro_mo_safe.mp4`, `poa_comparison_centro_mo_vs_straight_vs_zigzag.mp4`
 - Versões em `.gif` de alta resolução disponíveis na mesma pasta para relatórios e apresentações web.
