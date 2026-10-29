@@ -4,6 +4,23 @@ Esta apresentação reúne os resultados experimentais, animações de telemetri
 
 ---
 
+## 0. Vídeo Executivo no Estilo Apresentação (Deck PPTX)
+
+Para uma visão completa e integrada da motivação física, formulação algorítmica, métricas rigorosas de validação e voo sincronizado das políticas no cenário de desastre das **Ilhas de Porto Alegre (Enchente de Maio de 2024)**, assista à apresentação executiva em vídeo:
+
+![Apresentação Executiva em Vídeo - Ilhas de Porto Alegre](results_mo/videos/poa_ilhas_presentation_deck.gif)
+
+> 📹 **Arquivo em Alta Resolução (Full HD 1080p, 48s):** [`results_mo/videos/poa_ilhas_presentation_deck.mp4`](results_mo/videos/poa_ilhas_presentation_deck.mp4)  
+> 🎬 **Formato de Slides Executivos:**  
+> - **Slide 1 (Título & Overview):** Contexto operacional de GPS negado, MOPPO (SIGGRAPH 2025), ANL (ICLR 2018) e Transferência Zero-Shot.  
+> - **Slide 2 (O Porquê - Choque Morfológico):** A quebra de premissas com ilhas inteiras submersas sob águas marrons barrentas (comparação real: câmera pós-enchente vs mapa pré-enchente).  
+> - **Slide 3 (O Como - Arquitetura Técnica):** Os 3 pilares da solução: Filtro Espacial com Nuvem de Pontos $b_t$, MOPPO condicionado em preferências $w$ e Memória Curta de Ações FIFO.  
+> - **Slide 4 (Tabela Quantitativa 300 Episódios):** Resultados empíricos pareados no Cenário P1 das Ilhas (MOPPO Seguro vs MOPPO Rápido vs PPO PoC vs Linha Reta).  
+> - **Slide 5 (Voo Comparativo Dinâmico):** Reta vs Primeiro Treino vs Treino MO com Nuvem de Partículas da Crença e Câmera real ao vivo.  
+> - **Slide 6 (Conclusões & Lições):** O imperativo da navegação ativa adaptativa em cenários de calamidade pública.
+
+---
+
 ## 1. O Problema e a Dinâmica de Convergência
 
 Na localização ativa, o drone parte de uma janela de busca de $64 \times 64$ células ($3.2 \times 3.2\text{ km}$), onde sua posição real é inicialmente desconhecida. Um filtro de histograma mantém uma distribuição de probabilidade espacial $b_t \in [0, 1]^{64 \times 64}$ (a "crença").
@@ -129,17 +146,21 @@ Cada método exibe a sua **Nuvem de Pontos (partículas ciano da crença espacia
 Para reproduzir ou gerar novos vídeos, utilize os scripts automatizados:
 
 ```bash
-# Gerar vídeos do Vale do Taquari
-bash scripts/generate_mo_videos.sh
+# Gerar Apresentação Executiva em Vídeo (Deck PPTX completo)
+.venv/bin/python -u -m src.dal.mo_poa_presentation_video
 
 # Gerar vídeos das Ilhas com Nuvem de Pontos e Câmera vs Mapa
 .venv/bin/python -u -m src.dal.mo_poa_nuvem_video
+
+# Gerar vídeos do Vale do Taquari
+bash scripts/generate_mo_videos.sh
 
 # Gerar demais vídeos de Porto Alegre
 .venv/bin/python -u -m src.dal.mo_poa_video
 ```
 
 Os arquivos gerados estão disponíveis em `results_mo/videos/`:
+- `poa_ilhas_presentation_deck.mp4` e `.gif` (Apresentação Executiva Completa estilo PPTX, 1080p, 48s)
 - `poa_ilhas_comparison_nuvem_pontos_camera.mp4` e `.gif` (Comparação 3-way com Nuvem de Pontos e Câmera nas Ilhas)
 - `poa_ilhas_mo_safe.mp4` e `poa_centro_mo_safe.mp4`
 - `episode_0_mo_fast.mp4` e `comparison_ep0_mo_vs_straight_vs_zigzag.mp4` (Taquari)
