@@ -215,6 +215,8 @@ def generate_behavior_adaptation_figure(
     floc_vals = df_risk["false_loc"].values
 
     rho_risk, p_risk = spearmanr(w_risk_vals, floc_vals)
+    if np.isnan(rho_risk):
+        rho_risk = 0.0
 
     # Bootstrap CI for Spearman rho
     rng = np.random.default_rng(42)
@@ -225,8 +227,8 @@ def generate_behavior_adaptation_figure(
         r, _ = spearmanr(w_risk_vals[idx], floc_vals[idx])
         if not np.isnan(r):
             boot_rhos_risk.append(r)
-    rho_risk_lo = float(np.percentile(boot_rhos_risk, 2.5)) if boot_rhos_risk else rho_risk
-    rho_risk_hi = float(np.percentile(boot_rhos_risk, 97.5)) if boot_rhos_risk else rho_risk
+    rho_risk_lo = float(np.percentile(boot_rhos_risk, 2.5)) if boot_rhos_risk else 0.0
+    rho_risk_hi = float(np.percentile(boot_rhos_risk, 97.5)) if boot_rhos_risk else 0.0
 
     ax1.plot(df_risk["w_risk"], df_risk["false_loc"] * 100, "o-", color="#d62728", lw=2, markersize=6)
     if "false_loc_lo" in df_risk.columns:
