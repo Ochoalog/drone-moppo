@@ -4,20 +4,23 @@ Esta apresentação reúne os resultados experimentais, animações de telemetri
 
 ---
 
-## 0. Vídeo Executivo no Estilo Apresentação (Deck PPTX)
+## 0. Vídeos Executivos no Estilo Apresentação (Decks PPTX)
 
-Para uma visão completa e integrada da motivação física, formulação algorítmica, métricas rigorosas de validação e voo sincronizado das políticas no cenário de desastre das **Ilhas de Porto Alegre (Enchente de Maio de 2024)**, assista à apresentação executiva em vídeo:
+Para uma visão completa e integrada da motivação física, formulação algorítmica, métricas rigorosas de validação e voo sincronizado das políticas, foram geradas apresentações executivas em vídeo cobrindo tanto o **ambiente de treinamento original (Vale do Taquari)** quanto o **cenário de transferência zero-shot (Ilhas de Porto Alegre)**:
+
+### A. Apresentação Executiva: Vale do Taquari (Ambiente de Treino)
+
+![Apresentação Executiva em Vídeo - Vale do Taquari](results_mo/videos/taquari_presentation_deck.gif)
+
+> 📹 **Arquivo Full HD (1080p, 44s):** [`results_mo/videos/taquari_presentation_deck.mp4`](results_mo/videos/taquari_presentation_deck.mp4) (e [`taquari_presentation_deck_whatsapp.mp4`](results_mo/videos/taquari_presentation_deck_whatsapp.mp4))  
+> 🎬 **Conteúdo do Deck:** O relevo do Taquari e a cheia de setembro de 2023, os 3 pilares técnicos (Nuvem de Pontos, MOPPO à la AMOR e Memória ANL), tabela quantitativa de 300 episódios no Taquari S2, voo comparativo dinâmico das 3 políticas no Rio Taquari e conclusões.
+
+### B. Apresentação Executiva: Ilhas de Porto Alegre (Transferência Zero-Shot)
 
 ![Apresentação Executiva em Vídeo - Ilhas de Porto Alegre](results_mo/videos/poa_ilhas_presentation_deck.gif)
 
-> 📹 **Arquivo em Alta Resolução (Full HD 1080p, 48s):** [`results_mo/videos/poa_ilhas_presentation_deck.mp4`](results_mo/videos/poa_ilhas_presentation_deck.mp4)  
-> 🎬 **Formato de Slides Executivos:**  
-> - **Slide 1 (Título & Overview):** Contexto operacional de GPS negado, MOPPO (SIGGRAPH 2025), ANL (ICLR 2018) e Transferência Zero-Shot.  
-> - **Slide 2 (O Porquê - Choque Morfológico):** A quebra de premissas com ilhas inteiras submersas sob águas marrons barrentas (comparação real: câmera pós-enchente vs mapa pré-enchente).  
-> - **Slide 3 (O Como - Arquitetura Técnica):** Os 3 pilares da solução: Filtro Espacial com Nuvem de Pontos $b_t$, MOPPO condicionado em preferências $w$ e Memória Curta de Ações FIFO.  
-> - **Slide 4 (Tabela Quantitativa 300 Episódios):** Resultados empíricos pareados no Cenário P1 das Ilhas (MOPPO Seguro vs MOPPO Rápido vs PPO PoC vs Linha Reta).  
-> - **Slide 5 (Voo Comparativo Dinâmico):** Reta vs Primeiro Treino vs Treino MO com Nuvem de Partículas da Crença e Câmera real ao vivo.  
-> - **Slide 6 (Conclusões & Lições):** O imperativo da navegação ativa adaptativa em cenários de calamidade pública.
+> 📹 **Arquivo Full HD (1080p, 48s):** [`results_mo/videos/poa_ilhas_presentation_deck.mp4`](results_mo/videos/poa_ilhas_presentation_deck.mp4) (e [`poa_ilhas_presentation_deck_whatsapp.mp4`](results_mo/videos/poa_ilhas_presentation_deck_whatsapp.mp4))  
+> 🎬 **Conteúdo do Deck:** O fenômeno das ilhas que sumiram sob a lâmina d'água na enchente de maio de 2024, câmera ao vivo pós-enchente vs mapa original pré-enchente, tabela quantitativa pareada e voo comparativo dinâmico no Delta do Jacuí.
 
 ---
 
@@ -51,9 +54,18 @@ O vídeo abaixo exibe um episódio completo da política MOPPO no Taquari S2. Ob
 
 Por que aprender uma política de controle via RL multiobjetivo em vez de programar padrões geométricos tradicionais como linha reta ou zigue-zague (*lawnmower*)?
 
-A animação a seguir apresenta os três métodos iniciando no **exato mesmo ponto**, enfrentando a **mesma janela de busca** e a **mesma dinâmica estocástica de voo**:
+### Comparação 3-Way com Nuvem de Pontos e Câmera ao Vivo do Drone (Taquari S2)
 
-![Comparação Sincronizada: MOPPO vs Linha Reta vs Zigue-zague](results_mo/videos/comparison_ep0_mo_vs_straight_vs_zigzag.gif)
+A animação a seguir apresenta a comparação sincronizada das três políticas (**Linha Reta** vs **Primeiro Treino PPO PoC** vs **Treino MO com Memória**) no Vale do Taquari (Episódio 0, Janela `[381, 50]`), exibindo a **Nuvem de Partículas da Crença** colapsando sobre a ortofoto aérea e, na parte inferior, o recorte real da **Câmera do Drone (Pós-Enchente)** comparado com o **Mapa Original (Pré-Enchente)**:
+
+![Comparação Taquari: Reta vs Primeiro Treino vs Treino MO com Nuvem de Pontos e Câmera](results_mo/videos/taquari_comparison_nuvem_pontos_camera.gif)
+
+> 📹 **Arquivo Full HD:** [`results_mo/videos/taquari_comparison_nuvem_pontos_camera.mp4`](results_mo/videos/taquari_comparison_nuvem_pontos_camera.mp4) (e [`taquari_comparison_whatsapp.mp4`](results_mo/videos/taquari_comparison_whatsapp.mp4))  
+> - **Treino MO (MOPPO com Memória):** Decola da mata fechada, inflete imediatamente rumo à rodovia e à margem do Rio Taquari, convergindo em apenas **18 passos (1272 m)** com 48.8% de pico!  
+> - **Primeiro Treino (PPO PoC S2):** Também busca a margem, mas leva **29 passos**.  
+> - **Linha Reta (Straight Baseline):** Segue em rumo fixo para o norte, cruzando floresta homogênea por **54 passos (2777 m)** até encontrar referências por sorte.
+
+---
 
 ### Análise Comparativa dos Três Métodos:
 - **MOPPO (Com Memória):**
