@@ -14,6 +14,7 @@ Decisões de implementação para a extensão multiobjetivo de `drone_active_loc
 | 8 | No máximo 3 checkpoints por execução (~25%, ~50%, ~75%) + modelo final. | Restrição estrita de disco (§0: runs_mo + results_mo < 1 GB). | Salvar checkpoints a cada 10 rollouts (esgotaria os ~1.7 GB livres em disco). |
 | 9 | Trajetórias .npz salvas apenas para os primeiros 10 episódios dos 3 presets da MO com memória e da reta. | Atende a especificação da §6.5 e respeita a cota de disco. | Salvar todas as trajetórias de avaliação. |
 | 10 | Verificação pareada com sementes fixadas `2024 + episode_idx`. | Garante que todas as políticas enfrentam exatamente a mesma sequência de janelas, posições iniciais e ruídos estocásticos de dinâmica. | Amostragem independente por método (aumentaria variância de comparação). |
+| 11 | Arquitetura de rede com projeções balanceadas (128 CNN + 128 vetor) e injeção direta de $w$ normalizado nas cabeças de ator e crítico. | Evita que $w$ seja ofuscado pelos 1024 canais da CNN em um MLP único (onde $w$ representava apenas 0,36% da entrada), permitindo que a política condicione fortemente em $w$ e cumpra o gate de condicionamento (§8) e H6. | Alimentar 1024 + 69 diretamente em uma única camada densa (onde $w$ é ignorado pela política). |
 
 ---
 

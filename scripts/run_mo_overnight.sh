@@ -14,7 +14,7 @@ echo "Disk space before overnight:"
 df -h .
 
 # Run full MO pipeline (resumable, handles gates, evaluation, and reporting)
-.venv/bin/python -m src.dal.mo_pipeline
+.venv/bin/python -u -m src.dal.mo_pipeline
 
 # Check manifests at the end
 echo "Verifying checksums at the end of execution..."

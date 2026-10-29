@@ -23,7 +23,7 @@ from .mo_env import DroneLocMOEnv, make_mo_env
 # Neural Network
 # ============================================================================
 class LocExtractor(nn.Module):
-    """3 strided convs over (C, W, W) map + MLP trunk concatenated with the vector input."""
+    """3 strided convs over (C, W, W) map + balanced vector projection trunk."""
 
     def __init__(self, c_in: int, h: int, w: int, nv: int, features_dim: int = 256):
         super().__init__()
@@ -40,14 +40,28 @@ class LocExtractor(nn.Module):
         with torch.no_grad():
             dummy = torch.zeros(1, c_in, h, w)
             n_flat = self.cnn(dummy).shape[1]
-        self.mlp = nn.Sequential(nn.Linear(n_flat + nv, features_dim), nn.ReLU())
+
+        # Balanced 128 CNN + 128 vector projections to avoid overpowering w
+        self.cnn_proj = nn.Sequential(
+            nn.Linear(n_flat, features_dim // 2),
+            nn.ReLU(),
+        )
+        self.vec_proj = nn.Sequential(
+            nn.Linear(nv, features_dim // 2),
+            nn.ReLU(),
+        )
+        self.features_dim = features_dim
 
     def forward(self, obs_map: torch.Tensor, obs_vec: torch.Tensor) -> torch.Tensor:
-        cnn_feat = self.cnn(obs_map)
+        cnn_feat = self.cnn_proj(self.cnn(obs_map))
         # Normalize w component to zero-mean unit scale (§8 conditioning)
-        w_norm = (obs_vec[:, :4] - 0.25) * 4.0
-        vec_norm = torch.cat([w_norm, obs_vec[:, 4:]], dim=1)
-        return self.mlp(torch.cat([cnn_feat, vec_norm], dim=1))
+        if obs_vec.shape[1] >= 4:
+            w_norm = (obs_vec[:, :4] - 0.25) * 4.0
+            vec_norm = torch.cat([w_norm, obs_vec[:, 4:]], dim=1)
+        else:
+            vec_norm = obs_vec
+        vec_feat = self.vec_proj(vec_norm)
+        return torch.cat([cnn_feat, vec_feat], dim=1)
 
 
 class MOPPONetwork(nn.Module):
@@ -69,16 +83,26 @@ class MOPPONetwork(nn.Module):
         self.action_dim = action_dim
         self.extractor = LocExtractor(c_in, h, w, nv, features_dim=features_dim)
 
+        # Actor and Critic heads receive both features and normalized w directly (AMOR §4.1 / §5)
+        in_dim = features_dim + num_objectives
         self.actor = nn.Sequential(
-            nn.Linear(features_dim, hidden_dim),
+            nn.Linear(in_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, action_dim),
         )
         self.critic = nn.Sequential(
-            nn.Linear(features_dim, hidden_dim),
+            nn.Linear(in_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, num_objectives),
         )
+
+    def _get_head_input(self, feat: torch.Tensor, obs_vec: torch.Tensor) -> torch.Tensor:
+        w_raw = obs_vec[:, :self.num_objectives]
+        if self.num_objectives == 4:
+            w_norm = (w_raw - 0.25) * 4.0
+        else:
+            w_norm = w_raw
+        return torch.cat([feat, w_norm], dim=-1)
 
     def get_features(self, obs: dict[str, torch.Tensor]) -> torch.Tensor:
         return self.extractor(obs["map"], obs["vec"])
@@ -86,25 +110,28 @@ class MOPPONetwork(nn.Module):
     def get_value(self, obs: dict[str, torch.Tensor]) -> torch.Tensor:
         """Returns V(s, w) of shape (B, num_objectives)."""
         feat = self.get_features(obs)
-        return self.critic(feat)
+        head_in = self._get_head_input(feat, obs["vec"])
+        return self.critic(head_in)
 
     def get_action_and_value(
         self, obs: dict[str, torch.Tensor], action: torch.Tensor | None = None
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         feat = self.get_features(obs)
-        logits = self.actor(feat)
+        head_in = self._get_head_input(feat, obs["vec"])
+        logits = self.actor(head_in)
         dist = Categorical(logits=logits)
         if action is None:
             action = dist.sample()
         log_prob = dist.log_prob(action)
         entropy = dist.entropy()
-        value = self.critic(feat)
+        value = self.critic(head_in)
         return action, log_prob, entropy, value
 
     def act(self, obs: dict[str, torch.Tensor], deterministic: bool = True) -> int:
         with torch.no_grad():
             feat = self.get_features(obs)
-            logits = self.actor(feat)
+            head_in = self._get_head_input(feat, obs["vec"])
+            logits = self.actor(head_in)
             if deterministic:
                 action = torch.argmax(logits, dim=-1)
             else:
