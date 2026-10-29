@@ -15,14 +15,15 @@ O vídeo abaixo exibe um episódio completo da política MOPPO no Taquari S2. Ob
 ![Convergência da Política MOPPO (Episódio 0)](results_mo/videos/episode_0_mo_fast.gif)
 
 ### O que observar na animação acima:
-1. **Painel 1 (Esquerda - Mapa de Saliência & Trajetória):**
-   - O fundo exibe o mapa de distintividade (*distinctiveness*), onde tons mais claros e contornos amarelos indicam feições únicas no terreno (margens de rios, curvas de estradas, edificações isoladas).
-   - A linha verde-clara registra a trajetória real percorrida. O drone não voa em linha cega: ele curva ativamente em direção aos marcos discriminativos.
-   - O 'X' rosa representa a estimativa de posição $\hat{x}_t$ calculada pelo filtro. Conforme o drone coleta observações, a estimativa converge e "trava" sobre a posição real.
-2. **Painel 2 (Centro - Crença Espacial $b_t$):**
-   - No início ($t=0$), a crença é uma névoa difusa com pico inferior a $0.2\%$ (a incerteza está espalhada em mais de 1000 células possíveis).
-   - Nos passos intermediários ($t=6$ a $12$), surgem ilhas de probabilidade destacadas em laranja/amarelo.
-   - No passo 18, ocorre o colapso: a probabilidade atinge **48.8% no pico** e concentra mais de 90% da massa no raio de 100m, finalizando a missão com **LOCALIZAÇÃO COM SUCESSO**.
+1. **Painel 1 (Esquerda - Mapa Satélite Real & Trajetória):**
+   - **Fundo:** Ortofoto aérea real de satélite (Taquari/RS) em cores naturais, evidenciando o Rio Taquari à direita, as matas fechadas, as estradas e os galpões industriais/fazendas.
+   - **Contornos Dourados:** Indicam as feições de alta distintividade morfológica calculadas pelo descritor.
+   - **Ponto Inicial (círculo azul):** O drone inicia perdido na mata homogênea e voa ativamente em direção ao rio e entroncamento de estradas (linha verde).
+   - **Estimativa do Filtro (cruz rosa $\hat{x}_t$):** Converge com precisão sobre o drone conforme ele alcança a margem do rio.
+2. **Painel 2 (Centro - Crença Espacial $b_t$ sobre Satélite):**
+   - A imagem de satélite escurecida serve de fundo espacial.
+   - No início ($t=0$), a crença é uma névoa difusa com pico inferior a $0.2\%$.
+   - No passo 18, ocorre o colapso: a probabilidade atinge **48.8% no pico** exatamente sobre o ponto geográfico verdadeiro, finalizando com **LOCALIZAÇÃO COM SUCESSO**.
 3. **Painel 3 (Direita - Curvas de Telemetria):**
    - **Entropia de Shannon $H_t$ (curva amarela):** Mede a desordem e incerteza da distribuição. Despenca vertiginosamente de $7.8\text{ nats}$ para menos de $0.5\text{ nats}$.
    - **Erro cartesiano em metros (curva azul tracejada):** O desvio entre o drone e o pico do filtro cai de $730\text{ m}$ para menos de $50\text{ m}$.

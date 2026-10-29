@@ -17,9 +17,49 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-from .config import ROOT, load_config
+from .config import DATA, ROOT, load_config
 from .env import ScenarioData
 from .filter import entropy
+from .grid import Grid
+import rasterio
+from rasterio.windows import from_bounds
+
+
+def load_satellite_background(
+    r0: int,
+    c0: int,
+    cfg: dict,
+    date: str = "pre_oct23",
+    window_size: int = 64,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Crops the true-color satellite orthophoto for the given cell window (r0, c0).
+    Returns (rgb_bg, gray_bg) resized to (512, 512, 3) for clean rendering."""
+    d = cfg.get("data", {})
+    aoi = d.get("aoi", {"lon0": -51.95, "lon1": -51.875, "lat0": -29.33, "lat1": -29.12})
+    cell_m = float(d.get("cell_m", 50.0))
+    grid = Grid.from_aoi(**aoi, cell=cell_m)
+
+    xmin = grid.x0 + c0 * cell_m
+    xmax = grid.x0 + (c0 + window_size) * cell_m
+    ymin = grid.y1 - (r0 + window_size) * cell_m
+    ymax = grid.y1 - r0 * cell_m
+
+    tif_path = DATA / "raw" / f"{date}_thumb.tif"
+    if not tif_path.exists():
+        tif_path = DATA / "raw" / "post_thumb.tif"
+
+    if tif_path.exists():
+        with rasterio.open(tif_path) as ds:
+            win = from_bounds(xmin, ymin, xmax, ymax, ds.transform)
+            rgb = ds.read([1, 2, 3], window=win)
+            rgb = np.transpose(rgb, (1, 2, 0))
+    else:
+        rgb = np.full((512, 512, 3), 40, dtype=np.uint8)
+
+    rgb_bg = cv2.resize(rgb, (512, 512), interpolation=cv2.INTER_CUBIC)
+    gray = cv2.cvtColor(rgb_bg, cv2.COLOR_RGB2GRAY)
+    gray_bg = np.stack([gray // 3] * 3, axis=-1)
+    return rgb_bg, gray_bg
 
 
 def compute_frame(
@@ -32,6 +72,8 @@ def compute_frame(
     total_steps: int,
     success: bool,
     false_loc: bool,
+    rgb_bg: np.ndarray | None = None,
+    gray_bg: np.ndarray | None = None,
 ) -> np.ndarray:
     """Renders a single frame containing map, belief heatmap, and telemetry curves."""
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), facecolor="#181825")
@@ -47,36 +89,49 @@ def compute_frame(
     max_mass = float(cur_b.max()) * 100.0
 
     # -------------------------------------------------------------
-    # Panel 1: Map of Distinctiveness + Drone Trajectory
+    # Panel 1: Satellite Map & Trajectory
     # -------------------------------------------------------------
-    axes[0].imshow(dist_win, cmap="cividis", origin="upper", vmin=0.0, vmax=max(0.6, dist_win.max()))
+    if rgb_bg is not None:
+        axes[0].imshow(rgb_bg, extent=[0, 64, 64, 0], aspect="equal")
+    else:
+        axes[0].imshow(dist_win, cmap="cividis", origin="upper", vmin=0.0, vmax=max(0.6, dist_win.max()))
+
     # Landmark contours (high distinctiveness areas)
-    high_distinct = (dist_win > 0.35).astype(np.float32)
-    axes[0].contour(high_distinct, levels=[0.5], colors=["#f9e2af"], linewidths=[1.0], alpha=0.6)
+    Y, X = np.mgrid[0:64, 0:64]
+    axes[0].contour(X, Y, dist_win, levels=[0.35], colors=["#f9e2af"], linewidths=[1.3], alpha=0.7)
 
     # Path
     if len(cur_traj) > 1:
         axes[0].plot(cur_traj[:, 1], cur_traj[:, 0], color="#a6e3a1", lw=2.5, alpha=0.9, label="Trajetória Real")
     # Start point
-    axes[0].scatter(traj[0, 1], traj[0, 0], color="#89b4fa", s=60, marker="o", edgecolors="#181825", label="Início")
+    axes[0].scatter(traj[0, 1], traj[0, 0], color="#89b4fa", s=60, marker="o", edgecolors="#181825", zorder=5, label="Início")
     # Current drone position
-    axes[0].scatter(cur_traj[-1, 1], cur_traj[-1, 0], color="#a6e3a1", s=100, marker="o", edgecolors="#181825", label="Drone (Real)")
+    axes[0].scatter(cur_traj[-1, 1], cur_traj[-1, 0], color="#a6e3a1", s=100, marker="o", edgecolors="#181825", zorder=5, label="Drone (Real)")
     # Filter estimated position
-    axes[0].scatter(cur_est[-1, 1], cur_est[-1, 0], color="#f38ba8", s=100, marker="x", linewidths=2.5, label="Estimativa $\\hat{x}_t$")
+    axes[0].scatter(cur_est[-1, 1], cur_est[-1, 0], color="#f38ba8", s=100, marker="x", linewidths=2.5, zorder=5, label=r"Estimativa $\hat{x}_t$")
 
-    axes[0].set_title(f"Mapa de Feições & Posição ({method_name})", color="#cdd6f4", fontsize=11, fontweight="bold")
+    axes[0].set_xlim(0, 64)
+    axes[0].set_ylim(64, 0)
+    axes[0].set_title(f"Mapa Satélite Real & Trajetória ({method_name})", color="#cdd6f4", fontsize=11, fontweight="bold")
     axes[0].legend(loc="upper left", facecolor="#1e1e2e", edgecolor="#45475a", labelcolor="#cdd6f4", fontsize=8)
 
     # -------------------------------------------------------------
     # Panel 2: Spatial Belief Distribution b_t
     # -------------------------------------------------------------
-    im_b = axes[1].imshow(cur_b, cmap="magma", origin="upper", vmin=0.0, vmax=max(0.01, cur_b.max()))
+    if gray_bg is not None:
+        axes[1].imshow(gray_bg, extent=[0, 64, 64, 0], aspect="equal")
+        axes[1].imshow(cur_b, cmap="magma", extent=[0, 64, 64, 0], alpha=np.clip(cur_b / max(0.005, cur_b.max() * 0.7), 0.15, 0.95), origin="upper")
+    else:
+        axes[1].imshow(cur_b, cmap="magma", origin="upper", vmin=0.0, vmax=max(0.01, cur_b.max()))
+
     # Crosshair on true position
-    axes[1].scatter(cur_traj[-1, 1], cur_traj[-1, 0], color="#a6e3a1", s=80, marker="+", linewidths=2, label="Posição Real")
+    axes[1].scatter(cur_traj[-1, 1], cur_traj[-1, 0], color="#a6e3a1", s=80, marker="+", linewidths=2, zorder=5, label="Posição Real")
     # Circle on mode
     mode_r, mode_c = cur_est[-1]
-    circle = plt.Circle((mode_c, mode_r), 2.0, color="#f38ba8", fill=False, lw=1.5, linestyle="--", label="Raio de Sucesso (100m)")
+    circle = plt.Circle((mode_c, mode_r), 2.0, color="#f38ba8", fill=False, lw=1.5, linestyle="--", label="Raio Sucesso (100m)")
     axes[1].add_patch(circle)
+    axes[1].set_xlim(0, 64)
+    axes[1].set_ylim(64, 0)
 
     status_txt = "Buscando referências..."
     if t == total_steps - 1:
@@ -90,7 +145,7 @@ def compute_frame(
         status_txt = "Convergindo crença..."
 
     axes[1].set_title(
-        f"Distribuição de Crença Espacial $b_t$\nPasso {t+1}/{total_steps} | Pico: {max_mass:.1f}%\nStatus: {status_txt}",
+        f"Crença Espacial $b_t$ sobre Satélite\nPasso {t+1}/{total_steps} | Pico: {max_mass:.1f}%\nStatus: {status_txt}",
         color="#cdd6f4",
         fontsize=10,
         fontweight="bold",
@@ -105,7 +160,7 @@ def compute_frame(
     errors_m = [np.hypot(traj[i, 0] - map_est[i, 0], traj[i, 1] - map_est[i, 1]) * 50.0 for i in range(t + 1)]
 
     ax3_top = axes[2]
-    ax3_top.plot(time_steps, entropies, color="#f9e2af", lw=2, marker="o", markersize=3, label="Entropia $H_t$ (nats)")
+    ax3_top.plot(time_steps, entropies, color="#f9e2af", lw=2, marker="o", markersize=3, label=r"Entropia $H_t$ (nats)")
     ax3_top.set_ylabel("Entropia (nats)", color="#f9e2af", fontsize=10)
     ax3_top.set_ylim(-0.2, 8.5)
     ax3_top.grid(True, linestyle="--", alpha=0.2, color="#45475a")
@@ -139,6 +194,7 @@ def compute_frame(
 def render_episode_video(
     traj_path: Path,
     data: ScenarioData,
+    cfg: dict,
     out_mp4: Path,
     out_gif: Path | None = None,
     method_name: str = "MOPPO",
@@ -155,9 +211,14 @@ def render_episode_video(
     false_loc = bool(npz["false_loc"])
     T = len(traj)
 
+    rgb_bg, gray_bg = load_satellite_background(r0, c0, cfg, date="pre_oct23")
+
     frames_rgb = []
     for t in range(T):
-        frame = compute_frame(t, dist_win, traj, map_est, beliefs, method_name, T, success, false_loc)
+        frame = compute_frame(
+            t, dist_win, traj, map_est, beliefs, method_name, T, success, false_loc,
+            rgb_bg=rgb_bg, gray_bg=gray_bg,
+        )
         frames_rgb.append(frame)
 
     # Pause on the final frame for 1.5 seconds (6 frames at 4 FPS)
@@ -195,6 +256,7 @@ def render_comparison_video(
     npz_str: Path,
     npz_zig: Path,
     data: ScenarioData,
+    cfg: dict,
     out_mp4: Path,
     out_gif: Path | None = None,
     fps: int = 4,
@@ -206,10 +268,12 @@ def render_comparison_video(
 
     r0, c0 = d_mo["window"]
     dist_win = data.distinct[r0 : r0 + 64, c0 : c0 + 64]
+    rgb_bg, gray_bg = load_satellite_background(r0, c0, cfg, date="pre_oct23")
 
     t_mo, t_str, t_zig = len(d_mo["traj"]), len(d_str["traj"]), len(d_zig["traj"])
     max_t = max(t_mo, t_str, t_zig)
 
+    Y, X = np.mgrid[0:64, 0:64]
     frames_rgb = []
 
     for t in range(max_t):
@@ -239,13 +303,16 @@ def render_comparison_video(
             floc = bool(d["false_loc"])
             dist = float(np.sum([np.hypot(tr[i, 0] - tr[i-1, 0], tr[i, 1] - tr[i-1, 1]) * 50.0 for i in range(1, cur_idx + 1)])) if cur_idx > 0 else 0.0
 
-            # Row 0: Map & Trajectory
-            axes[0, c_idx].imshow(dist_win, cmap="cividis", origin="upper", vmin=0.0, vmax=max(0.6, dist_win.max()))
+            # Row 0: Real Satellite Map & Trajectory
+            axes[0, c_idx].imshow(rgb_bg, extent=[0, 64, 64, 0], aspect="equal")
+            axes[0, c_idx].contour(X, Y, dist_win, levels=[0.35], colors=["#f9e2af"], linewidths=[1.2], alpha=0.6)
             if len(tr) > 1:
                 axes[0, c_idx].plot(tr[:, 1], tr[:, 0], color=col, lw=2.5, alpha=0.9)
-            axes[0, c_idx].scatter(tr[0, 1], tr[0, 0], color="#89b4fa", s=50, marker="o")
-            axes[0, c_idx].scatter(tr[-1, 1], tr[-1, 0], color=col, s=80, marker="o", edgecolors="#181825")
-            axes[0, c_idx].scatter(est[-1, 1], est[-1, 0], color="#f38ba8", s=80, marker="x", linewidths=2)
+            axes[0, c_idx].scatter(tr[0, 1], tr[0, 0], color="#89b4fa", s=50, marker="o", zorder=5)
+            axes[0, c_idx].scatter(tr[-1, 1], tr[-1, 0], color=col, s=80, marker="o", edgecolors="#181825", zorder=5)
+            axes[0, c_idx].scatter(est[-1, 1], est[-1, 0], color="#f38ba8", s=80, marker="x", linewidths=2.5, zorder=5)
+            axes[0, c_idx].set_xlim(0, 64)
+            axes[0, c_idx].set_ylim(64, 0)
 
             st_str = "Em voo..."
             if cur_idx == total_T - 1:
@@ -258,12 +325,15 @@ def render_comparison_video(
                 fontweight="bold",
             )
 
-            # Row 1: Spatial Belief Heatmap
-            axes[1, c_idx].imshow(b, cmap="magma", origin="upper", vmin=0.0, vmax=max(0.01, b.max()))
-            axes[1, c_idx].scatter(tr[-1, 1], tr[-1, 0], color=col, s=60, marker="+")
+            # Row 1: Spatial Belief Heatmap over dimmed satellite
+            axes[1, c_idx].imshow(gray_bg, extent=[0, 64, 64, 0], aspect="equal")
+            axes[1, c_idx].imshow(b, cmap="magma", extent=[0, 64, 64, 0], alpha=np.clip(b / max(0.005, b.max() * 0.7), 0.15, 0.95), origin="upper")
+            axes[1, c_idx].scatter(tr[-1, 1], tr[-1, 0], color=col, s=60, marker="+", linewidths=2, zorder=5)
             mode_r, mode_c = est[-1]
             circle = plt.Circle((mode_c, mode_r), 2.0, color="#f38ba8", fill=False, lw=1.5, linestyle="--")
             axes[1, c_idx].add_patch(circle)
+            axes[1, c_idx].set_xlim(0, 64)
+            axes[1, c_idx].set_ylim(64, 0)
 
             H = entropy(b)
             axes[1, c_idx].set_title(
@@ -272,7 +342,7 @@ def render_comparison_video(
                 fontsize=9,
             )
 
-        plt.suptitle("Comparação Sincronizada: MOPPO vs Linha Reta vs Zigue-Zague (Mesma Janela e Semente)", color="#cdd6f4", fontsize=13, fontweight="bold")
+        plt.suptitle("Comparação Sincronizada com Imagem Satélite Real: MOPPO vs Linha Reta vs Zigue-Zague", color="#cdd6f4", fontsize=13, fontweight="bold")
         plt.tight_layout()
 
         fig.canvas.draw()
@@ -421,7 +491,7 @@ def main():
     if ep0_fast.exists():
         print("[video] Rendering Episode 0 (MOPPO Fast)...")
         render_episode_video(
-            ep0_fast, data,
+            ep0_fast, data, cfg,
             out_mp4=video_dir / "episode_0_mo_fast.mp4",
             out_gif=video_dir / "episode_0_mo_fast.gif",
             method_name="MOPPO (Rápido)",
@@ -434,7 +504,7 @@ def main():
     if ep2_safe.exists():
         print("[video] Rendering Episode 2 (MOPPO Safe)...")
         render_episode_video(
-            ep2_safe, data,
+            ep2_safe, data, cfg,
             out_mp4=video_dir / "episode_2_mo_safe.mp4",
             out_gif=video_dir / "episode_2_mo_safe.gif",
             method_name="MOPPO (Seguro)",
@@ -448,7 +518,7 @@ def main():
     if ep0_fast.exists() and ep0_str.exists() and ep0_zig.exists():
         print("[video] Rendering Synchronized Comparison (Episode 0: MOPPO vs Straight vs Zigzag)...")
         render_comparison_video(
-            ep0_fast, ep0_str, ep0_zig, data,
+            ep0_fast, ep0_str, ep0_zig, data, cfg,
             out_mp4=video_dir / "comparison_ep0_mo_vs_straight_vs_zigzag.mp4",
             out_gif=video_dir / "comparison_ep0_mo_vs_straight_vs_zigzag.gif",
             fps=4,
@@ -461,7 +531,7 @@ def main():
     if ep2_safe.exists() and ep2_str.exists() and ep2_zig.exists():
         print("[video] Rendering Synchronized Comparison (Episode 2: MOPPO vs Straight vs Zigzag)...")
         render_comparison_video(
-            ep2_safe, ep2_str, ep2_zig, data,
+            ep2_safe, ep2_str, ep2_zig, data, cfg,
             out_mp4=video_dir / "comparison_ep2_mo_vs_straight_vs_zigzag.mp4",
             out_gif=video_dir / "comparison_ep2_mo_vs_straight_vs_zigzag.gif",
             fps=4,
