@@ -1,0 +1,26 @@
+{
+  "hv": {
+    "mo_mem": 0.3,
+    "mo_nomem": NaN,
+    "fixed_ppo": NaN
+  },
+  "eum": {
+    "mo_mem": 0.7202553141690833,
+    "mo_nomem": NaN,
+    "fixed_ppo": NaN
+  },
+  "bounds": {
+    "success": [
+      0.75,
+      1.0
+    ],
+    "false_loc": [
+      0.0,
+      0.2
+    ],
+    "distance_m": [
+      970.8061887780748,
+      2695.2098171072557
+    ]
+  }
+}

@@ -9,3 +9,6 @@ data_poa/
 runs_poa/
 results_poa/traj/
 results_poa/smoke/traj/
+runs_mo/
+results_mo/traj/
+
