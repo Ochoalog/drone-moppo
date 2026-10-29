@@ -105,25 +105,22 @@ A política treinada exclusivamente em Taquari S2 foi submetida a um teste cego 
 
 > **Veredito H7:** Nas ilhas de Porto Alegre, o preset seguro do MOPPO obteve a **menor taxa de falsa localização de todos os métodos** (19.7% vs 21.3% da PPO-S2 e 22.0% da reta), com economia expressiva de distância (voou 1028 m contra 2160 m da reta). O custo da transferência direta foi a taxa de sucesso moderada (49%), explicada pela severa inundação que alterou o contorno das ilhas.
 
-### Vídeos e Animações em Porto Alegre:
+### O Fenômeno das Ilhas Submersas: Nuvem de Pontos e Câmera vs Mapa Original
 
-#### 1. Ilhas do Delta do Jacuí (Episódio 4):
-O drone parte da várzea alagada e converge com **86.4% de pico** ao alcançar as margens habitadas do canal fluvial próximo à ponte da BR-290:
+Durante a enchente de maio de 2024 no Delta do Jacuí, ilhas inteiras desapareceram sob as águas marrons barrentas. O drone decola de um local onde o mapa prévio indicava terra firme e vegetação, mas sua câmera só vê água marrom uniforme!
 
-![MOPPO Seguro nas Ilhas de Porto Alegre](results_mo/videos/poa_ilhas_mo_safe.gif)
+A animação comparativa abaixo coloca lado a lado:
+1. **Linha Reta (`straight`)**
+2. **Primeiro Treino (`ppo_s2`, PPO escalar da PoC)**
+3. **Treino MO (`moppo`, MOPPO multiobjetivo com memória)**
 
-*Comparação Lado a Lado nas Ilhas (MOPPO vs Linha Reta vs Zigue-zague):*
+Cada método exibe a sua **Nuvem de Pontos (partículas ciano da crença espacial)** no mapa principal e, na parte inferior, a visão real da câmera: **O que o Drone Vê (Pós-Enchente / Maio 2024)** comparado a **O que Veria no Mapa Original (Pré-Enchente / Fev 2024)**!
 
-![Comparação nas Ilhas de Porto Alegre](results_mo/videos/poa_comparison_ilhas_mo_vs_straight_vs_zigzag.gif)
+![Comparação Ilhas do Jacuí: Reta vs Primeiro Treino vs Treino MO](results_mo/videos/poa_ilhas_comparison_nuvem_pontos_camera.gif)
 
-#### 2. Centro Histórico e Parque da Redenção (Episódio 1):
-O drone navega pela malha urbana de Porto Alegre sobrevoando o Parque da Redenção e converge com **77.0% de certeza** em 35 passos, poupando mais de 2.3 km de voo em relação ao Zigue-zague:
-
-![MOPPO Seguro no Centro de Porto Alegre](results_mo/videos/poa_centro_mo_safe.gif)
-
-*Comparação Lado a Lado no Centro (MOPPO vs Linha Reta vs Zigue-zague):*
-
-![Comparação no Centro de Porto Alegre](results_mo/videos/poa_comparison_centro_mo_vs_straight_vs_zigzag.gif)
+- **Treino MO (MOPPO com Memória - 9 passos, 636m):** O drone decola da ilha submersa, reconhece a ausência de marcos e ruma direto para a margem habitada do canal junto à ponte da BR-290. A nuvem de pontos colapsa completamente em uma esfera densa sobre o drone com 71.3% de certeza!
+- **Primeiro Treino (PPO Escalar - 14 passos, 824m):** Busca a rodovia, mas faz uma curva menos direta, demorando 5 passos a mais que o MOPPO.
+- **Linha Reta (Straight Baseline - 67 passos, 3353m):** Voa em rumo fixo para leste, entrando em mar aberto na baía inundada. Vê apenas água barrenta uniforme enquanto a nuvem de pontos permanece fragmentada e dispersa por mais de 50 passos.
 
 ---
 
@@ -135,11 +132,15 @@ Para reproduzir ou gerar novos vídeos, utilize os scripts automatizados:
 # Gerar vídeos do Vale do Taquari
 bash scripts/generate_mo_videos.sh
 
-# Gerar vídeos de Porto Alegre (Centro e Ilhas)
+# Gerar vídeos das Ilhas com Nuvem de Pontos e Câmera vs Mapa
+.venv/bin/python -u -m src.dal.mo_poa_nuvem_video
+
+# Gerar demais vídeos de Porto Alegre
 .venv/bin/python -u -m src.dal.mo_poa_video
 ```
 
-Os arquivos gerados estão disponíveis em:
-- **Taquari:** `results_mo/videos/episode_0_mo_fast.mp4`, `comparison_ep0_mo_vs_straight_vs_zigzag.mp4`, `pareto_frontier_explainer.mp4`
-- **Porto Alegre:** `results_mo/videos/poa_ilhas_mo_safe.mp4`, `poa_comparison_ilhas_mo_vs_straight_vs_zigzag.mp4`, `poa_centro_mo_safe.mp4`, `poa_comparison_centro_mo_vs_straight_vs_zigzag.mp4`
-- Versões em `.gif` de alta resolução disponíveis na mesma pasta para relatórios e apresentações web.
+Os arquivos gerados estão disponíveis em `results_mo/videos/`:
+- `poa_ilhas_comparison_nuvem_pontos_camera.mp4` e `.gif` (Comparação 3-way com Nuvem de Pontos e Câmera nas Ilhas)
+- `poa_ilhas_mo_safe.mp4` e `poa_centro_mo_safe.mp4`
+- `episode_0_mo_fast.mp4` e `comparison_ep0_mo_vs_straight_vs_zigzag.mp4` (Taquari)
+- `pareto_frontier_explainer.mp4`
