@@ -1,6 +1,6 @@
-"""Tables, statistics, figures and REPORT_POA.md for the Porto Alegre battery. Every number in
-the report is read from files in the POA results folder (Taquari reference rows are first
-copied there from the read-only Taquari results)."""
+"""Tabelas, estatística, figuras e REPORT_POA.md da bateria de Porto Alegre. Todo número do
+relatório é lido de arquivos na pasta de resultados de POA (as linhas de referência do Taquari
+são antes copiadas para lá, a partir dos resultados do Taquari, que são só lidos)."""
 from __future__ import annotations
 
 import argparse
@@ -42,9 +42,9 @@ def _order(s: pd.Series) -> pd.Series:
     return s.map({m: i for i, m in enumerate(ORDER)}).fillna(99)
 
 
-# ============================================================================ statistics
+# ============================================================================ estatística
 def per_episode(df: pd.DataFrame, max_steps: int) -> pd.DataFrame:
-    """One row per (region, scenario, variant, method, episode): PPO seeds averaged per episode."""
+    """Uma linha por (região, cenário, variante, método, episódio); os seeds do PPO são promediados por episódio."""
     d = df.assign(pen=df.steps_to_success.fillna(max_steps + 1), success=df.success.astype(float),
                   false_loc=df.false_loc.astype(float))
     keys = ["region", "scenario", "variant", "method", "episode"]
@@ -75,8 +75,8 @@ def summary(df: pd.DataFrame, n_boot: int, seed: int = 0) -> pd.DataFrame:
 
 
 def paired_tests(df: pd.DataFrame, max_steps: int, n_boot: int, seed: int = 1) -> pd.DataFrame:
-    """Every PPO variant vs every other method on the same episodes: paired bootstrap of Δsuccess
-    and Δdistance, Wilcoxon signed-rank on penalized steps (failure = max_steps + 1)."""
+    """Cada variante de PPO contra cada outro método nos mesmos episódios: bootstrap pareado de Δsucesso
+    e Δdistância, Wilcoxon pareado nos passos penalizados (falha = max_steps + 1)."""
     rng = np.random.default_rng(seed)
     pe = per_episode(df, max_steps)
     rows = []
@@ -105,7 +105,7 @@ def paired_tests(df: pd.DataFrame, max_steps: int, n_boot: int, seed: int = 1) -
 
 
 def quintile_table(pe: pd.DataFrame, col: str, n_boot: int, seed: int = 2, q: int = 5) -> pd.DataFrame:
-    """Success per quantile bin of a window covariate (bins over the pooled episodes, per method)."""
+    """Sucesso por faixa de quantil de uma covariável da janela (faixas sobre todos os episódios, por método)."""
     rng = np.random.default_rng(seed)
     base = pe.drop_duplicates(["region", "scenario", "episode"])[["region", "scenario", "episode", col]].dropna()
     edges = np.unique(np.quantile(base[col], np.linspace(0, 1, q + 1)))
@@ -122,7 +122,7 @@ def quintile_table(pe: pd.DataFrame, col: str, n_boot: int, seed: int = 2, q: in
 
 
 def trend_stats(pe: pd.DataFrame, qt: pd.DataFrame, col: str, n_boot: int, seed: int = 3) -> pd.DataFrame:
-    """Per method: Spearman(covariate, success) over episodes and bootstrap CI of success(Q1) - success(Q5)."""
+    """Por método: Spearman(covariável, sucesso) sobre os episódios e IC por bootstrap de sucesso(Q1) - sucesso(Q5)."""
     rng = np.random.default_rng(seed)
     nb = qt.bin.max()
     edges = qt[qt.method == qt.method.iloc[0]][["lo_edge", "hi_edge"]].to_numpy()
@@ -140,8 +140,8 @@ def trend_stats(pe: pd.DataFrame, qt: pd.DataFrame, col: str, n_boot: int, seed:
 
 
 def region_contrast(pe: pd.DataFrame, scen: str, variant: str, n_boot: int, seed: int = 4) -> pd.DataFrame:
-    """centro - ilhas success per method (independent bootstrap of the two regions), and the
-    active-strategy advantage over the best simple baseline in each region and its difference."""
+    """Sucesso centro - ilhas por método (bootstrap independente das duas regiões), e a vantagem da
+    estratégia ativa sobre a melhor baseline simples em cada região, com a diferença entre elas."""
     rng = np.random.default_rng(seed)
     g = pe[(pe.scenario == scen) & (pe.variant == variant)]
     if set(g.region) != {"ilhas", "centro"}:
@@ -167,7 +167,7 @@ def region_contrast(pe: pd.DataFrame, scen: str, variant: str, n_boot: int, seed
     return pd.DataFrame(rows)
 
 
-# ============================================================================ figures
+# ============================================================================ figuras
 def fig_bars(summ: pd.DataFrame, path: Path) -> None:
     units = summ[["region", "scenario"]].drop_duplicates().values.tolist()
     variants = sorted(summ.variant.unique(), key=lambda v: v != "zeroshot")
@@ -243,7 +243,7 @@ def fig_change(qt: pd.DataFrame, path: Path, xlabel: str, title: str) -> None:
 
 def fig_trajectories(cfg: dict, traj_dir: Path, scen: str, path: Path, methods=("ppo_S2", "straight"),
                      variant: str = "zeroshot") -> bool:
-    """Same episode for each method over the poa_post thumbnail, for both regions."""
+    """O mesmo episódio para cada método sobre a miniatura poa_post, nas duas regiões."""
     from .poa_data import _extent, load_date, poa_grid, region_slices
 
     grid = poa_grid(cfg)
@@ -267,7 +267,7 @@ def fig_trajectories(cfg: dict, traj_dir: Path, scen: str, path: Path, methods=(
             continue
         z0 = {m: np.load(traj_dir / f"{reg}_{scen}_{variant}_{tags[m]}_ep{eps[0]}.npz") for m in methods}
 
-        def score(e):  # prefer an episode where the first method succeeds and the episode is long
+        def score(e):  # prefere um episódio em que o primeiro método tem sucesso e que seja longo
             z = {m: np.load(traj_dir / f"{reg}_{scen}_{variant}_{tags[m]}_ep{e}.npz") for m in methods}
             return (bool(z[methods[0]]["success"]), len(z[methods[0]]["traj"]))
 
@@ -302,10 +302,10 @@ def fig_trajectories(cfg: dict, traj_dir: Path, scen: str, path: Path, methods=(
     return True
 
 
-# ============================================================================ verdicts
+# ============================================================================ vereditos
 def verdict_hp1(tests: pd.DataFrame, tq: pd.DataFrame) -> tuple[str, list[str]]:
-    """Per region: `kept` (Δsuccess CI lo >= -5 pp and Δdistance CI < 0), `broken` (PPO significantly
-    worse in success, CI hi < 0, or not significantly shorter), otherwise `unclear`."""
+    """Por região: `kept` (IC inferior de Δsucesso >= -5 p.p. e IC de Δdistância < 0), `broken` (PPO
+    significativamente pior em sucesso, IC superior < 0, ou não significativamente mais curto); senão `unclear`."""
     lines = []
     t = tests[(tests.scenario == "P1") & (tests.variant == "zeroshot") & (tests.vs == "straight")]
     status = {}
@@ -374,7 +374,7 @@ def verdict_hp3(contrast: pd.DataFrame) -> tuple[str, list[str]]:
     return v, lines
 
 
-# ============================================================================ report
+# ============================================================================ relatório
 def _fmt_main(summ: pd.DataFrame) -> pd.DataFrame:
     t = summ.copy()
     t["success"] = [f"{s:.3f} [{lo:.3f}, {hi:.3f}]" for s, lo, hi in zip(t.success, t.success_lo, t.success_hi)]
@@ -385,7 +385,7 @@ def _fmt_main(summ: pd.DataFrame) -> pd.DataFrame:
 
 
 def taquari_reference(cfg: dict, out: Path) -> pd.DataFrame:
-    """Copy (read-only source) the Taquari PPO − straight rows used for the comparison into results_poa."""
+    """Copia para results_poa as linhas PPO − reta do Taquari usadas na comparação (a origem é só lida)."""
     root = ROOT / cfg["paths"]["taquari_results"]
     tests, summ = root / "paired_tests_test.csv", root / "summary_test.csv"
     if not (tests.exists() and summ.exists()):
@@ -417,7 +417,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
           "*Generated automatically by `python -m dal.poa_report`. Every number below is read from files in "
           f"`{rel(results)}/`.*{note}\n"]
 
-    # ---------------------------------------------------------------- 1. data
+    # ---------------------------------------------------------------- 1. dados
     md.append(SECTIONS[0] + "\n")
     gate = _json(results / "data_gate.json")
     if gate:
@@ -445,7 +445,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
         if (figs / f).exists():
             md.append(f"![{f}]({rel(figs / f)})\n")
 
-    # ---------------------------------------------------------------- 2. sanity gate
+    # ---------------------------------------------------------------- 2. gate de sanidade
     md.append(SECTIONS[1] + "\n")
     sg = _json(results / "sanity_gate.json")
     if sg:
@@ -456,7 +456,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
     else:
         md.append("Not run.\n")
 
-    # ---------------------------------------------------------------- 3. retrieval / beta
+    # ---------------------------------------------------------------- 3. recuperação / beta
     md.append("\n" + SECTIONS[2] + "\n")
     if (results / "retrieval.csv").exists():
         rt = pd.read_csv(results / "retrieval.csv")
@@ -468,7 +468,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
                   "β₁ and κ re-estimated on the *other* POA region (light adaptation, no PPO retraining).\n")
         md.append(md_table(bt, ["region", "scenario", "variant", "source", "beta1", "kappa", "beta"]))
 
-    # ---------------------------------------------------------------- 4. main results
+    # ---------------------------------------------------------------- 4. resultados principais
     md.append("\n" + SECTIONS[3] + "\n")
     df = pd.read_csv(results / "episodes.csv")
     summ = summary(df, n_boot)
@@ -492,7 +492,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
         if fig_trajectories(cfg, results / "traj", scen, figs / f"trajectories_{scen}.png"):
             md.append(f"![trajectories {scen}]({rel(figs / f'trajectories_{scen}.png')})\n")
 
-    # ---------------------------------------------------------------- 5. Taquari comparison
+    # ---------------------------------------------------------------- 5. comparação com o Taquari
     md.append(SECTIONS[4] + "\n")
     tq = taquari_reference(cfg, results / "taquari_reference.csv")
     cmp_rows = []
@@ -510,7 +510,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
                   "from the PoC results into `taquari_reference.csv`.\n")
         md.append(md_table(cmp, ["site", "scenario", "ref", "variant", "success_diff", "lo", "hi", "distance_diff_m"]))
 
-    # ---------------------------------------------------------------- 6. change index
+    # ---------------------------------------------------------------- 6. índice de mudança
     md.append("\n" + SECTIONS[5] + "\n")
     pe = per_episode(df, max_steps)
     pe.to_csv(results / "per_episode.csv", index=False)
@@ -540,7 +540,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
                 md.append(f"\nWithin `{reg}` only (quintiles of that region):\n\n" +
                           md_table(q, ["method", "bin", "lo_edge", "hi_edge", "n", "success", "success_lo", "success_hi"]))
 
-    # ---------------------------------------------------------------- 7. water
+    # ---------------------------------------------------------------- 7. água
     md.append("\n" + SECTIONS[6] + "\n")
     w = pe[(pe.scenario == "P1") & (pe.variant == "zeroshot")]
     if len(w) and w.water_diff.nunique() > 5:
@@ -562,7 +562,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
     else:
         md.append("Not available.\n")
 
-    # ---------------------------------------------------------------- 8. hypotheses
+    # ---------------------------------------------------------------- 8. hipóteses
     md.append("\n" + SECTIONS[7] + "\n")
     contrast = region_contrast(pe, "P1", "zeroshot", n_boot)
     if len(contrast):
@@ -586,7 +586,7 @@ def build(cfg: dict, results: Path, out_md: Path, note: str = "") -> str:
               "(a) and (b) both fail; otherwise inconclusive.\n\n" + "\n".join(l3) + "\n")
     (results / "hypotheses.json").write_text(json.dumps(dict(HP1=v1, HP2=v2, HP3=v3), indent=1))
 
-    # ---------------------------------------------------------------- 9. limitations
+    # ---------------------------------------------------------------- 9. limitações
     md.append("\n" + SECTIONS[8] + "\n")
     md.append(LIMITATIONS)
     val = results / "validation.md"

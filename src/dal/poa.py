@@ -1,7 +1,7 @@
-"""Porto Alegre battery: descriptors, Taquari-PCA reuse, per-region scenario data, beta
-recalibration (cross-region) and the paired zero-shot evaluation of the Taquari models.
+"""Bateria de Porto Alegre: descritores, reuso da PCA do Taquari, dados de cenário por região,
+recalibração do beta (cruzada entre regiões) e avaliação zero-shot pareada dos modelos do Taquari.
 
-Taquari artefacts (`paths.taquari_data`, `paths.taquari_runs`) are only ever read.
+Os artefatos do Taquari (`paths.taquari_data`, `paths.taquari_runs`) são apenas lidos.
 """
 from __future__ import annotations
 
@@ -36,10 +36,10 @@ def cache_dir(cfg: dict) -> Path:
     return paths(cfg)["data"] / "cache" / DESC
 
 
-# ============================================================================ descriptors
+# ============================================================================ descritores
 def precompute(cfg: dict) -> dict:
-    """Map descriptor per cell for every POA date and K augmented observation variants of the
-    observation date, with exactly the PoC crop/augmentation parameters."""
+    """Descritor de mapa por célula para cada data de POA e K variantes aumentadas da data de
+    observação, com exatamente os parâmetros de recorte e aumento da PoC."""
     from .features import compute_set, hand_descriptor
 
     d, fcfg = cfg["data"], cfg["features"]
@@ -67,17 +67,17 @@ def precompute(cfg: dict) -> dict:
 
 
 def standardize(x: np.ndarray, ref_idx: np.ndarray) -> np.ndarray:
-    """PoC per-date z-score (statistics over `ref_idx` cells) + L2 normalization."""
+    """Z-score por data, como na PoC (estatísticas sobre as células `ref_idx`), seguido de normalização L2."""
     from .features import _standardize
 
     return _standardize(x, ref_idx)
 
 
-# ============================================================================ Taquari PCA (read-only reuse)
+# ============================================================================ PCA do Taquari (reuso só de leitura)
 def taquari_pca_params(cfg: dict, map_date: str) -> dict[str, np.ndarray]:
-    """Recompute, from the Taquari files (read-only), the PCA that `env.build_cache` fitted on the
-    Taquari TRAIN cells of `map_date` (mu, Vt, sd); it is not saved there, but it is a
-    deterministic function of those files. Checked against the stored Taquari PCA channels."""
+    """Recalcula, a partir dos arquivos do Taquari (só leitura), a PCA que `env.build_cache` ajustou nas
+    células de TREINO do Taquari em `map_date` (mu, Vt, sd). Ela não fica salva lá, mas é uma função
+    determinística desses arquivos. O resultado é conferido com os canais de PCA gravados no Taquari."""
     from .config import default_config
     from .features import load_descriptors
     from .grid import Grid
@@ -105,7 +105,7 @@ def taquari_pca_params(cfg: dict, map_date: str) -> dict[str, np.ndarray]:
 
 
 def apply_pca(params: dict, m: np.ndarray, ok: np.ndarray) -> np.ndarray:
-    """Same transform as env.build_cache, with fixed (not refitted) parameters -> (P, R, C)."""
+    """Mesma transformação de env.build_cache, com parâmetros fixos (sem reajuste) -> (P, R, C)."""
     proj = ((m - params["mu"]) @ params["Vt"].T) / params["sd"]
     pca = np.clip(proj / 3.0, -1, 1).transpose(2, 0, 1).astype(np.float32)
     pca[:, ~ok] = 0.0
@@ -128,7 +128,7 @@ def taquari_beta(cfg: dict, scenario: str) -> dict:
 
 # ============================================================================ cache
 def change_index(m: np.ndarray, o: np.ndarray) -> np.ndarray:
-    """1 - cos(map descriptor, mean of the K observation descriptors) per cell, in [0, 2]."""
+    """Índice de mudança: 1 - cos(descritor do mapa, média dos K descritores de observação) por célula, em [0, 2]."""
     om = o.mean(0)
     num = (m * om).sum(-1)
     den = np.linalg.norm(m, axis=-1) * np.linalg.norm(om, axis=-1) + 1e-12
@@ -136,8 +136,8 @@ def change_index(m: np.ndarray, o: np.ndarray) -> np.ndarray:
 
 
 def build_cache(cfg: dict) -> None:
-    """Standardized descriptors (per date, statistics over that date's valid cells of the whole POA
-    box), distinctiveness on the POA map, Taquari-PCA channels and the change index."""
+    """Descritores padronizados (por data, com estatísticas das células válidas dessa data em toda a
+    área de POA), distintividade no mapa de POA, canais da PCA do Taquari e índice de mudança."""
     d = cfg["data"]
     grid = poa_grid(cfg)
     masks = load_masks(cfg)
@@ -166,7 +166,7 @@ def build_cache(cfg: dict) -> None:
     (cd / "meta.json").write_text(json.dumps(dict(grid=grid.to_dict(), stats=stats), indent=1))
 
 
-# ============================================================================ region data
+# ============================================================================ dados por região
 _MEM: dict = {}
 
 
@@ -180,7 +180,7 @@ def _arr(cfg: dict, name: str) -> np.ndarray:
 
 
 def region_data(cfg: dict, region: str, scenario: str, beta: float, pca_from: str | None = None) -> ScenarioData:
-    """ScenarioData cropped to a region; every row of the crop is usable (no train/test split here)."""
+    """ScenarioData recortado para uma região; todas as linhas do recorte podem ser usadas (aqui não há divisão treino/teste)."""
     date = cfg["scenarios"][scenario]
     rs, cs = region_slices(cfg)[region]
     masks = load_masks(cfg)
@@ -212,7 +212,7 @@ def n_windows(cfg: dict, region: str, scenario: str) -> int:
 
 
 def eval_units(cfg: dict) -> list[tuple[str, str]]:
-    """(region, scenario) pairs with enough valid windows; the others are reported as skipped."""
+    """Pares (região, cenário) com janelas válidas suficientes; os demais são relatados como pulados."""
     out = []
     for region in cfg["regions"]:
         for scen in cfg["scenarios"]:
@@ -221,14 +221,14 @@ def eval_units(cfg: dict) -> list[tuple[str, str]]:
     return out
 
 
-# ============================================================================ beta recalibration
+# ============================================================================ recalibração do beta
 def other_region(cfg: dict, region: str) -> str:
     return next(r for r in cfg["regions"] if r != region)
 
 
 def recalibrate(cfg: dict, units: list[tuple[str, str]], n_windows_: int = 30) -> dict:
-    """Variant "beta recalibrated": beta_1 (max. likelihood) and kappa (random-policy utility)
-    estimated on the OTHER region, for every scenario; written to data_poa/beta_recal.json."""
+    """Variante "beta recalibrado": beta_1 (máxima verossimilhança) e kappa (utilidade da política aleatória)
+    estimados na OUTRA região, para cada cenário; gravado em data_poa/beta_recal.json."""
     from .calibrate import calibrate_kappa, window_stats
 
     P = paths(cfg)
@@ -258,7 +258,7 @@ def recalibrate(cfg: dict, units: list[tuple[str, str]], n_windows_: int = 30) -
 
 
 def retrieval_table(cfg: dict, units: list[tuple[str, str]], n_windows_: int = 30) -> pd.DataFrame:
-    """Descriptor retrieval in each evaluated (region, scenario) (diagnostic only; nothing is tuned on it)."""
+    """Recuperação dos descritores em cada (região, cenário) avaliado (só diagnóstico; nada é ajustado com isso)."""
     from .calibrate import window_stats
 
     f = cfg["filter"]
@@ -273,7 +273,7 @@ def retrieval_table(cfg: dict, units: list[tuple[str, str]], n_windows_: int = 3
 
 
 def beta_table(cfg: dict, units: list[tuple[str, str]]) -> pd.DataFrame:
-    """beta per (region, scenario, variant) as used by the filter -> results_poa/beta.csv."""
+    """beta por (região, cenário, variante), como usado pelo filtro -> results_poa/beta.csv."""
     p = paths(cfg)["data"] / "beta_recal.json"
     rec = json.loads(p.read_text()) if p.exists() else {}
     rows = []
@@ -298,7 +298,7 @@ def beta_for(cfg: dict, region: str, scen: str, variant: str) -> float | None:
     return None if rec is None else float(rec["beta"])
 
 
-# ============================================================================ evaluation
+# ============================================================================ avaliação
 COLUMNS = ["region", "scenario", "variant", "method", "model_seed", "episode", "seed", "success", "false_loc",
            "steps", "steps_to_success", "final_error_m", "distance_m", "n_blocked", "final_entropy", "decision_ms",
            "beta", "window_r0", "window_c0", "change_window", "change_start", "water_obs", "water_map",
@@ -321,7 +321,7 @@ def _policy(cfg: dict, method: str, model_path: str | None):
 
 
 def run_episodes(task: tuple) -> list[dict]:
-    """Worker: one (region, scenario, variant, method, model) and a chunk of paired episode indices."""
+    """Worker: um (região, cenário, variante, método, modelo) e um bloco de índices de episódios pareados."""
     import torch
 
     torch.set_num_threads(1)
@@ -392,8 +392,8 @@ def find_taquari_models(cfg: dict) -> list[tuple[str, int, str]]:
 
 def evaluate(cfg: dict, units: list[tuple[str, str]], methods: list[str], variants: list[str], episodes: int,
              out_csv: Path, workers: int, save_traj: int, chunk: int = 25, extra_models: list | None = None) -> pd.DataFrame:
-    """`methods`: baseline names and/or "ppo" (= every Taquari model). `extra_models`: further
-    (method, seed, path, pca_from) PPO entries (e.g. models trained in Porto Alegre)."""
+    """`methods`: nomes de baselines e/ou "ppo" (= todos os modelos do Taquari). `extra_models`: outras
+    entradas PPO (método, seed, caminho, pca_from), por exemplo modelos treinados em Porto Alegre."""
     models = find_taquari_models(cfg) if "ppo" in methods else []
     specs = [(m, -1, None, None) for m in methods if m != "ppo"]
     specs += [(m, s, p, m.split("_", 1)[1]) for m, s, p in models]
@@ -406,7 +406,7 @@ def evaluate(cfg: dict, units: list[tuple[str, str]], methods: list[str], varian
                 print(f"[poa-eval] skip {region} {scen} {variant}: no beta")
                 continue
             for method, ms, path, pca_from in specs:
-                # trajectories: first episodes of the zero-shot variant, PPO seed 0 (or first seed)
+                # trajetórias: primeiros episódios da variante zero-shot, PPO seed 0 (ou o primeiro seed disponível)
                 keep = save_traj if variant == variants[0] and ms <= 0 else 0
                 for s in range(0, episodes, chunk):
                     tasks.append((cfg, region, scen, variant, method, ms, path, pca_from,
@@ -431,9 +431,9 @@ def evaluate(cfg: dict, units: list[tuple[str, str]], methods: list[str], varian
     return df
 
 
-# ============================================================================ sanity gate
+# ============================================================================ gate de sanidade
 def sanity_gate(cfg: dict, episodes: int = 200, workers: int = 8) -> dict:
-    """P0 (map = observation date): the straight baseline must localize in >= 90 % in both regions."""
+    """P0 (mapa = data da observação): a linha reta precisa localizar em >= 90% nas duas regiões."""
     P = paths(cfg)
     df = evaluate(cfg, [(r, "P0") for r in cfg["regions"]], ["straight", "random", "lawnmower"], ["zeroshot"],
                   episodes, P["results"] / "gate_episodes.csv", workers, 0)
