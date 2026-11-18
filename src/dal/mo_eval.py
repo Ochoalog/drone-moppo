@@ -1,9 +1,6 @@
 """Avaliação multiobjetivo: métricas de Pareto, hipervolume, EUM e baselines."""
 from __future__ import annotations
 
-import argparse
-import itertools
-import os
 import time
 from pathlib import Path
 
@@ -11,7 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from .config import DATA, RESULTS, RUNS, load_config
+from .config import RUNS
 from .mo_env import DroneLocMOEnv, make_mo_env
 from .mo_ppo import MOPPONetwork
 
@@ -137,8 +134,17 @@ def boot_ci(x: np.ndarray | list[float], n: int = 1000, seed: int = 0, stat=np.m
 # ============================================================================
 # Pipeline de avaliação
 # ============================================================================
-def load_mo_model(model_path: Path, memory: bool = True) -> MOPPONetwork:
-    """Carrega o state dict de uma MOPPONetwork treinada."""
+INVALID_GATE_MARKER = "INVALID_GATE"
+
+
+def load_mo_model(model_path: Path, memory: bool = True, allow_invalid: bool = False) -> MOPPONetwork:
+    """Carrega o state dict de uma MOPPONetwork treinada.
+
+    Recusa execuções marcadas com INVALID_GATE (regra A4 do DECISIONS_MO_V2.md). Use
+    `allow_invalid=True` só para diagnóstico, e grave as saídas num diretório com o sufixo `_INVALID_GATE`.
+    """
+    if (Path(model_path).parent / INVALID_GATE_MARKER).exists() and not allow_invalid:
+        raise ValueError(f"{model_path}: execução marcada {INVALID_GATE_MARKER}; não gere vereditos a partir dela")
     c_in = 7
     h, w = 64, 64
     nv = 69 if memory else 5

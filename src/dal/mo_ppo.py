@@ -347,6 +347,43 @@ def evaluate_moppo(
     }
 
 
+GATE_WEIGHTS = {
+    "unif": np.array([0.25, 0.25, 0.25, 0.25], dtype=np.float32),
+    "fast": np.array([0.15, 0.55, 0.15, 0.15], dtype=np.float32),
+    "safe": np.array([0.15, 0.15, 0.15, 0.55], dtype=np.float32),
+}
+INVALID_GATE_MARKER = "INVALID_GATE"
+LEARNING_GATE_THRESHOLD = 0.50
+GATE_EPISODES = 50
+
+
+def _bootstrap_mean_ci(values: np.ndarray, n_boot: int = 1000, seed: int = 42) -> tuple[float, float]:
+    """IC de 95% da média por bootstrap simples."""
+    rng = np.random.default_rng(seed)
+    boot_means = [rng.choice(values, size=len(values), replace=True).mean() for _ in range(n_boot)]
+    return float(np.percentile(boot_means, 2.5)), float(np.percentile(boot_means, 97.5))
+
+
+def _conditioning_gate(net, cfg, scenario, descriptor, split, memory, scale_factors, deterministic: bool) -> dict:
+    """Gate de condicionamento num modo: a distância de `fast` e `safe` difere (IC da diferença exclui 0)."""
+    results = {
+        name: evaluate_moppo(
+            net, cfg, scenario, descriptor, split, GATE_WEIGHTS[name], n_episodes=GATE_EPISODES, seed_base=6000,
+            memory=memory, scale_factors=scale_factors, deterministic=deterministic,
+        )
+        for name in ("fast", "safe")
+    }
+    diff_dist = np.array(results["safe"]["raw_distances"]) - np.array(results["fast"]["raw_distances"])
+    ci_lo, ci_hi = _bootstrap_mean_ci(diff_dist)
+    return {
+        "dist_fast_mean": results["fast"]["distance_mean"],
+        "dist_safe_mean": results["safe"]["distance_mean"],
+        "diff_mean": float(diff_dist.mean()),
+        "ci_95": [ci_lo, ci_hi],
+        "passed": bool(ci_lo > 0.0 or ci_hi < 0.0),
+    }
+
+
 def run_gate_checks(
     net: MOPPONetwork,
     cfg: dict,
@@ -356,63 +393,47 @@ def run_gate_checks(
     memory: bool = True,
     scale_factors: np.ndarray | None = None,
     log_file: Path | None = None,
+    fixed_weights: np.ndarray | None = None,
 ) -> dict:
-    """Verifica os gates de aprendizado e de condicionamento aos 25% do treino (§8).
+    """Verifica os gates aos 25% do treino (§8 da v1; regra A4 do DECISIONS_MO_V2.md).
 
-    - Gate de aprendizado: sucesso no treino >= 0,5 em S2 com w uniforme (a aleatória faz ~0,42).
-    - Gate de condicionamento: a distância difere entre w_fast e w_safe (IC exclui 0).
+    - Gate de aprendizado: sucesso no treino >= 0,5 em S2 (com w uniforme na MO, ou com o w fixo do
+      PPO de peso fixo); a política aleatória faz ~0,42. Decide no modo amostrado.
+    - Gate de condicionamento (só na MO): a distância difere entre w_fast e w_safe (IC exclui 0).
+      É medido nos dois modos; decide no modo amostrado, e o argmax fica registrado.
     """
-    w_unif = np.array([0.25, 0.25, 0.25, 0.25], dtype=np.float32)
-    w_fast = np.array([0.15, 0.55, 0.15, 0.15], dtype=np.float32)
-    w_safe = np.array([0.15, 0.15, 0.15, 0.55], dtype=np.float32)
-
-    # 1. Gate de aprendizado (50 episódios)
-    res_unif = evaluate_moppo(
-        net, cfg, scenario, descriptor, split, w_unif, n_episodes=50, seed_base=5000,
-        memory=memory, scale_factors=scale_factors
-    )
-    learn_pass = bool(res_unif["success"] >= 0.50)
-
-    # 2. Gate de condicionamento (50 episódios pareados)
-    res_fast = evaluate_moppo(
-        net, cfg, scenario, descriptor, split, w_fast, n_episodes=50, seed_base=6000,
-        memory=memory, scale_factors=scale_factors, deterministic=False
-    )
-    res_safe = evaluate_moppo(
-        net, cfg, scenario, descriptor, split, w_safe, n_episodes=50, seed_base=6000,
-        memory=memory, scale_factors=scale_factors, deterministic=False
-    )
-
-    diff_dist = np.array(res_safe["raw_distances"]) - np.array(res_fast["raw_distances"])
-    # IC de 95% por bootstrap
-    rng = np.random.default_rng(42)
-    boot_means = [rng.choice(diff_dist, size=len(diff_dist), replace=True).mean() for _ in range(1000)]
-    ci_lo = float(np.percentile(boot_means, 2.5))
-    ci_hi = float(np.percentile(boot_means, 97.5))
-    cond_pass = bool(ci_lo > 0.0 or ci_hi < 0.0)
-
+    learning_weights = GATE_WEIGHTS["unif"] if fixed_weights is None else np.asarray(fixed_weights, np.float32)
+    learning = {}
+    for mode, deterministic in (("sampled", False), ("argmax", True)):
+        result = evaluate_moppo(
+            net, cfg, scenario, descriptor, split, learning_weights, n_episodes=GATE_EPISODES, seed_base=5000,
+            memory=memory, scale_factors=scale_factors, deterministic=deterministic,
+        )
+        learning[mode] = {"success": result["success"], "passed": bool(result["success"] >= LEARNING_GATE_THRESHOLD)}
     report = {
-        "learning_gate": {
-            "success": res_unif["success"],
-            "threshold": 0.50,
-            "passed": learn_pass,
-        },
-        "conditioning_gate": {
-            "dist_fast_mean": res_fast["distance_mean"],
-            "dist_safe_mean": res_safe["distance_mean"],
-            "diff_mean": float(diff_dist.mean()),
-            "ci_95": [ci_lo, ci_hi],
-            "passed": cond_pass,
-        },
+        "learning_gate": {"threshold": LEARNING_GATE_THRESHOLD, "decision_mode": "sampled", **learning,
+                          "passed": learning["sampled"]["passed"]},
     }
 
-    msg = (
-        f"[GATE] Learning Gate (w_unif success >= 0.5): success={res_unif['success']:.3f} -> "
-        f"{'PASSED' if learn_pass else 'FAILED'}\n"
-        f"[GATE] Conditioning Gate (distance fast vs safe CI excl 0): "
-        f"fast={res_fast['distance_mean']:.1f}m, safe={res_safe['distance_mean']:.1f}m, "
-        f"diff_CI=[{ci_lo:.1f}, {ci_hi:.1f}]m -> {'PASSED' if cond_pass else 'FAILED'}"
-    )
+    if fixed_weights is None:
+        conditioning = {
+            mode: _conditioning_gate(net, cfg, scenario, descriptor, split, memory, scale_factors, deterministic)
+            for mode, deterministic in (("sampled", False), ("argmax", True))
+        }
+        report["conditioning_gate"] = {"decision_mode": "sampled", **conditioning,
+                                       "passed": conditioning["sampled"]["passed"]}
+
+    report["valid"] = all(gate["passed"] for gate in report.values() if isinstance(gate, dict))
+    lines = [f"[GATE] learning (success >= {LEARNING_GATE_THRESHOLD}): "
+             + ", ".join(f"{m}={learning[m]['success']:.3f}" for m in learning)
+             + f" -> {'PASSED' if report['learning_gate']['passed'] else 'FAILED'}"]
+    if "conditioning_gate" in report:
+        lines.append("[GATE] conditioning (distance safe - fast, CI excl. 0): " + ", ".join(
+            f"{m}=[{c['ci_95'][0]:.1f}, {c['ci_95'][1]:.1f}] m" for m, c in conditioning.items())
+            + f" -> {'PASSED' if report['conditioning_gate']['passed'] else 'FAILED'}")
+    if not report["valid"]:
+        lines.append(f"[GATE] {INVALID_GATE_MARKER}: esta execução não pode gerar vereditos")
+    msg = "\n".join(lines)
     print(msg)
     if log_file:
         with open(log_file, "a") as f:
@@ -648,21 +669,21 @@ def train_moppo(
             torch.save(net.state_dict(), ck_file)
             print(f"[checkpoint] Saved checkpoint {ck_idx}/3 to {ck_file.name}")
 
-        # Gates aos 25% do treino (§8)
-        if not gate_checked_25 and rollout >= ck_steps[0] and memory and default_w is None:
+        # Gates aos 25% do treino (§8); agora também nos PPOs de peso fixo e na MO sem memória
+        if not gate_checked_25 and rollout >= ck_steps[0]:
             gate_checked_25 = True
-            print("[GATE] Checking learning and conditioning gates at 25% training...")
+            print("[GATE] Checking gates at 25% training...")
             gate_results = run_gate_checks(
                 net, cfg, scen, desc, split=split, memory=memory,
-                scale_factors=scale_factors, log_file=out_dir / "gates.log"
+                scale_factors=scale_factors, log_file=out_dir / "gates.log", fixed_weights=default_w,
             )
             (out_dir / "gate_check_25pct.json").write_text(json.dumps(gate_results, indent=2))
-            if not gate_results["conditioning_gate"]["passed"]:
-                # Antes, a falha deste gate passava em silêncio e o colapso só apareceu no relatório final.
-                (out_dir / "CONDITIONING_GATE_FAILED").write_text(json.dumps(gate_results["conditioning_gate"]))
+            if not gate_results["valid"]:
+                # Na v1, a falha do gate passou em silêncio e o problema só apareceu no relatório final.
+                (out_dir / INVALID_GATE_MARKER).write_text(json.dumps(gate_results, indent=2))
                 warnings.warn(
-                    f"Gate de condicionamento falhou em {out_dir.name}: a política não responde a w. "
-                    "Os resultados multiobjetivo desta execução não devem ser usados sem investigação.",
+                    f"{INVALID_GATE_MARKER} em {out_dir.name}: um gate falhou aos 25% do treino. "
+                    "Não gere vereditos a partir desta execução.",
                     stacklevel=1,
                 )
 
