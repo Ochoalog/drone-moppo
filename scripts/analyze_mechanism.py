@@ -87,6 +87,83 @@ def run_change_stage() -> None:
     print(table[table.quintile.isin([1, QUINTILES])].round(3).to_string(index=False))
 
 
+# ============================================================================ F2: covariável independente
+def _match_histogram(source: np.ndarray, reference: np.ndarray, source_ok: np.ndarray, reference_ok: np.ndarray):
+    """Iguala, canal a canal, o histograma de `source` ao de `reference` (só pixels válidos, AOI inteira)."""
+    matched = source.copy()
+    for channel in range(3):
+        src_hist = np.bincount(source[..., channel][source_ok], minlength=256).astype(float)
+        ref_hist = np.bincount(reference[..., channel][reference_ok], minlength=256).astype(float)
+        src_cdf, ref_cdf = np.cumsum(src_hist) / src_hist.sum(), np.cumsum(ref_hist) / ref_hist.sum()
+        lookup = np.clip(np.round(np.interp(src_cdf, ref_cdf, np.arange(256))), 0, 255).astype(np.uint8)
+        matched[..., channel] = lookup[source[..., channel]]
+    return matched
+
+
+def _cell_mean_lab(raster, grid, offset: tuple[float, float]) -> tuple[np.ndarray, np.ndarray]:
+    """Média Lab por célula da grade (pixels válidos) e a fração de pixels válidos por célula."""
+    import cv2
+
+    from dal.data import valid_mask
+
+    height, width = raster.img.shape[:2]
+    cols = raster.x_origin + (np.arange(width) + 0.5) * raster.res - offset[0]
+    rows = raster.y_origin - (np.arange(height) + 0.5) * raster.res - offset[1]
+    cell_col = np.floor((cols - grid.x0) / grid.cell).astype(int)
+    cell_row = np.floor((grid.y1 - rows) / grid.cell).astype(int)
+    inside = ((cell_row[:, None] >= 0) & (cell_row[:, None] < grid.nrows)
+              & (cell_col[None, :] >= 0) & (cell_col[None, :] < grid.ncols))
+    ok = valid_mask(raster.img) & inside
+    index = (cell_row[:, None] * grid.ncols + cell_col[None, :])[ok]
+    lab = cv2.cvtColor(raster.img, cv2.COLOR_RGB2LAB).astype(np.float64)[ok]
+    n_cells = grid.nrows * grid.ncols
+    counts = np.bincount(index, minlength=n_cells)
+    means = np.stack([np.bincount(index, weights=lab[:, c], minlength=n_cells) for c in range(3)], axis=1)
+    return means / np.maximum(counts, 1)[:, None], counts
+
+
+def run_covariate_stage() -> None:
+    """F2: ΔE Lab por célula (mapa com histograma igualado ao da observação) e Spearman com o sucesso."""
+    from dal.align import load_offsets
+    from dal.data import load_date, valid_mask
+    from dal.grid import Grid
+
+    config = load_config("configs/default.yaml")
+    grid = Grid.from_aoi(**config["data"]["aoi"], cell=config["data"]["cell_m"])
+    offsets = load_offsets()
+    post = load_date("post")
+    post_lab, post_counts = _cell_mean_lab(post, grid, offsets["post"])
+    episodes = pd.read_csv(OUT / "change_index" / "taquari_episodes.csv")
+    W = int(config["filter"]["window"])
+    rows = []
+    for scenario in ("S1", "S2"):
+        map_date = config["scenarios"][scenario]
+        raster = load_date(map_date)
+        raster.img = _match_histogram(raster.img, post.img, valid_mask(raster.img), valid_mask(post.img))
+        map_lab, map_counts = _cell_mean_lab(raster, grid, offsets[map_date])
+        min_pixels = 0.5 * (grid.cell / post.res) ** 2
+        delta_e = np.where((map_counts >= min_pixels) & (post_counts >= min_pixels),
+                           np.linalg.norm(map_lab - post_lab, axis=1), np.nan).reshape(grid.nrows, grid.ncols)
+        np.save(OUT / "change_index" / f"taquari_delta_e_{scenario}.npy", delta_e.astype(np.float32))
+        for _, ep in episodes[episodes.scenario == scenario].drop_duplicates("episode").iterrows():
+            block = delta_e[ep.window_r0:ep.window_r0 + W, ep.window_c0:ep.window_c0 + W]
+            rows.append({"scenario": scenario, "episode": int(ep.episode), "color_delta_window": float(np.nanmean(block))})
+        del raster
+    episodes = episodes.merge(pd.DataFrame(rows), on=["scenario", "episode"])
+    episodes.to_csv(OUT / "change_index" / "taquari_episodes_with_color.csv", index=False)
+    table = []
+    for method, group in episodes.groupby("method"):
+        success = group["success"].astype(float)
+        table.append({"method": method,
+                      "spearman_change_success": spearmanr(group.change_window, success).statistic,
+                      "spearman_color_success": spearmanr(group.color_delta_window, success, nan_policy="omit").statistic,
+                      "spearman_change_color": spearmanr(group.change_window, group.color_delta_window,
+                                                         nan_policy="omit").statistic, "n": len(group)})
+    table = pd.DataFrame(table)
+    table.to_csv(OUT / "change_index" / "independent_covariate.csv", index=False)
+    print(table.round(3).to_string(index=False))
+
+
 # ============================================================================ F3: reexecução
 def _location_setup(location: str):
     """Dados do episódio, mapas de distintividade e mudança, e config, para um local."""
@@ -218,10 +295,10 @@ def run_verdict_stage() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("stage", choices=["change", "replay", "verdict"])
+    parser.add_argument("stage", choices=["change", "covariate", "replay", "verdict"])
     parser.add_argument("--workers", type=int, default=os.cpu_count() or 4)
     args = parser.parse_args()
-    {"change": run_change_stage, "replay": lambda: run_replay_stage(args.workers),
+    {"change": run_change_stage, "covariate": run_covariate_stage, "replay": lambda: run_replay_stage(args.workers),
      "verdict": run_verdict_stage}[args.stage]()
 
 
