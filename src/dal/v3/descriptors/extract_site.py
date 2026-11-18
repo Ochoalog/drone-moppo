@@ -28,7 +28,9 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
     site = specs.load_site(config["site"])
     manifest = json.loads((ROOT / "colab" / "specs" / specs.MANIFEST).read_text())
     spec_dir.mkdir(parents=True, exist_ok=True)
-    extractor = extract.DinoV2Extractor(config["model"], int(config.get("input_px", 224)), device,
+    # `model` nomeia a pasta de saída; `hub_model` é o modelo base do torch.hub (padrão: o próprio `model`).
+    hub_model = config.get("hub_model", config["model"])
+    extractor = extract.DinoV2Extractor(hub_model, int(config.get("input_px", 224)), device,
                                         weights=config.get("weights"))
     done = {}
     for name, frame in specs.iter_specs(site):

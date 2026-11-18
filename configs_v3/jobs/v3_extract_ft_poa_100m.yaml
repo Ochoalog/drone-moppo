@@ -1,0 +1,9 @@
+# Notebook 01 com os pesos do ajuste fino da dobra A (o ajuste fino só viu a faixa de treino do Taquari).
+site: poa
+altitudes: [100]
+model: dinov2_vits14_ftA
+hub_model: dinov2_vits14
+weights: /content/drive/MyDrive/drone_v3/finetune/finetune_A/backbone.pt
+input_px: 224
+batch_size: 256
+chunk_rows: 50000

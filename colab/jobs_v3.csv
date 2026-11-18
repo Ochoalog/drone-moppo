@@ -6,3 +6,10 @@ v3_extract_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract
 v3_extract_poa_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_poa_100m.yaml,,50,5,queued
 v3_extract_poa_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_poa_60m.yaml,,50,6,queued
 v3_extract_poa_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_poa_150m.yaml,,50,7,queued
+finetune_A,colab/03_contrastive_finetune.ipynb,configs_v3/jobs/finetune_A.yaml,,170,8,queued
+v3_extract_ft_taquari_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_taquari_100m.yaml,finetune_A,70,9,queued
+v3_extract_ft_taquari_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_taquari_60m.yaml,finetune_A,70,10,queued
+v3_extract_ft_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_taquari_150m.yaml,finetune_A,70,11,queued
+v3_extract_ft_poa_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_poa_100m.yaml,finetune_A,50,12,queued
+v3_extract_ft_poa_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_poa_60m.yaml,finetune_A,50,13,queued
+v3_extract_ft_poa_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_poa_150m.yaml,finetune_A,50,14,queued

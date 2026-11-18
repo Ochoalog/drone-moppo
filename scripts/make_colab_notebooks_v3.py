@@ -79,6 +79,13 @@ def main() -> None:
             "contra `colab/specs/v3_manifest.json`** (se não baterem, o job para). Depois extrai DINOv2 (GeM e CLS) e a "
             "qualidade de cada recorte (fração válida e de nuvem) em `MyDrive/drone_v3/features/v3/<modelo>/<spec>/`.",
             "dal.v3.descriptors.extract_site", "v3_extract_taquari_100m"),
+        "03_contrastive_finetune.ipynb": job_notebook(
+            "03 · Ajuste fino contrastivo (InfoNCE)",
+            "Ajusta os últimos blocos do DINOv2 com pares (mapa pré-evento, variante de observação pós-evento) da mesma "
+            "célula, **só na faixa de treino da dobra** do Taquari. Checkpoint no Drive a cada ≤ 15 min; se o tempo do "
+            "job acabar, o `DONE.json` sai com `FAILED` e é só rodar de novo (retoma). No fim grava "
+            "`MyDrive/drone_v3/finetune/<job_id>/backbone.pt`.",
+            "dal.v3.descriptors.finetune", "finetune_A"),
         "02_dinov2_features.ipynb": job_notebook(
             "02 · Descritores DINOv2 a partir de uma spec",
             "Renderiza os recortes da spec na GPU (`dal.v3.sensor.render`), extrai DINOv2 (GeM e CLS) e, se a config "
