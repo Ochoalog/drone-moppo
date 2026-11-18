@@ -30,7 +30,7 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 
 | Gate | Critério | Situação |
 |---|---|---|
-| G0 | dados (prior, terceira área, evento externo) | aguardando `G0_report.md` da IA-2 |
+| G0 | dados (prior, terceira área, evento externo) | **relatório recebido** (branch `colab/results`, `colab_out/g0_data_check/`, 18/11 12:32). Aprovado **com condições** (ver §5): prior do Taquari a refazer só com fontes ≤ 06/05/2024; terceira área e evento externo aguardam decisão do Vitor (recomendação da IA-2: Canoas e Valência/EMSR773) |
 | G1 preliminar | DINOv2 zero-shot × hand (S1 0,409; S2 0,269) na spec `legacy_50m` | spec publicada; caminho de avaliação conferido (o hand da v1 dá 0,409 e 0,269 pelo `scripts/eval_retrieval_v3.py`) |
 | G2 | paridade do ambiente em lote | versão de 100 episódios **passou** (trajetórias idênticas para a reta e o zigue-zague; a PPO da PoC reproduz episódio a episódio o sucesso e os passos gravados); gate completo de 1000 episódios em execução |
 | G3 | controle: reta ≥ 90% | pendente |
@@ -43,3 +43,13 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 - descritor hand com cosseno ≥ 0,9999999 contra o gravado pela v1.
 
 A spec tem 323.595 recortes: 64.719 células (43.287 de treino e 21.432 de teste) × (3 mapas + 2 variantes de observação de `post`).
+
+## 5. G0: conferência do relatório da IA-2 (18/11, IA-1)
+
+| Ponto | Situação | Ação |
+|---|---|---|
+| **Possível vazamento no prior do Taquari** | O relatório diz que todas as fontes do EMSR720 são ≤ 06/05/2024, mas lista para a AOI 01 um produto de *grading* feito a partir de **GeoEye-1 de 07/05/2024, 13:29 UTC**. O GeoEye-1 é da Maxar, e a imagem pós-evento da câmera é Maxar de 07/05/2024: pode ser a mesma aquisição | **Refazer o raster do Taquari só com produtos de fontes ≤ 06/05/2024** (excluir o GRA de 07/05). Até lá, o prior do Taquari não é usado |
+| Prior de Porto Alegre (EMSN194, fontes Sentinel-1/2 de 08/05/2024) | Independente da câmera (Maxar de 09/05), mas publicado em junho/2024: prior **"otimista"** | Usar com esse rótulo em todo texto e tabela; Sentinel-1 de 11/05 como sensibilidade |
+| `DONE.json` fora do contrato | `status: "PASSED"` (o contrato aceita `OK`, `INVALID_GATE`, `FAILED`); `summary_metrics` em vez de `metrics`; `config_hash` é o SHA-256 da string vazia (o G0 não era um job da fila) | Aceito como relatório manual; o `colab/README.md` reforça o formato para os próximos jobs |
+| Afirmações que a IA-1 não consegue conferir daqui (cobertura do EMSR720, áreas de sobreposição, contagem de janelas em Canoas) | sem acesso à internet de dados nem ao Drive nesta máquina | Conferência visual do Vitor nas figuras do prior e checagem das janelas de Canoas quando a spec dela for gerada |
+| Rasters do prior em `MyDrive/drone_v3/prior/` | não acessíveis localmente (sem `rclone`) | **[AÇÃO DO VITOR]** baixar para `drone_active_loc/data_v3/prior/` |
