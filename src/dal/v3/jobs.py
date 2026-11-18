@@ -174,7 +174,8 @@ def _episodes(env: RealisticBatchedEnv, method: str, seed: int, site: str, scena
 # ============================================================================ CLI
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=["calibrate", "train", "evaluate"])
+    parser.add_argument("kind", nargs="?", choices=["calibrate", "train", "evaluate"],
+                        help="tipo do job; se omitido, vem da chave `kind` do YAML")
     parser.add_argument("--job-config", required=True)
     parser.add_argument("--job-id", required=True)
     parser.add_argument("--out-root", required=True)
@@ -182,6 +183,7 @@ def main() -> None:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
     job = load_job_config(ROOT / args.job_config)
+    args.kind = args.kind or job["kind"]
     started_at, started = now_iso(), time.time()
     out = Path(args.colab_out) / args.job_id
     out.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,9 @@
+# Notebook 04 (kind: calibrate): β₁ por altitude, κ e α na faixa de treino da dobra A (Taquari, cenário S2).
+kind: calibrate
+descriptor: dinov2_vits14_ftA
+fold: A
+scenario: S2
+episodes: 200
+# Prior do Taquari **refeito só com fontes ≤ 06/05/2024** (ver DECISIONS_V3.md §5). Sem ele, o job falha.
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif

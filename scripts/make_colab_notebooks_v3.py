@@ -86,6 +86,20 @@ def main() -> None:
             "job acabar, o `DONE.json` sai com `FAILED` e é só rodar de novo (retoma). No fim grava "
             "`MyDrive/drone_v3/finetune/<job_id>/backbone.pt`.",
             "dal.v3.descriptors.finetune", "finetune_A"),
+        "04_train_matrix.ipynb": job_notebook(
+            "04 · Calibração e treino da matriz (PPO em lote)",
+            "Roda jobs de **calibração** (β₁ por altitude, κ e α, só no treino da dobra) e de **treino** (PPO, PPO-CA, "
+            "PPO-CA-ALT) no ambiente realista em lote na GPU. O tipo vem da chave `kind` do YAML. O treino é retomável "
+            "(checkpoint a cada ≤ 15 min), registra passos/s em `progress.csv` (**gate G4: ≥ 5.000 passos/s**) e aplica o "
+            "gate de aprendizado aos 25%: se falhar, a pasta ganha o sufixo `_INVALID_GATE` e o `DONE.json` sai com "
+            "`status: INVALID_GATE`.",
+            "dal.v3.jobs", "calibrate_A_dinov2"),
+        "05_evaluate.ipynb": job_notebook(
+            "05 · Avaliação pareada",
+            "Avalia baselines (filtro padrão e CA) e modelos treinados nos **mesmos 1000 episódios** (seeds 2024 + i) de "
+            "cada local da lista `targets` do YAML. Execuções `INVALID_GATE` ficam de fora automaticamente. Os episódios "
+            "vão para o Drive (`v3/<descritor>/fold_<dobra>/eval/<job_id>/episodes.csv`) e um resumo para `colab_out`.",
+            "dal.v3.jobs", "eval_pilot_A"),
         "02_dinov2_features.ipynb": job_notebook(
             "02 · Descritores DINOv2 a partir de uma spec",
             "Renderiza os recortes da spec na GPU (`dal.v3.sensor.render`), extrai DINOv2 (GeM e CLS) e, se a config "
