@@ -14,6 +14,11 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 | V6 | 18/11 | **Ruído por hash** de (crop_id, pixel, canal), sem gerador com estado | Mesmo resultado na CPU e na GPU, em qualquer ordem e tamanho de lote; "variantes determinísticas dada a semente" (§3.4 do prompt). Consequência: o ruído das variantes v1 não é reproduzido bit a bit pelo `render.py` (a v1 usava um gerador sequencial); a conferência injeta o ruído original | `torch.Generator` por recorte (lento na GPU e dependente do lote) |
 | V7 | 18/11 | **Raio fixo do desfoque** (9 px; σ ≤ 3 px) | Um raio dependente do maior σ do lote mudava o recorte conforme o lote (o teste de paridade de lote pegou isso) | Raio por lote |
 | V8 | 18/11 | **Inclinação** como raio da câmera (FOV 84°) girado por pitch (eixo leste) e roll (eixo sul) e intersectado com o solo; o yaw é aplicado depois, no plano da imagem, como na v1 | Com tilt 0 recai exatamente no afim da v1 (teste) | Homografia aproximada por cisalhamento |
+| V9 | 18/11 | O job do G1 calcula **também o hand sobre os mesmos recortes** que o DINOv2 | A v1 recortou de rasters locais regravados em JPEG q95; a IA-2 lê os COGs originais. Comparar o DINOv2 (COG) com o hand da v1 (JPEG) misturaria descritor e fonte. O G1 compara os dois sobre os mesmos pixels e reporta também a referência v1 (0,409 / 0,269) | Mandar os rasters JPEG da v1 para o Drive (161 MB; depende do Vitor) |
+| V10 | 18/11 | **Defeito na fila de CPU:** o invólucro esperava com `pgrep -f "<script>"`, e o padrão aparecia na própria linha de comando dele, então ele nunca saía da espera. Perderam-se ~40 min de CPU (das 12:26 às ~13:05). Corrigido: a fila agora roda os passos em sequência, sem espera por padrão de texto | A fila v2 tinha o mesmo defeito, ainda não manifestado | — |
+| V11 | 18/11 | Desenvolvimento da v3 num **worktree separado** (`../dal_v3`, branch `feat/v3-change-aware`), com `data/`, `data_poa/`, `runs/` e `runs_mo/` como links só de leitura para a árvore principal | A árvore principal fica na `science/plan-v2-review` enquanto os processos do estudo v1 (M1, v1fix) rodam nela; trocar de branch sob processos em execução é arriscado | Trocar de branch na mesma árvore |
+| V12 | 18/11 | **Ambiente em lote, modo legado:** cada episódio mantém o próprio gerador numpy, consumido na ordem da v1 (deslizamento só quando o movimento não é bloqueado; variante de observação a cada passo). Filtro, verossimilhança, predição e resumos ficam em lote no torch. A verossimilhança multiplica a observação pela grade inteira e recolhe as células da janela | Única forma de trajetórias **idênticas** (G2): os sorteios dependem dos dados e não têm equivalente no gerador do torch. No modo realista, o sorteio será em lote no torch | Sorteios em lote no torch também no modo legado (trajetórias divergiriam) |
+| V13 | 18/11 | G2 no `pytest` padrão com 100 episódios; o gate oficial (1000 episódios, 3 seeds da PoC) roda em `scripts/gate_g2_parity_v3.py` e grava `results_v3/gates/G2.json` | A versão completa leva ~20 min de CPU e já há um teste longo na suíte | Só a versão completa no `pytest` |
 
 ## 2. Hipóteses, matriz e regras estatísticas
 
@@ -25,7 +30,7 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 |---|---|---|
 | G0 | dados (prior, terceira área, evento externo) | aguardando `G0_report.md` da IA-2 |
 | G1 preliminar | DINOv2 zero-shot × hand (S1 0,409; S2 0,269) na spec `legacy_50m` | spec publicada; caminho de avaliação conferido (o hand da v1 dá 0,409 e 0,269 pelo `scripts/eval_retrieval_v3.py`) |
-| G2 | paridade do ambiente em lote | pendente |
+| G2 | paridade do ambiente em lote | versão de 100 episódios **passou** (trajetórias idênticas para a reta e o zigue-zague; a PPO da PoC reproduz episódio a episódio o sucesso e os passos gravados); gate completo de 1000 episódios em execução |
 | G3 | controle: reta ≥ 90% | pendente |
 | G4 | ≥ 5.000 passos/s na T4 | pendente |
 
