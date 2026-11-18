@@ -63,3 +63,15 @@ def test_finetune_learns_and_resumes(tmp_path):
     assert (tmp_path / "backbone.pt").exists()
     again = finetune.train(cfg, tmp_path, "cpu", backbone=TinyBackbone(), embed_dim=8, sampler=FakeSampler())
     assert again["step"] == 60
+
+
+def test_neighbor_negatives_stay_in_training_cells_and_include_neighbours():
+    cfg = finetune.FinetuneConfig(batch_size=32, neighbor_negatives=3)
+    sampler = finetune.PairSampler(SITE, cfg, images={}, device="cpu")
+    cells = sampler._sample_cells()
+    assert len(cells) == 32 and len(set(cells.tolist())) == 32
+    assert set(cells.tolist()) <= set(sampler.cells.tolist())
+    n_cols = specs.site_grid(SITE).ncols
+    rows, cols = cells // n_cols, cells % n_cols
+    close = (np.abs(rows[:, None] - rows[None]) <= 3) & (np.abs(cols[:, None] - cols[None]) <= 3)
+    assert (close.sum(1) > 1).mean() > 0.5  # a maioria das células tem uma vizinha no lote

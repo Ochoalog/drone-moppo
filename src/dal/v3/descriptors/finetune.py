@@ -22,7 +22,7 @@ import torch.nn as nn
 from torch.nn import functional
 
 from dal.config import ROOT
-from dal.v3.descriptors.extract import GEM_P, IMAGENET_MEAN, IMAGENET_STD, read_source
+from dal.v3.descriptors.extract import GEM_P, IMAGENET_MEAN, IMAGENET_STD, grid_gem, read_source
 from dal.v3.evaluation.folds import make_fold
 from dal.v3.reporting.colab_io import load_job_config, now_iso, write_done
 from dal.v3.sensor import specs
@@ -47,14 +47,19 @@ class FinetuneConfig:
     checkpoint_minutes: float = 15.0
     max_minutes: float = 170.0  # jobs ≤ 3 h no Colab
     seed: int = 0
+    pooling: str = "gem"  # "gem" (global) ou "grid4" (GeM espacial 4 × 4; ver V22)
+    neighbor_negatives: int = 0  # vizinhos por âncora no lote (negativos difíceis); 0 = lote aleatório
 
 
 class ContrastiveModel(nn.Module):
     """Backbone (DINOv2) + GeM + projeção. Só os últimos `trainable_blocks` blocos treinam."""
 
-    def __init__(self, backbone: nn.Module, embed_dim: int, projection_dim: int, trainable_blocks: int):
+    def __init__(self, backbone: nn.Module, embed_dim: int, projection_dim: int, trainable_blocks: int,
+                 pooling: str = "gem"):
         super().__init__()
         self.backbone = backbone
+        self.pooling = pooling
+        embed_dim = embed_dim * 16 if pooling == "grid4" else embed_dim
         for parameter in self.backbone.parameters():
             parameter.requires_grad = False
         blocks = getattr(self.backbone, "blocks", [])
@@ -68,8 +73,11 @@ class ContrastiveModel(nn.Module):
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         patches = self.backbone.forward_features(images)["x_norm_patchtokens"]
-        gem = patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P)
-        return functional.normalize(self.head(gem), dim=-1)
+        if self.pooling == "grid4":
+            pooled = grid_gem(patches, 4)
+        else:
+            pooled = patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P)
+        return functional.normalize(self.head(pooled), dim=-1)
 
 
 def info_nce(map_embeddings: torch.Tensor, obs_embeddings: torch.Tensor, temperature: float) -> torch.Tensor:
@@ -103,6 +111,28 @@ class PairSampler:
         self.rng = np.random.default_rng(cfg.seed)
         self._specs: dict = {}
 
+    def _sample_cells(self) -> np.ndarray:
+        """Lote de células de treino; com `neighbor_negatives`, grupos de âncora + vizinhas a 1–3 células."""
+        cfg = self.cfg
+        if not cfg.neighbor_negatives:
+            return self.rng.choice(self.cells, cfg.batch_size, replace=False)
+        n_cols = specs.site_grid(self.site).ncols
+        allowed = set(self.cells.tolist())
+        group = cfg.neighbor_negatives + 1
+        chosen: list[int] = []
+        while len(chosen) < cfg.batch_size:
+            anchor = int(self.rng.choice(self.cells))
+            members = [anchor]
+            for _ in range(20 * group):
+                if len(members) == group:
+                    break
+                d_row, d_col = self.rng.integers(-3, 4, size=2)
+                neighbor = anchor + int(d_row) * n_cols + int(d_col)
+                if (d_row or d_col) and neighbor in allowed and neighbor not in members and neighbor not in chosen:
+                    members.append(neighbor)
+            chosen.extend(m for m in members if m not in chosen)
+        return np.array(chosen[:cfg.batch_size])
+
     def _spec(self, kind: str, date: str, altitude: int) -> pd.DataFrame:
         """Specs geradas uma vez por (tipo, data, altitude) e reaproveitadas em todos os lotes."""
         key = (kind, date, altitude)
@@ -113,7 +143,7 @@ class PairSampler:
 
     def sample(self) -> tuple[torch.Tensor, torch.Tensor, np.ndarray]:
         cfg = self.cfg
-        cells = self.rng.choice(self.cells, cfg.batch_size, replace=False)
+        cells = self._sample_cells()
         altitude = int(self.rng.choice(cfg.altitudes))
         map_date = str(self.rng.choice(cfg.map_dates))
         variant = int(self.rng.integers(specs.N_OBS_VARIANTS))
@@ -145,7 +175,7 @@ def train(cfg: FinetuneConfig, out_dir: Path, device: str, backbone: nn.Module |
     out_dir.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(cfg.seed)
     backbone = backbone if backbone is not None else torch.hub.load("facebookresearch/dinov2", cfg.model)
-    model = ContrastiveModel(backbone, embed_dim, cfg.projection_dim, cfg.trainable_blocks).to(device)
+    model = ContrastiveModel(backbone, embed_dim, cfg.projection_dim, cfg.trainable_blocks, cfg.pooling).to(device)
     optimizer = torch.optim.AdamW([
         {"params": [p for p in model.backbone.parameters() if p.requires_grad], "lr": cfg.learning_rate},
         {"params": model.head.parameters(), "lr": cfg.head_learning_rate}], weight_decay=0.01)
