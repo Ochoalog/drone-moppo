@@ -1,6 +1,6 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 18/11/2026, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
@@ -17,7 +17,7 @@ Resolvido: figuras do prior aprovadas; terceira área = **Canoas**; evento exter
 | Gate | Situação | Número |
 |---|---|---|
 | G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
-| G1 preliminar | **DINOv2 zero-shot não supera o hand** | top-1 no treino (GeM / hand nos mesmos pixels): S0 0,816 / 0,998; S1 0,139 / 0,411; S2 0,063 / 0,270. O hand reproduz a v1. Diagnóstico em andamento: o pooling global não separa células vizinhas (até o S0, com a mesma imagem, fica em 0,82) |
+| G1 preliminar | **DINOv2 GeM global não supera o hand**; descritor em grade 4 × 4 em teste | GeM / hand: S1 0,139 / 0,411; S2 0,063 / 0,270. Diagnóstico local: grade 4 × 4 multiplica o top-1 do GeM por 2,4 (S1). **Job `g1_legacy_grid4` (prioridade 1) decide**; o resto da fila está `on_hold` |
 | G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
 | G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
 | G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |

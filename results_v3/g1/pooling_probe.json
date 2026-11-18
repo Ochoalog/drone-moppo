@@ -1,0 +1,26 @@
+{
+ "S0": {
+  "gem": 0.7466666666666667,
+  "cls": 0.6433333333333333,
+  "grid2": 0.8533333333333334,
+  "grid4": 0.94,
+  "hand": 0.9933333333333333
+ },
+ "S1": {
+  "gem": 0.13666666666666666,
+  "cls": 0.07666666666666666,
+  "grid2": 0.25,
+  "grid4": 0.3333333333333333,
+  "hand": 0.12666666666666668
+ },
+ "setup": {
+  "window_cells": 40,
+  "queries": 300,
+  "window_origin": [
+   40,
+   40
+  ],
+  "candidates": 1600,
+  "note": "diagn\u00f3stico local (raster JPEG da v1, normaliza\u00e7\u00e3o na pr\u00f3pria janela); n\u00e3o \u00e9 o G1"
+ }
+}

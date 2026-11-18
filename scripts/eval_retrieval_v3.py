@@ -37,13 +37,17 @@ def raw_arrays_from_spec(spec: pd.DataFrame, descriptors: np.ndarray, n_cells: i
     dim = descriptors.shape[1]
     map_rows = spec[(spec.kind == "map") & (spec.date_id == map_date)]
     map_raw = np.zeros((n_cells, dim), np.float32)
-    map_raw[map_rows.cell_index.to_numpy()] = descriptors[map_rows.index.to_numpy()]
+    # Lê do arquivo mapeado só as linhas usadas e converte para float32 (6144 dim não cabem inteiros na RAM).
+    map_raw[map_rows.cell_index.to_numpy()] = np.asarray(descriptors[np.sort(map_rows.index.to_numpy())],
+                                                         np.float32)[np.argsort(np.argsort(map_rows.index.to_numpy()))]
     obs_rows = spec[spec.kind == "obs"]
     variants = sorted(obs_rows.variant.unique())
     obs_raw = np.zeros((len(variants), n_cells, dim), np.float32)
     for k, variant in enumerate(variants):
         rows = obs_rows[obs_rows.variant == variant]
-        obs_raw[k, rows.cell_index.to_numpy()] = descriptors[rows.index.to_numpy()]
+        order = rows.index.to_numpy()
+        obs_raw[k, rows.cell_index.to_numpy()] = np.asarray(descriptors[np.sort(order)],
+                                                            np.float32)[np.argsort(np.argsort(order))]
     return map_raw, obs_raw
 
 
@@ -98,7 +102,7 @@ def main() -> None:
         if args.descriptors == "hand-v1":
             map_raw, obs_raw = raw_arrays_hand_v1(map_date)
         else:
-            map_raw, obs_raw = raw_arrays_from_spec(spec, np.asarray(descriptors, np.float32), n_cells, map_date)
+            map_raw, obs_raw = raw_arrays_from_spec(spec, descriptors, n_cells, map_date)
         stats = retrieval_for_scenario(config, scenario, map_raw, obs_raw)
         rows.append({"descriptor": args.name, "scenario": scenario, **stats})
         print(f"[retrieval] {args.name} {scenario}: top1 {stats['top1']:.3f} top5 {stats['top5']:.3f} "

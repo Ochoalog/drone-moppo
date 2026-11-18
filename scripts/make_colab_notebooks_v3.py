@@ -44,7 +44,9 @@ G1_EVAL_CELL = new_code_cell(
     "import json, yaml\n"
     "cfg = yaml.safe_load(open(f'/content/repo/{JOB_CONFIG}'))\n"
     "base = f\"/content/drive/MyDrive/drone_v3/{cfg['output_dir']}\"\n"
-    "for name in ('gem', 'cls', 'hand'):\n"
+    "import pathlib\n"
+    "names = [f.stem for f in sorted(pathlib.Path(base).glob('*.npy')) if f.stem not in ('valid_frac', 'cloud_frac')]\n"
+    "for name in names:\n"
     "    subprocess.run([sys.executable, 'scripts/eval_retrieval_v3.py', '--spec', cfg['spec'], '--descriptors',\n"
     "                    f'{base}/{name}.npy', '--name', f'{JOB_ID}_{name}', '--out', f'colab_out/{JOB_ID}'],\n"
     "                   cwd='/content/repo', check=True)")

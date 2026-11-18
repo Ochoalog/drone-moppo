@@ -139,8 +139,10 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
     work_dir = out_root / config["output_dir"]
     work_dir.mkdir(parents=True, exist_ok=True)
     chunk_rows = int(config.get("chunk_rows", 20000))
-    extractor = extractor or DinoV2Extractor(config["model"], int(config.get("input_px", 224)), device,
-                                             weights=config.get("weights"))
+    extractor = extractor or DinoV2Extractor(config.get("hub_model", config["model"]), int(config.get("input_px", 224)),
+                                             device, weights=config.get("weights"),
+                                             grids=tuple(config.get("grids", ())),
+                                             outputs=tuple(config.get("outputs", ("gem", "cls"))))
     also_hand = bool(config.get("also_hand", False))
     margin_m = float(config.get("margin_m", 50.0))
     batch_size = int(config.get("batch_size", 256))

@@ -12,7 +12,7 @@ A raiz do repositório GitHub **é** a pasta `drone_active_loc/`: os caminhos ab
 
 1. `git fetch`; leia `colab/jobs_v3.csv` no commit de `CURRENT_COMMIT`.
 2. Pegue o job de **maior prioridade** (menor número em `priority`) que **ainda não tem** `colab_out/<job_id>/DONE.json` na branch `colab/results` e cujas dependências (`depends_on`, separadas por `;`) já têm `DONE.json`.
-3. Não edite a fila: quem atualiza o `status` é a IA-1.
+3. **Só rode jobs com `status = queued`.** `on_hold` = em espera por decisão da IA-1 (não rodar); `done` = já feito. Não edite a fila: quem atualiza o `status` é a IA-1.
 
 | Coluna | Significado |
 |---|---|
@@ -49,4 +49,5 @@ Os jobs gravam blocos no Drive e pulam os que já existem. Se a sessão cair: ro
 | `finetune_A` | `03_contrastive_finetune.ipynb` | Ajuste fino contrastivo (dobra A, só faixa de treino do Taquari). Saída: `MyDrive/drone_v3/finetune/finetune_A/backbone.pt` |
 | `v3_extract_ft_<local>_<h>m` | `01_data_and_crops.ipynb` | Igual ao `v3_extract_*`, com os pesos do ajuste fino (depende de `finetune_A`). Saída: `features/v3/dinov2_vits14_ftA/<spec>/` |
 | `calibrate_A_<descritor>` | `04_train_matrix.ipynb` | Calibração (β₁ por altitude, κ, α) na faixa de treino da dobra A. **Precisa do prior do Taquari refeito só com fontes ≤ 06/05/2024**, gravado como `MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif` |
+| `g1_legacy_grid4` | `02_dinov2_features.ipynb` | G1 oficial do DINOv2 com GeM espacial 4 × 4 (`grid4`, 6144 dim) nos recortes exatos da v1. A célula de G1 do notebook avalia `grid4` e `gem` |
 | `g1_legacy_dinov2` | `02_dinov2_features.ipynb` | DINOv2 ViT-S/14 (GeM e CLS) e o hand da v1 nos mesmos pixels, sobre os recortes exatos da v1 (`specs/legacy_50m.parquet`, 323.595 recortes, overview 1,22 m/px). Saída: `MyDrive/drone_v3/features/legacy_50m/dinov2_vits14/{gem,cls,hand}.npy` |
