@@ -112,7 +112,12 @@ class RealisticBatchedEnv:
         self.n_variants = next(iter(tables.obs_desc.values())).shape[0]
 
     # ------------------------------------------------------------------ reinício
-    def reset(self, seeds: list[int]) -> None:
+    STATE_KEYS = ("origin", "pos_m", "scale_error", "heading_error", "variants", "altitude_index", "window_cells",
+                  "win_map_ok", "win_obs_ok", "belief", "t", "flight_time_s", "distance_m", "done", "success",
+                  "false_loc", "blocked_axes")
+
+    def _fresh_state(self, seeds: list[int]) -> dict[str, torch.Tensor]:
+        """Estado inicial de episódios novos, com todo o ruído do episódio sorteado a partir da semente."""
         cfg, W, n = self.cfg, self.W, len(seeds)
         windows, starts, scale, heading, variants = [], [], [], [], []
         ok_np = self.tables.map_ok & self.tables.obs_ok
@@ -129,29 +134,44 @@ class RealisticBatchedEnv:
             heading.append(dtheta)
             variants.append(rng.integers(self.n_variants, size=cfg.max_steps + 1))
         dev = self.device
-        self.n = n
-        self.origin = torch.tensor(np.array(windows), dtype=torch.long, device=dev)
-        self.pos_m = torch.tensor(np.array(starts), dtype=torch.float64, device=dev)  # (N, 2) linha, coluna em m
-        self.scale_error = torch.tensor(np.array(scale), dtype=torch.float64, device=dev)
-        self.heading_error = torch.tensor(np.array(heading), dtype=torch.float64, device=dev)
-        self.variants = torch.tensor(np.array(variants), dtype=torch.long, device=dev)
-        self.altitude_index = torch.full((n,), cfg.start_altitude_index, dtype=torch.long, device=dev)
+        origin = torch.tensor(np.array(windows), dtype=torch.long, device=dev)
         local = torch.arange(W, device=dev)
-        rows_idx = (self.origin[:, 0:1] + local.view(1, -1)).view(-1, W, 1)
-        cols_idx = (self.origin[:, 1:2] + local.view(1, -1)).view(-1, 1, W)
-        self.window_cells = (rows_idx * self.tables.grid_shape[1] + cols_idx).view(n, W * W)
-        self.win_map_ok = self.map_ok.reshape(-1)[self.window_cells].view(n, W, W)
-        self.win_obs_ok = self.obs_ok.reshape(-1)[self.window_cells].view(n, W, W)
-        valid = self.win_map_ok.to(self.dtype)
-        self.belief = valid / valid.sum(dim=(1, 2), keepdim=True).clamp(min=1)
-        self.t = torch.zeros(n, dtype=torch.long, device=dev)
-        self.flight_time_s = torch.zeros(n, dtype=torch.float64, device=dev)
-        self.distance_m = torch.zeros(n, dtype=torch.float64, device=dev)
-        self.done = torch.zeros(n, dtype=torch.bool, device=dev)
-        self.success = torch.zeros(n, dtype=torch.bool, device=dev)
-        self.false_loc = torch.zeros(n, dtype=torch.bool, device=dev)
-        self.blocked_axes = torch.zeros(n, 2, dtype=torch.bool, device=dev)
-        self._observe(torch.ones(n, dtype=torch.bool, device=dev))
+        rows_idx = (origin[:, 0:1] + local.view(1, -1)).view(-1, W, 1)
+        cols_idx = (origin[:, 1:2] + local.view(1, -1)).view(-1, 1, W)
+        window_cells = (rows_idx * self.tables.grid_shape[1] + cols_idx).view(n, W * W)
+        win_map_ok = self.map_ok.reshape(-1)[window_cells].view(n, W, W)
+        valid = win_map_ok.to(self.dtype)
+        zeros_f = torch.zeros(n, dtype=torch.float64, device=dev)
+        zeros_b = torch.zeros(n, dtype=torch.bool, device=dev)
+        return {
+            "origin": origin, "pos_m": torch.tensor(np.array(starts), dtype=torch.float64, device=dev),
+            "scale_error": torch.tensor(np.array(scale), dtype=torch.float64, device=dev),
+            "heading_error": torch.tensor(np.array(heading), dtype=torch.float64, device=dev),
+            "variants": torch.tensor(np.array(variants), dtype=torch.long, device=dev),
+            "altitude_index": torch.full((n,), cfg.start_altitude_index, dtype=torch.long, device=dev),
+            "window_cells": window_cells, "win_map_ok": win_map_ok,
+            "win_obs_ok": self.obs_ok.reshape(-1)[window_cells].view(n, W, W),
+            "belief": valid / valid.sum(dim=(1, 2), keepdim=True).clamp(min=1),
+            "t": torch.zeros(n, dtype=torch.long, device=dev), "flight_time_s": zeros_f.clone(),
+            "distance_m": zeros_f.clone(), "done": zeros_b.clone(), "success": zeros_b.clone(),
+            "false_loc": zeros_b.clone(), "blocked_axes": torch.zeros(n, 2, dtype=torch.bool, device=dev),
+        }
+
+    def reset(self, seeds: list[int]) -> None:
+        """Reinicia todos os episódios."""
+        self.n = len(seeds)
+        for key, value in self._fresh_state(seeds).items():
+            setattr(self, key, value)
+        self._observe(torch.ones(self.n, dtype=torch.bool, device=self.device))
+
+    def reset_rows(self, rows: torch.Tensor, seeds: list[int]) -> None:
+        """Reinicia só os episódios das linhas dadas (treino com episódios contínuos)."""
+        rows = rows.to(self.device)
+        for key, value in self._fresh_state(seeds).items():
+            getattr(self, key)[rows] = value
+        mask = torch.zeros(self.n, dtype=torch.bool, device=self.device)
+        mask[rows] = True
+        self._observe(mask)
 
     # ------------------------------------------------------------------ estado derivado
     def cell(self) -> torch.Tensor:

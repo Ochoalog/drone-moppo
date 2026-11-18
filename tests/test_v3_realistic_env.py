@@ -89,3 +89,14 @@ def test_policy_observation_shapes():
     env.reset([0, 1, 2])
     obs = env.policy_obs(include_change_prior=True)
     assert obs["map"].shape == (3, 4, 32, 32) and obs["vec"].shape == (3, 6)
+
+
+def test_reset_rows_matches_a_fresh_reset_for_those_episodes():
+    env, fresh = RealisticBatchedEnv(_tables(False), _config()), RealisticBatchedEnv(_tables(False), _config())
+    env.reset([10, 11, 12])
+    env.step(torch.tensor([0, 1, 2]))
+    env.reset_rows(torch.tensor([1]), [99])
+    fresh.reset([99])
+    for key in ("pos_m", "belief", "variants", "window_cells"):
+        assert torch.equal(getattr(env, key)[1], getattr(fresh, key)[0]), key
+    assert int(env.t[1]) == 0 and int(env.t[0]) == 1
