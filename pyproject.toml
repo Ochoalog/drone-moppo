@@ -21,6 +21,8 @@ dependencies = [
   "tensorboard",
   "threadpoolctl",
   "pyarrow",
+  "rliable",
+  "arch>=9",
 ]
 
 [build-system]

@@ -50,3 +50,5 @@ tzdata==2026.5
 werkzeug==3.1.9
 threadpoolctl==3.8.0
 pyarrow==26.0.1
+rliable==1.2.0
+arch==9.0.0
