@@ -6,9 +6,9 @@ resultado por seed e diferença pareada contra a reta. Toda linha tem source_fil
 n_episodes, seeds, region e scenario.
 
 Tabelas:
-- rq1_taquari.csv: PoC, teste (sul), S0–S2, 1000 episódios pareados (results/episodes_test.csv);
-- rq1_poa.csv: Porto Alegre, P0–P2, variante zero-shot, centro e ilhas, 500 episódios (results_poa/episodes.csv);
-- rq3_mo_v1.csv: MO v1 e referências nos dois modos, Taquari S2, 300 episódios (results_mo_v1fix/), se existir.
+- v1_rq1_taquari.csv: PoC, teste (sul), S0–S2, 1000 episódios pareados (results/episodes_test.csv);
+- v1_rq1_poa.csv: Porto Alegre, P0–P2, variante zero-shot, centro e ilhas, 500 episódios (results_poa/episodes.csv);
+- v1_rq3_mo.csv: MO v1 e referências nos dois modos, Taquari S2, 300 episódios (results_mo_v1fix/), se existir.
 
 Uso: .venv/bin/python scripts/make_canonical_tables.py [--n-boot 2000]
 """
@@ -164,8 +164,8 @@ def main() -> None:
 
     output_dir = ROOT / "paper" / "tables"
     output_dir.mkdir(parents=True, exist_ok=True)
-    builders = {"taquari": ("rq1_taquari.csv", taquari_table), "poa": ("rq1_poa.csv", poa_table),
-                "mo": ("rq3_mo_v1.csv", mo_v1_table)}
+    builders = {"taquari": ("v1_rq1_taquari.csv", taquari_table), "poa": ("v1_rq1_poa.csv", poa_table),
+                "mo": ("v1_rq3_mo.csv", mo_v1_table)}
     for key, (filename, builder) in builders.items():
         if args.only and key != args.only:
             continue
