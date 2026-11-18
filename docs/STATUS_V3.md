@@ -1,22 +1,22 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 13:32. Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 18/11/2026, 13:55. Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Prior do Taquari: possível vazamento (urgente, repassar à IA-2).** O relatório G0 lista, na AOI 01 do EMSR720, um produto de *grading* feito a partir de **GeoEye-1 de 07/05/2024**. O GeoEye-1 é da Maxar, e a imagem que a câmera do drone vê também é Maxar de 07/05/2024: pode ser a mesma aquisição. **Pedir à IA-2 que refaça `taquari_prior_emsr720_10m.tif` só com produtos de fontes ≤ 06/05/2024.** Detalhes: `DECISIONS_V3.md` §5.
-2. **Baixar os rasters do prior** de `MyDrive/drone_v3/prior/` para `drone_active_loc/data_v3/prior/` (não há `rclone` nesta máquina). Conferir visualmente as duas figuras `*_overlay_preevent.png`.
-3. **Decidir a terceira área e o evento externo.** A IA-2 recomenda **Canoas** (par Maxar 09/05/2024 × 02/02/2024; prior do EMSN194) e **Valência** (Maxar Open Data, 26/10 × 31/10/2024; prior do EMSR773). O furacão Helene foi descartado (sem ativação do Copernicus EMS).
-4. **Token do GitHub** nos *secrets* do Colab (`GITHUB_TOKEN`), se ainda não estiver: o commit do G0 saiu com a sua conta, então parece que já está.
-5. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma): confirmar com o professor.
-6. **Revisar o rascunho das hipóteses e da matriz** em `docs/DECISIONS_V3_hipoteses_RASCUNHO.md` (quinta). Os pontos marcados com "[definido aqui]" foram operacionalizados pela IA-1 e precisam do seu aval. Depois da revisão, o texto vai para a §2 do `DECISIONS_V3.md` e fica pré-especificado.
-7. **Nome do prior refeito do Taquari:** pedir à IA-2 que grave o raster refeito (só fontes ≤ 06/05/2024) como `MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif`; os jobs de calibração usam esse nome.
+1. **Conferir visualmente** as figuras do prior na grade de 25 m: `results_v3/prior/taquari_prior_check.png` e `poa_prior_check.png` (prior sobre a imagem pré-evento).
+2. **Decidir a terceira área e o evento externo** (a IA-2 recomenda Canoas e Valência/EMSR773).
+3. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta); depois vira a §2 do `DECISIONS_V3.md`.
+4. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
+5. Disparar no Colab o `g1_legacy_dinov2` e, em seguida, a fila (`colab/README.md`).
+
+Resolvido: prior do Taquari (a IA-2 confirmou que o produto de 07/05 nunca entrou; o arquivo canônico está no Drive e aqui); rasters baixados para `data_v3/prior/` (manifesto OK).
 
 ## Gates
 
 | Gate | Situação | Número |
 |---|---|---|
-| G0 (dados) | relatório recebido; **aprovado com condições** (prior do Taquari a refazer) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
+| G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
 | G1 preliminar | spec e job prontos; aguardando a IA-2 rodar `g1_legacy_dinov2` | referência hand: S1 0,409, S2 0,269 |
 | G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
 | G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |

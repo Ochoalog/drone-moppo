@@ -1,0 +1,24 @@
+{
+ "taquari": {
+  "source": "Copernicus EMS EMSR720 (fontes ≤ 06/05/2024)",
+  "file": "taquari_prior_emsr720_le0605_10m.tif",
+  "grid": [
+   927,
+   283
+  ],
+  "mean_flooded_fraction": 0.08432140201330185,
+  "cells_ge_0_5": 22071,
+  "flooded_km2_equivalent": 13.825600624084473
+ },
+ "poa": {
+  "source": "Copernicus EMS EMSN194 (fontes 08/05/2024; prior 'otimista')",
+  "file": "porto_alegre_prior_emsn194_10m.tif",
+  "grid": [
+   485,
+   384
+  ],
+  "mean_flooded_fraction": 0.32572638988494873,
+  "cells_ge_0_5": 60629,
+  "flooded_km2_equivalent": 37.91455078125
+ }
+}
