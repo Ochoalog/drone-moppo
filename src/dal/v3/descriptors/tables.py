@@ -54,17 +54,28 @@ def project_altitude(map_raw: np.ndarray, obs_raw: np.ndarray, train_cells: np.n
 
 
 def build_tables(map_raw: dict[int, np.ndarray], obs_raw: dict[int, np.ndarray], map_ok: np.ndarray,
-                 obs_ok: np.ndarray, rows_allowed: np.ndarray, train_rows: np.ndarray, beta: dict[int, float],
+                 obs_ok: np.ndarray, rows_allowed: np.ndarray, train_rows: np.ndarray | None, beta: dict[int, float],
                  change_prior: np.ndarray | None = None, extra_channels: dict | None = None,
-                 dim: int = PCA_DIM) -> tuple[PerceptionTables, dict[int, PCAFit]]:
-    """`rows_allowed` = linhas onde as janelas podem ficar (treino ou teste); a PCA usa só `train_rows`."""
+                 dim: int = PCA_DIM, pca_fits: dict[int, PCAFit] | None = None
+                 ) -> tuple[PerceptionTables, dict[int, PCAFit]]:
+    """`rows_allowed` = linhas onde as janelas podem ficar (treino ou teste).
+
+    A PCA é ajustada só em `train_rows`; ou, num local zero-shot, vem pronta em `pca_fits` (ajustada no
+    treino do Taquari) e é só aplicada, sem olhar o local de teste.
+    """
     n_rows, n_cols = map_ok.shape
-    train_cells = cells_in_rows(train_rows, n_cols)
-    train_cells = train_cells[(map_ok & obs_ok).ravel()[train_cells]]
     maps, obs, fits = {}, {}, {}
+    if pca_fits is None:
+        train_cells = cells_in_rows(train_rows, n_cols)
+        train_cells = train_cells[(map_ok & obs_ok).ravel()[train_cells]]
     for altitude in map_raw:
-        maps[altitude], obs[altitude], fits[altitude] = project_altitude(map_raw[altitude], obs_raw[altitude],
-                                                                          train_cells, dim)
+        if pca_fits is None:
+            maps[altitude], obs[altitude], fits[altitude] = project_altitude(map_raw[altitude], obs_raw[altitude],
+                                                                              train_cells, dim)
+        else:
+            fits[altitude] = pca_fits[altitude]
+            maps[altitude] = fits[altitude].transform(map_raw[altitude])
+            obs[altitude] = np.stack([fits[altitude].transform(o) for o in obs_raw[altitude]])
     tables = PerceptionTables(map_desc=maps, obs_desc=obs, map_ok=map_ok, obs_ok=obs_ok, beta=beta,
                               grid_shape=(n_rows, n_cols), rows_allowed=rows_allowed, change_prior=change_prior,
                               extra_channels=extra_channels or {})
