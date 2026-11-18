@@ -35,8 +35,12 @@ GEM_P = 3.0
 class DinoV2Extractor:
     """DINOv2 (torch.hub) com GeM sobre os tokens de patch e o token CLS; entrada redimensionada para input_px."""
 
-    def __init__(self, model_name: str, input_px: int, device: str, model=None):
+    def __init__(self, model_name: str, input_px: int, device: str, model=None, weights: str | None = None):
         self.model = model if model is not None else torch.hub.load("facebookresearch/dinov2", model_name)
+        if weights:
+            # Pesos do ajuste fino contrastivo (só o backbone; a cabeça de projeção não entra no descritor).
+            state = torch.load(weights, map_location="cpu")
+            self.model.load_state_dict(state.get("backbone", state), strict=False)
         self.model = self.model.eval().to(device)
         self.input_px, self.device = input_px, device
         self.mean = torch.tensor(IMAGENET_MEAN, device=device).view(1, 3, 1, 1)
@@ -55,6 +59,21 @@ class DinoV2Extractor:
         gem = patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P)
         cls = features["x_norm_clstoken"].float()
         return {"gem": gem.cpu().numpy().astype(np.float16), "cls": cls.cpu().numpy().astype(np.float16)}
+
+
+# Detector de nuvem da v1 (claro e pouco saturado), sem a morfologia: só a fração por recorte.
+CLOUD_V_MIN, CLOUD_S_MAX = 200, 40
+
+
+def crop_quality(crops: torch.Tensor) -> dict[str, np.ndarray]:
+    """Fração de pixels válidos (dado ≠ 0) e de pixels de nuvem por recorte, para as máscaras na grade v3."""
+    x = crops.float()
+    valid = (x.amax(dim=-1) > 3).float()
+    value = x.amax(dim=-1)
+    saturation = torch.where(value > 0, (value - x.amin(dim=-1)) / value.clamp(min=1) * 255, torch.zeros_like(value))
+    cloud = ((value > CLOUD_V_MIN) & (saturation < CLOUD_S_MAX)).float()
+    return {"valid_frac": valid.mean(dim=(1, 2)).cpu().numpy()[:, None].astype(np.float16),
+            "cloud_frac": cloud.mean(dim=(1, 2)).cpu().numpy()[:, None].astype(np.float16)}
 
 
 def hand_extractor(crops: torch.Tensor) -> dict[str, np.ndarray]:
@@ -92,11 +111,12 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
         source_reader=read_source) -> dict:
     """Executa (ou retoma) a extração; devolve as métricas gravadas no DONE.json."""
     started_at, started = now_iso(), time.time()
-    spec = pd.read_parquet(ROOT / config["spec"])
+    spec = pd.read_parquet(Path(config["spec"]) if Path(config["spec"]).is_absolute() else ROOT / config["spec"])
     work_dir = out_root / config["output_dir"]
     work_dir.mkdir(parents=True, exist_ok=True)
     chunk_rows = int(config.get("chunk_rows", 20000))
-    extractor = extractor or DinoV2Extractor(config["model"], int(config.get("input_px", 224)), device)
+    extractor = extractor or DinoV2Extractor(config["model"], int(config.get("input_px", 224)), device,
+                                             weights=config.get("weights"))
     also_hand = bool(config.get("also_hand", False))
     margin_m = float(config.get("margin_m", 50.0))
     batch_size = int(config.get("batch_size", 256))
@@ -117,7 +137,7 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
             for start in range(0, len(rows), batch_size):
                 batch_rows = rows.iloc[start:start + batch_size]
                 crops = render_crops(image_t, georef, batch_from_spec(batch_rows, device))
-                parts = extractor(crops)
+                parts = extractor(crops) | crop_quality(crops)
                 if also_hand:
                     parts |= hand_extractor(crops)
                 for name, values in parts.items():

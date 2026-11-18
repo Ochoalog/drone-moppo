@@ -1,2 +1,8 @@
 job_id,notebook,config_path,depends_on,est_gpu_min,priority,status
 g1_legacy_dinov2,colab/02_dinov2_features.ipynb,configs_v3/jobs/g1_legacy_dinov2.yaml,,45,1,queued
+v3_extract_taquari_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_taquari_100m.yaml,,70,2,queued
+v3_extract_taquari_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_taquari_60m.yaml,,70,3,queued
+v3_extract_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_taquari_150m.yaml,,70,4,queued
+v3_extract_poa_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_poa_100m.yaml,,50,5,queued
+v3_extract_poa_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_poa_60m.yaml,,50,6,queued
+v3_extract_poa_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_poa_150m.yaml,,50,7,queued

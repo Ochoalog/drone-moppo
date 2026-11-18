@@ -1,0 +1,7 @@
+# Notebook 01: specs v3 (conferidas pelo manifesto) e DINOv2 zero-shot (GeM e CLS) + qualidade dos recortes.
+site: poa
+altitudes: [100]
+model: dinov2_vits14
+input_px: 224
+batch_size: 256
+chunk_rows: 50000

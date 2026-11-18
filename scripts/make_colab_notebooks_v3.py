@@ -60,6 +60,12 @@ def job_notebook(title: str, description: str, module_command: str, default_job:
 def main() -> None:
     notebooks = {
         "00_setup.ipynb": new_notebook(cells=SETUP_CELLS),
+        "01_data_and_crops.ipynb": job_notebook(
+            "01 · Specs v3 e descritores multialtitude",
+            "Gera as specs v3 do local (grade de 25 m, K = 4 variantes) com `dal.v3.sensor.specs` e **confere os hashes "
+            "contra `colab/specs/v3_manifest.json`** (se não baterem, o job para). Depois extrai DINOv2 (GeM e CLS) e a "
+            "qualidade de cada recorte (fração válida e de nuvem) em `MyDrive/drone_v3/features/v3/<modelo>/<spec>/`.",
+            "dal.v3.descriptors.extract_site", "v3_extract_taquari_100m"),
         "02_dinov2_features.ipynb": job_notebook(
             "02 · Descritores DINOv2 a partir de uma spec",
             "Renderiza os recortes da spec na GPU (`dal.v3.sensor.render`), extrai DINOv2 (GeM e CLS) e, se a config "

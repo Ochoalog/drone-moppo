@@ -35,7 +35,7 @@ A raiz do repositório GitHub **é** a pasta `drone_active_loc/`: os caminhos ab
 | Resultados pequenos (≤ 5 MB) | branch `colab/results`, `colab_out/<job_id>/` + `DONE.json` |
 | Diário | `colab_out/LOG.md` na branch `colab/results` |
 
-`DONE.json`: `job_id`, `git_commit`, `config_hash`, `gpu_minutes`, `started_at`, `finished_at`, `status` (`OK`, `INVALID_GATE` ou `FAILED`), `reason`, `metrics`. A IA-1 confere se o commit e o hash da config batem com a fila (`dal.v3.reporting.colab_io.validate_done`).
+`DONE.json`: `job_id`, `git_commit`, `config_hash`, `gpu_minutes`, `started_at`, `finished_at`, `status` (**só** `OK`, `INVALID_GATE` ou `FAILED`), `reason`, `metrics` (**com esse nome**). Use sempre `dal.v3.reporting.colab_io.write_done`, que já grava no formato certo. Tarefas fora da fila (como o G0) também usam esse formato, com `config_hash` do YAML da tarefa. A IA-1 confere se o commit e o hash da config batem com a fila (`dal.v3.reporting.colab_io.validate_done`).
 
 ## Retomar um job
 
@@ -45,4 +45,5 @@ Os jobs gravam blocos no Drive e pulam os que já existem. Se a sessão cair: ro
 
 | Job | Notebook | O que faz |
 |---|---|---|
+| `v3_extract_<local>_<h>m` | `01_data_and_crops.ipynb` | Gera as specs v3 do local e da altitude (confere o manifesto de hashes) e extrai DINOv2 zero-shot (GeM e CLS) + fração válida e de nuvem por recorte. Saída: `MyDrive/drone_v3/features/v3/dinov2_vits14/<spec>/` |
 | `g1_legacy_dinov2` | `02_dinov2_features.ipynb` | DINOv2 ViT-S/14 (GeM e CLS) e o hand da v1 nos mesmos pixels, sobre os recortes exatos da v1 (`specs/legacy_50m.parquet`, 323.595 recortes, overview 1,22 m/px). Saída: `MyDrive/drone_v3/features/legacy_50m/dinov2_vits14/{gem,cls,hand}.npy` |
