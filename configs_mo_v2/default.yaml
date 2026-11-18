@@ -1,0 +1,11 @@
+# MOPPO v2 (retreino justo, §2.3 do PLANO_DESENVOLVIMENTO.md v2). Herda a config v1 e muda só o que está
+# registrado no DECISIONS_MO_V2.md.
+base: ../configs_mo/default.yaml
+
+mo:
+  # A7: autoreset SAME_STEP (corrige a transição espúria do NEXT_STEP).
+  autoreset_same_step: true
+
+ppo:
+  # Mesmo orçamento da PPO da PoC (1,4M passos por execução).
+  total_timesteps: 1400000

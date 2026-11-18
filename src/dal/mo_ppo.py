@@ -249,6 +249,19 @@ def compute_losses(
     return total_loss, pg_loss, v_loss, ent_loss
 
 
+def extract_reward_vectors(infos: dict) -> np.ndarray:
+    """Recompensas vetoriais (n_envs, M) de um passo do ambiente vetorizado.
+
+    No autoreset SAME_STEP, o `info` de um ambiente que terminou é o do reset (r_vec = 0), e a
+    recompensa verdadeira do passo terminal fica em `final_info`. No NEXT_STEP, `r_vec` já é o do passo.
+    """
+    rewards = np.array(infos["r_vec"], dtype=np.float32, copy=True)
+    if "final_info" in infos:
+        finished = np.asarray(infos["_final_info"], dtype=bool)
+        rewards[finished] = np.asarray(infos["final_info"]["r_vec"], dtype=np.float32)[finished]
+    return rewards
+
+
 # ============================================================================
 # Fábrica de ambientes para o AsyncVectorEnv
 # ============================================================================
@@ -504,7 +517,12 @@ def train_moppo(
         )
         for i in range(n_envs)
     ]
-    envs = gym.vector.AsyncVectorEnv(env_fns)
+    # v1 usou o padrão do gymnasium 1.x (NEXT_STEP): depois de cada fim de episódio, o step seguinte só
+    # reseta, ignora a ação e entra no buffer como uma transição espúria. A v2 usa SAME_STEP
+    # (`mo.autoreset_same_step: true`), como o SB3 da PoC. Ver DECISIONS_MO_V2.md, A7.
+    same_step = bool(cfg.get("mo", {}).get("autoreset_same_step", False))
+    autoreset_mode = gym.vector.AutoresetMode.SAME_STEP if same_step else gym.vector.AutoresetMode.NEXT_STEP
+    envs = gym.vector.AsyncVectorEnv(env_fns, autoreset_mode=autoreset_mode)
 
     # Dimensões do espaço de observação
     c_in, h, w = envs.single_observation_space["map"].shape
@@ -583,7 +601,7 @@ def train_moppo(
 
             next_obs, reward, terminations, truncations, infos = envs.step(action.cpu().numpy())
             next_done = torch.from_numpy((terminations | truncations).astype(np.float32))
-            rewards_vec[step] = torch.from_numpy(infos["r_vec"]).float()
+            rewards_vec[step] = torch.from_numpy(extract_reward_vectors(infos))
 
             next_obs_map = torch.from_numpy(next_obs["map"]).float()
             next_obs_vec = torch.from_numpy(next_obs["vec"]).float()
