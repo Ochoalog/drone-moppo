@@ -112,7 +112,17 @@ Consequências:
 - o hipervolume e o EUM podem estar inflados ou mal interpretados;
 - a fronteira de Pareto da MO pode, na prática, ser um único ponto.
 
-Investigação (responsável: _____, até 20/11):
+**Diagnóstico (18/11), `scripts/diagnose_mo_conditioning.py`:**
+- **O gate de condicionamento falhou aos 25% do treino** (`fast` = `safe` = 1096,3 m, IC [0, 0]; ver `runs_mo/moppo_S2_hand_s0/gate_check_25pct.json`) e o pipeline seguiu mesmo assim.
+- **O `w` chega à rede corretamente** na avaliação (`mo_eval.run_episode` → `reset(options={"w": w})`).
+- **A escala dos objetivos não explica o colapso:** o desvio do retorno de custo (2,55) é o maior, e info, sucesso e risco ficam em ~0,4–0,5.
+- **A distribuição de ações muda com `w`** (variação total média de até 0,26 e máxima de 0,33 entre `only_info` e `only_cost`), **mas a ação de maior probabilidade não muda**: o argmax coincide em 100% dos estados entre `unif`, `fast` e `safe`, e em 89% para `only_cost`.
+- **Conclusão:** a avaliação com argmax (`deterministic=True`) apaga o condicionamento. A política foi treinada estocástica (entropia de ~1,4 nats, máximo de 2,08), então a avaliação fiel ao treino é a **amostrada**.
+- **Correção:** `deterministic=False` em `mo_eval`, com semente do torch fixada por episódio (pareamento entre os `w`). A reavaliação completa sai em `results_mo/stochastic/` (`scripts/evaluate_mo_stochastic.py`). Os resultados originais (argmax) ficam preservados para comparação no artigo.
+- **Melhoria no pipeline:** se o gate de condicionamento falhar, o treino precisa parar ou ficar marcado como inválido, nunca seguir em silêncio.
+- **Atenção na leitura do hipervolume e do EUM:** o conjunto `fixed_ppo` tem só 2 pontos, e os PPOs da PoC (que dominam em sucesso) ficam fora dele.
+
+Roteiro original da investigação (concluído):
 1. Conferir em `mo_eval.py` se o `w` do preset está mesmo no vetor de observação na inferência, e não o `default_w`.
 2. Conferir se a avaliação determinística (argmax) não está apagando diferenças pequenas nos logits: comparar as distribuições de ação para `w` diferentes no mesmo estado.
 3. Teste de sensibilidade: o gradiente da saída do ator em relação a `w` deve ser diferente de zero.
@@ -126,9 +136,9 @@ Desfechos possíveis:
 
 O `REPORT.md` dá 70,7% de sucesso para o PPO em S2 (1000 episódios × 3 seeds). O `REPORT_MO.md` dá 81,0%, 68,3% e 72,3% por seed (300 episódios, com outro protocolo). O artigo precisa de **uma tabela canônica** que diga claramente o *n* e o protocolo de cada número.
 
-### 5.3 Validar com o professor
+### 5.3 Validar com o professor ✅
 
-Levar ao professor o escopo final e as hipóteses H1–H7. O enunciado exige essa validação.
+Escopo validado pelo professor (confirmado em 18/11/2026).
 
 ---
 
@@ -140,7 +150,7 @@ Levar ao professor o escopo final e as hipóteses H1–H7. O enunciado exige ess
 |---|---|---|
 | **Qua 18/11** | Código no GitHub (`main` + branches + tags); planos publicados; papéis definidos | Vitor |
 | **Qui 19/11** | `CONTRIBUTING.md`, ruff configurado, linha de base golden (§4); início da investigação 5.1 | A, B |
-| **Qui 19 – Sex 20/11** | Investigação 5.1 concluída e decisão tomada: corrigir e reavaliar, retreinar à noite, ou relatar como negativo. Validação com o professor | A + professor |
+| **Qua 18 – Qui 19/11** | ✅ Investigação 5.1 concluída: reavaliação estocástica em andamento. ✅ Escopo validado | A |
 | **Sex 20 – Sáb 21/11** | Refatoração em PRs pequenos, na ordem: (1) renomeações para inglês; (2) comentários e docstrings em português; (3) mover `presentation/` e `legacy/`; (4) subpacotes; (5) quebrar funções longas do núcleo | B, C (revisão cruzada) |
 | **Sáb 21/11** | **Congelamento dos resultados**: tag `results-final`, tabelas e figuras exportadas para `paper/figures/` | A |
 | **Sáb 21 – Seg 23/11** | Rascunho completo do artigo (ver `PLANO_ARTIGO.md`) | todos, por seção |

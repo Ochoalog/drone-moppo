@@ -33,3 +33,14 @@ markers = ["data: requires downloaded data in data/ (skipped otherwise)"]
 testpaths = ["tests"]
 # The host shell exports ROS PYTHONPATH entries whose pytest plugins fail to import.
 addopts = "-p no:launch_testing -p no:launch_ros -p no:ament_copyright -p no:ament_xmllint -p no:ament_pep257 -p no:ament_flake8 -p no:ament_lint"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+# E/F: erros básicos; I: imports ordenados; N: nomes PEP 8; B: bugs comuns; UP: sintaxe moderna.
+select = ["E", "F", "I", "N", "B", "UP"]
+# N803/N806: permite nomes matemáticos curtos em maiúscula (H, W, M) dentro de fórmulas.
+ignore = ["N803", "N806"]
