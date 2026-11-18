@@ -16,10 +16,13 @@ Decisões de implementação para a extensão multiobjetivo de `drone_active_loc
 | 10 | Verificação pareada com sementes fixadas `2024 + episode_idx`. | Garante que todas as políticas enfrentam exatamente a mesma sequência de janelas, posições iniciais e ruídos estocásticos de dinâmica. | Amostragem independente por método (aumentaria variância de comparação). |
 | 11 | Arquitetura de rede com projeções balanceadas (128 CNN + 128 vetor) e injeção direta de $w$ normalizado nas cabeças de ator e crítico. | Evita que $w$ seja ofuscado pelos 1024 canais da CNN em um MLP único (onde $w$ representava apenas 0,36% da entrada), permitindo que a política condicione fortemente em $w$ e cumpra o gate de condicionamento (§8) e H6. | Alimentar 1024 + 69 diretamente em uma única camada densa (onde $w$ é ignorado pela política). |
 | 12 | Apresentação executiva em vídeo no estilo PPTX (`poa_ilhas_presentation_deck.mp4` / `.gif`) integrando fundamentação (Por quê / Como), visualização da ilha submersa (câmera vs mapa pré-enchente), tabela quantitativa pareada de 300 episódios e voo comparativo dinâmico das 3 políticas com nuvem de pontos da crença. | Permite comunicação direta, autoexplicativa e executiva do fenômeno do choque morfológico e da superioridade do MOPPO com memória sobre baselines geométricos e modelos de objetivo único. | Gerar apenas gráficos estáticos avulsos ou slides em PDF sem dinamismo de telemetria e nuvem de partículas. |
+| 12-errata | **Errata (18/11/2026)** à decisão nº 12, que fica acima como registro. A justificativa fala em "superioridade do MOPPO com memória sobre baselines geométricos e modelos de objetivo único", o que os dados contradizem: no Taquari S2, a MO tem 60,0% de sucesso contra 73,0% da reta e 81,0% / 68,3% / 72,3% da PPO da PoC; nas ilhas, 49,0% contra 67,7% e 71,3%. O gate de condicionamento falhou aos 25% do treino. Os vídeos-deck não devem ser usados até serem regenerados com os geradores corrigidos. Ver `REPORT_MO_ERRATA.md` e `DECISIONS_MO_V2.md`. | — | — |
 
 ---
 
 ## Critérios das Hipóteses (Pré-registrados antes da avaliação completa, §7)
+
+> **Nota (18/11/2026):** leia "pré-especificados": os critérios foram escritos antes da avaliação, mas não houve registro público. Vereditos recalculados por estes critérios em `REPORT_MO_ERRATA.md`.
 
 Os critérios a seguir foram fixados antes de rodar os experimentos completos da §5.4 e §5.5:
 

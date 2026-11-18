@@ -29,6 +29,17 @@ EPISODE_SEEDS = range(2024, 2030)
 MO_MODEL_PATH = ROOT / "runs_mo" / "moppo_S2_hand_s0" / "final_model.pt"
 
 
+@pytest.fixture(autouse=True)
+def deterministic_torch():
+    """Um thread e algoritmos determinísticos: o golden precisa bater em execuções seguidas (§4.4, item 2)."""
+    previous_threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+    torch.use_deterministic_algorithms(True)
+    yield
+    torch.use_deterministic_algorithms(False)
+    torch.set_num_threads(previous_threads)
+
+
 def summarize_episode(method: str, seed: int, episode: Episode) -> dict:
     """Extrai as métricas de um episódio terminado, no mesmo formato dos CSVs de avaliação."""
     result = episode.last
@@ -102,7 +113,6 @@ def test_golden_moppo_policy(deterministic: bool):
     from dal.mo_env import make_mo_env
     from dal.mo_eval import load_mo_model, run_episode
 
-    torch.set_num_threads(1)
     config = load_config("configs_mo/default.yaml")
     env = make_mo_env("hand", "S2", config, split="test", memory=True)
     net = load_mo_model(MO_MODEL_PATH, memory=True)

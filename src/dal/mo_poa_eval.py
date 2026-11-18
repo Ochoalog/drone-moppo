@@ -65,18 +65,20 @@ def evaluate_poa_p1(
     out_csv: Path | None = None,
     deterministic: bool = True,
     include_references: bool = True,
+    episodes_csv: Path | None = None,
 ) -> pd.DataFrame:
     """Roda a avaliação zero-shot pareada em POA P1, nas regiões centro e ilhas.
 
-    `deterministic=False` amostra as ações das políticas MO; a semente do torch é fixada pelo seed
-    do episódio, então os presets continuam pareados. `include_references=False` pula a reta e o
-    PPO-S2 (que não dependem dessa opção e já estão em results_mo/poa_summary.csv).
+    `deterministic` vale para **todas** as políticas aprendidas (MO e PPO-S2), como manda a regra A2
+    do DECISIONS_MO_V2.md; com `False`, a semente do torch é fixada pelo seed do episódio
+    (números aleatórios comuns). `include_references=False` pula só a reta, que não é aprendida e
+    não depende do modo. `episodes_csv` grava uma linha por episódio (para ICs pareados).
     """
     cfg_poa = load_config("configs_poa/poa.yaml")
     net = load_mo_model(mo_model_path, memory=True)
 
     ppo_s2_path = ROOT / "runs/overnight/S2_hand_s0/final_model.zip"
-    pol_ppo_s2 = PPOPolicy(str(ppo_s2_path), deterministic=True) if ppo_s2_path.exists() else None
+    pol_ppo_s2 = PPOPolicy(str(ppo_s2_path), deterministic=deterministic) if ppo_s2_path.exists() else None
     pol_straight = StraightPolicy()
 
     presets = {
@@ -87,6 +89,7 @@ def evaluate_poa_p1(
 
     regions = ["centro", "ilhas"]
     rows = []
+    episode_rows = []
 
     for region in regions:
         print(f"\n[poa_eval] Evaluating region {region} (P1, zeroshot, {episodes} episodes)...")
@@ -101,8 +104,8 @@ def evaluate_poa_p1(
         }
         if include_references:
             policies["straight"] = pol_straight
-            if pol_ppo_s2:
-                policies["ppo_s2"] = pol_ppo_s2
+        if pol_ppo_s2:
+            policies["ppo_s2"] = pol_ppo_s2
 
         for method_name, pol in policies.items():
             t0 = time.time()
@@ -129,6 +132,13 @@ def evaluate_poa_p1(
                 flocs.append(float(r.false_loc))
                 dists.append(float(ep.distance_m))
                 steps.append(int(ep.t))
+                episode_rows.append({
+                    "region": region, "method": method_name, "episode": i, "seed": ep_seed,
+                    "mode": "argmax" if deterministic else "sampled",
+                    "window_r0": int(ep.r0), "window_c0": int(ep.c0),
+                    "success": bool(r.success), "false_loc": bool(r.false_loc),
+                    "steps": int(ep.t), "distance_m": float(ep.distance_m),
+                })
 
             s_lo, s_hi = boot_ci(succs)
             f_lo, f_hi = boot_ci(flocs)
@@ -160,6 +170,9 @@ def evaluate_poa_p1(
             )
 
     df_res = pd.DataFrame(rows)
+    if episodes_csv:
+        episodes_csv.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(episode_rows).to_csv(episodes_csv, index=False)
     if out_csv:
         out_csv.parent.mkdir(parents=True, exist_ok=True)
         df_res.to_csv(out_csv, index=False)
@@ -169,20 +182,24 @@ def evaluate_poa_p1(
 
 
 def main() -> None:
-    """CLI: `--stochastic` reavalia só as políticas MO, com amostragem, em results_mo/stochastic/."""
+    """CLI. `--mode` escolhe argmax ou amostrado; `--out` grava resumo e episódios (padrão: saída v1)."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Avaliação zero-shot do MOPPO em Porto Alegre (H7)")
-    parser.add_argument("--stochastic", action="store_true", help="amostra as ações das políticas MO")
+    parser.add_argument("--mode", choices=["argmax", "sampled"], default="argmax")
     parser.add_argument("--episodes", type=int, default=300)
+    parser.add_argument("--out", help="pasta de saída; sem ela, grava o resumo v1 em results_mo/poa_summary.csv")
     args = parser.parse_args()
 
     mo_model = ROOT / "runs_mo/moppo_S2_hand_s0/final_model.pt"
-    if args.stochastic:
-        out = ROOT / "results_mo/stochastic/poa_summary.csv"
-        evaluate_poa_p1(mo_model, episodes=args.episodes, out_csv=out, deterministic=False, include_references=False)
-    else:
+    if args.out is None:
         evaluate_poa_p1(mo_model, episodes=args.episodes, out_csv=ROOT / "results_mo/poa_summary.csv")
+        return
+    out_dir = ROOT / args.out
+    evaluate_poa_p1(
+        mo_model, episodes=args.episodes, deterministic=args.mode == "argmax",
+        out_csv=out_dir / f"poa_summary_{args.mode}.csv", episodes_csv=out_dir / f"poa_episodes_{args.mode}.csv",
+    )
 
 
 if __name__ == "__main__":

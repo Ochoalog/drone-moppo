@@ -279,7 +279,7 @@ def build_slide3_architecture(prs):
                 "Permite adaptar o drone em tempo de voo sem retreinar:",
                 "  • Preset Rápido: minimiza a bateria gasta.",
                 "  • Preset Seguro: aversão máxima a risco.",
-                "Supera modelos de peso fixo e domina a casca convexa da Fronteira de Pareto!",
+                "Na v1, o condicionamento em w não foi demonstrado (gate reprovado; ver errata).",
             ],
             C_PEACH
         ),
@@ -291,7 +291,7 @@ def build_slide3_architecture(prs):
                 "Armazena as últimas 8 ações em one-hot (64 dimensões) concatenadas à observação.",
                 "Quebra de Simetria Visual: Impede que o drone fique em círculos sobre água uniforme ou mata homogênea.",
                 "Incentiva a fuga ativa em direção à terra firme e rodovias estruturadas.",
-                "Multiplica o hipervolume da fronteira de Pareto em quase 300% (0.1529 → 0.4232)!",
+                "Efeito da memória no hipervolume: inconclusivo (1 seed, orçamentos diferentes).",
             ],
             C_GREEN
         ),
@@ -535,9 +535,9 @@ def build_slide6_results_table(prs):
 
     # Bottom Area: 3 Highlight Callout Cards (Width 3.75 in each)
     highlights = [
-        ("🔋 >50% de Economia de Voo", "Voou apenas 1019 m no Taquari e 1028 m em POA contra mais de 2.1 km da linha reta, poupando metade da bateria!", C_GREEN),
-        ("🛡️ Menor Risco de Acidente", "O MOPPO Seguro alcançou a menor taxa de falsa localização nas ilhas (19.7% vs 22.0% da reta). Prefere admitir incerteza a errar!", C_CYAN),
-        ("📈 Ganho de ~300% em Hipervolume", "A memória curta de 8 ações elevou o hipervolume de 0.1529 para 0.4232, superando PPOs de peso fixo e dominando o Pareto!", C_PEACH),
+        ("🔋 Menos distância, mais erros", "MO: 1019 m em média no Taquari contra 2384 m da reta, mas com 25,0% de localização falsa contra 10,0% (média sobre todos os episódios).", C_GREEN),
+        ("🛡️ H7 não suportada", "Localização falsa do safe nas ilhas: 19,7% contra 21,3% da PPO-S2; o IC da diferença inclui 0.", C_CYAN),
+        ("📈 Hipervolume: inconclusivo", "0.1529 → 0.4232 com memória, mas confundido por orçamento (348k × 246k), 1 seed e conjuntos de tamanhos diferentes.", C_PEACH),
     ]
 
     for i, (hl_t, hl_d, hl_col) in enumerate(highlights):
@@ -585,8 +585,8 @@ def build_slide7_conclusions(prs):
             C_PEACH
         ),
         (
-            "3. Memória Curta (ANL) e Generalização Zero-Shot Comprovadas",
-            "O buffer FIFO de 8 ações quebrou simetrias visuais em ambientes homogêneos, triplicando o hipervolume de Pareto. Mesmo treinado a 120 km de distância (Taquari), o modelo transferiu-se diretamente para Porto Alegre em plena cheia histórica, provando a robustez da representação geométrica aprendida.",
+            "3. Memória Curta (ANL) e Transferência Zero-Shot",
+            "O efeito da memória de 8 ações é inconclusivo na v1 (1 seed, orçamentos diferentes). As políticas treinadas no Taquari rodam em Porto Alegre sem retreino; a MO perde para a PPO-S2 e para a reta nas ilhas (49,0% × 71,3% × 67,7% de sucesso).",
             C_GREEN
         ),
     ]

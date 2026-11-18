@@ -407,7 +407,7 @@ def build_report_markdown(
     out_file: Path,
 ) -> str:
     """Monta o relatório REPORT_MO.md completo."""
-    # Vereditos de H4 a H7 estritamente pelas regras pré-registradas na §7
+    # Vereditos de H4 a H7 estritamente pelas regras pré-especificadas na §7
 
     # Veredito de H4: MO(w_k) vs PPO de peso fixo(w_k)
     h4_details = []
@@ -491,9 +491,9 @@ def build_report_markdown(
         "",
         "## 1. Resumo dos Resultados e Vereditos das Hipóteses",
         "",
-        "Os critérios foram pré-registrados em `DECISIONS_MO.md` antes da execução dos experimentos:",
+        "Os critérios foram pré-especificados em `DECISIONS_MO.md` antes da execução dos experimentos (ver `REPORT_MO_ERRATA.md`):",
         "",
-        "| Hipótese | Descrição | Critério Pré-registrado | Veredito |",
+        "| Hipótese | Descrição | Critério pré-especificado | Veredito |",
         "|---|---|---|---|",
         f"| **H4** | Uma política no lugar de várias | IC 95% do retorno escalarizado r · w_k contém 0 ou favorece MO para cada preset | **{h4_verdict}** |",
         f"| **H5** | Dominar a linha reta (Taquari S2) | Limite inferior de sucesso >= -0.03, falsa loc <= 0, distância < 0 | **{h5_verdict}** |",
@@ -501,7 +501,7 @@ def build_report_markdown(
         f"| **H7** | Porto Alegre zero-shot (ilhas) | Localização falsa de w_seguro nas ilhas com IC da diferença < 0 contra PPO-S2 | **{h7_verdict}** |",
         "",
         "### Detalhamento dos Vereditos:",
-        "- **H4:** A política multiobjetivo única superou o desempenho dos PPOs especializados treinados com peso fixo: no preset rápido ($w_{\\mathrm{rápido}}$), o retorno escalarizado da MO foi favorável contra o PPO fixo rápido (sucesso 60.0% vs 55.7%, falsa loc 25.0% vs 30.3%, distância 1019.7 m vs 1246.6 m); no preset seguro ($w_{\\mathrm{seguro}}$), a MO também superou o PPO fixo seguro (sucesso 60.0% vs 49.7%, falsa loc 25.0% vs 27.0%, distância 1019.7 m vs 1261.5 m). O critério pré-registrado foi plenamente atendido.",
+        f"- **H4:** veredito calculado = **{h4_verdict}**. Na v1, esta linha era texto fixo com números da execução; ver `REPORT_MO_ERRATA.md` (H4 não avaliável: gate de condicionamento reprovado e orçamentos diferentes).",
         f"- **H5:** A linha reta no Taquari S2 voa em média {d_straight:.1f} m com {s_straight*100:.1f}% de sucesso e {f_straight*100:.1f}% de falsa localização. Embora a política MO reduza a distância em 57% (1019.7 m vs 2384.4 m) com apenas 20 passos medianos (vs 34.5 da reta), o sucesso alcançado (60.0% [54.7%, 65.0%]) fica aquém do limite estrito pré-registrado de -0.03 contra a reta (73.0%), não satisfazendo H5.",
         "- **H6 (Adaptação de Comportamento):**",
         f"  - Correlação $w_{{\\mathrm{{risco}}}}$ x falsa localização: rho = {rho_r_str} (IC 95%: {ci_r_str}).",
@@ -530,7 +530,7 @@ def build_report_markdown(
         f"| **MOPPO (sem memória - ablação)** | {hv_nomem_str} | {eum_nomem_str} |",
         f"| **PPOs de Peso Fixo (conjunto)** | {hv_fixed_str} | {eum_fixed_str} |",
         "",
-        "A memória curta de ações (ANL) proporcionou um ganho de quase 3x no hipervolume (0.4232 vs 0.1529) e elevou o EUM de 0.5428 para 0.7542, demonstrando o papel crucial do histórico na desambiguação sob observabilidade parcial.",
+        "Hipervolume e EUM entre conjuntos de tamanhos diferentes e orçamentos diferentes não permitem conclusão sobre a memória (ver `REPORT_MO_ERRATA.md`).",
         "",
         "---",
         "",

@@ -133,10 +133,9 @@ def render_slide_how(w=1920, h=1080) -> np.ndarray:
         ("PILAR 3: MEMÓRIA CURTA DE AÇÕES (ANL)",
          "• Buffer FIFO com o histórico das últimas 8 ações.\n\n"
          "• Inspirado no Active Neural Localization (ICLR 2018).\n\n"
-         "• Resolve o problema de simetria da floresta:\n"
-         "  Impede que o drone fique em círculos na mata,\n"
-         "  incentivando a fuga ativa para o Rio Taquari!\n\n"
-         "• Multiplica o hipervolume da fronteira em ~300%!",
+         "• Hipótese: ajuda a quebrar a simetria da mata\n"
+         "  (não demonstrada: 1 seed, orçamentos diferentes).\n\n"
+         "• Efeito no hipervolume: inconclusivo (ver errata).",
          "#a6e3a1", 0.68),
     ]
 

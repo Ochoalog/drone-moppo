@@ -1,0 +1,33 @@
+{
+  "H1": {
+    "original_ci": "not supported",
+    "hierarchical_ci": "not supported"
+  },
+  "H2": {
+    "original_ci": "inconclusive",
+    "hierarchical_ci": "inconclusive"
+  },
+  "H3": {
+    "original_ci": "not supported",
+    "hierarchical_ci": "not supported"
+  },
+  "HP1": {
+    "original_ci": "inconclusive",
+    "hierarchical_ci": "inconclusive"
+  },
+  "HP2_HP3": "IC original mantido: contrastes entre regiões com bootstrap independente (ver docstring)",
+  "details_hierarchical": {
+    "H1": "Criterion (per scenario): PPO beats every simple baseline (paired-bootstrap CI of Δsuccess > 0, Wilcoxon p < 0.05 on penalized steps, PPO median not worse; against a baseline already at ≥ 0.98 success: Δsuccess ≥ −1 pp and significantly fewer steps) AND Δsuccess vs greedy ≥ −5 pp. Holds in 0/2 discriminative scenarios.\n\nExcluded as degenerate (all simple baselines ≥ 0.98 success in ≤ 2 steps): S0.\n\n- S1: PPO vs straight: Δsuccess = -0.087 [-0.139, -0.032], Wilcoxon p = 6.9e-06 → not better\n- S1: PPO vs lawnmower: Δsuccess = -0.057 [-0.111, -0.001], Wilcoxon p = 0.39 → not better\n- S1: PPO vs random: Δsuccess = +0.076 [+0.017, +0.136], Wilcoxon p = 3.4e-23 → better\n- S1: PPO vs greedy IG: Δsuccess = +0.073 [+0.019, +0.133] (competitive if ≥ −0.05: yes); decision time greedy/PPO = 36.2×\n- S2: PPO vs straight: Δsuccess = +0.007 [-0.069, +0.097], Wilcoxon p = 5.6e-06 → not better\n- S2: PPO vs lawnmower: Δsuccess = +0.136 [+0.058, +0.225], Wilcoxon p = 4.6e-29 → better\n- S2: PPO vs random: Δsuccess = +0.290 [+0.211, +0.379], Wilcoxon p = 3.8e-56 → better\n- S2: PPO vs greedy IG: Δsuccess = +0.173 [+0.094, +0.264] (competitive if ≥ −0.05: yes); decision time greedy/PPO = 41.2×",
+    "H2": "Criterion: the advantage increases monotonically S0 < S1 < S2 and the 95% CIs of S0 and S2 do not overlap (supported); monotone or S2 > S0 without separation (inconclusive); otherwise not supported.\n\n- S0: PPO − best simple baseline (straight) = +0.000 [+0.000, +0.000]\n- S1: PPO − best simple baseline (straight) = -0.087 [-0.139, -0.032]\n- S2: PPO − best simple baseline (straight) = +0.007 [-0.069, +0.097]",
+    "H3": "Criterion (per scenario): in the unseen south region PPO still beats the best simple baseline (CI > 0) and its gap to the training-free greedy reference shrinks by at most 5 pp relative to the north (training) region.\n\nExcluded as degenerate (all simple baselines ≥ 0.98 success in ≤ 2 steps): S0.\n\n- S1: PPO success north 0.917 → south 0.840; PPO − greedy: north +0.007, south +0.073 (relative drop -0.066); south PPO − straight = -0.087 [-0.139, -0.032] → does not\n- S2: PPO success north 0.701 → south 0.707; PPO − greedy: north +0.104, south +0.173 (relative drop -0.068); south PPO − straight = +0.007 [-0.069, +0.097] → does not",
+    "HP1": "- centro P1, PPO (Taquari S2) − straight: Δsuccess = -0.000 [-0.058, +0.058], Δdistance = -906 m [-1054, -765] → relation unclear\n- ilhas P1, PPO (Taquari S2) − straight: Δsuccess = -0.067 [-0.153, +0.023], Δdistance = -872 m [-1009, -734] → relation unclear\n- centro P1, PPO (Taquari S1) − straight: Δsuccess = -0.142 [-0.224, -0.057], Δdistance = -950 m [-1201, -645] → relation broken (secondary)\n- ilhas P1, PPO (Taquari S1) − straight: Δsuccess = -0.185 [-0.248, -0.121], Δdistance = -892 m [-1112, -627] → relation broken (secondary)\n- Taquari S1 (reference, test split): PPO − straight Δsuccess = -0.087 [-0.110, -0.063], distance PPO 656 m vs straight 807 m\n- Taquari S2 (reference, test split): PPO − straight Δsuccess = +0.007 [-0.027, +0.040], distance PPO 1243 m vs straight 2366 m"
+  },
+  "recorded_in_reports": {
+    "H1": "not supported",
+    "H2": "inconclusive",
+    "H3": "not supported",
+    "HP1": "inconclusive",
+    "HP2": "supported",
+    "HP3": "not supported"
+  }
+}

@@ -1,0 +1,15 @@
+
+[poa_eval] Evaluating region centro (P1, zeroshot, 300 episodes)...
+  [mo_safe] succ: 87.0%, floc: 1.0%, dist: 2001.5m (51.3s)
+  [mo_fast] succ: 87.0%, floc: 1.7%, dist: 2000.2m (48.4s)
+  [mo_unif] succ: 88.0%, floc: 0.7%, dist: 1965.8m (49.0s)
+  [straight] succ: 85.0%, floc: 2.7%, dist: 2338.5m (25.8s)
+  [ppo_s2] succ: 91.3%, floc: 1.0%, dist: 2016.1m (51.5s)
+
+[poa_eval] Evaluating region ilhas (P1, zeroshot, 300 episodes)...
+  [mo_safe] succ: 63.7%, floc: 22.3%, dist: 1905.7m (46.2s)
+  [mo_fast] succ: 62.3%, floc: 23.3%, dist: 1956.4m (49.0s)
+  [mo_unif] succ: 65.0%, floc: 24.0%, dist: 1774.5m (45.5s)
+  [straight] succ: 67.7%, floc: 22.0%, dist: 2160.2m (20.1s)
+  [ppo_s2] succ: 56.3%, floc: 22.7%, dist: 2123.4m (51.5s)
+[poa_eval] Saved summary to /storage/projects/RL_project_final/drone_active_loc/results_mo_v1fix/poa_summary_sampled.csv
