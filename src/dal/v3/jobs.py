@@ -61,7 +61,8 @@ def calibrate_job(job: dict, out_root: Path, device: str) -> dict:
     directory = work_dir(out_root, job["descriptor"], job["fold"])
     directory.mkdir(parents=True, exist_ok=True)
     prior = site_prior(job, "taquari")
-    request = DataRequest("taquari", job.get("scenario", "S2"), job["fold"], job["descriptor"], split="train")
+    request = DataRequest("taquari", job.get("scenario", "S2"), job["fold"], job["descriptor"], split="train",
+                          feature=job.get("feature", "gem"))
     tables, fits = load_tables(Path(out_root) / "features" / "v3", request, beta={h: 1.0 for h in specs.ALTITUDES_M},
                                change_prior=prior)
     save_pca(fits, directory)
@@ -92,7 +93,8 @@ def load_site_tables(job: dict, out_root: Path, site: str, scenario: str, split:
         calib = json.loads((directory / "calibration.json").read_text())
         beta = {int(h): float(b) for h, b in calib["beta"].items()}
         zero_shot = site != "taquari"
-        request = DataRequest(site, scenario, None if zero_shot else job["fold"], job["descriptor"], split=split)
+        request = DataRequest(site, scenario, None if zero_shot else job["fold"], job["descriptor"], split=split,
+                              feature=job.get("feature", "gem"))
         pca = load_pca(directory, specs.ALTITUDES_M) if zero_shot else None
         tables, _ = load_tables(Path(out_root) / "features" / "v3", request, beta, change_prior=site_prior(job, site),
                                 pca_fits=pca)

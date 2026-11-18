@@ -1,0 +1,13 @@
+# Notebook 01: specs v3 e DINOv2 com GeM espacial 4 × 4, comprimido por PCA 6144 → 128 ajustada por dobra
+# só na faixa de treino (Taquari); no zero-shot (Porto Alegre), aplica a PCA da dobra A do Taquari.
+site: taquari
+altitudes: [100]
+model: dinov2_vits14_grid4
+hub_model: dinov2_vits14
+input_px: 224
+batch_size: 128
+chunk_rows: 50000
+projection:
+  grid: 4
+  dim: 128
+  folds: [A, B, C]

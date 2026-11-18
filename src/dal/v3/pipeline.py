@@ -37,6 +37,14 @@ class DataRequest:
     descriptor: str = "dinov2_vits14"
     altitudes: tuple[int, ...] = specs.ALTITUDES_M
     split: str = "train"  # onde as janelas podem ficar: "train" ou "test"
+    # Arquivo do descritor: "gem" (GeM global) ou "pca_fold" (GeM em grade com a PCA da própria dobra;
+    # no zero-shot, a da dobra A do Taquari).
+    feature: str = "gem"
+
+    def feature_file(self) -> str:
+        if self.feature != "pca_fold":
+            return self.feature
+        return f"pca_{self.fold or 'A'}"
 
 
 def spec_dir(features_root: Path, descriptor: str, site: str, date: str, kind: str, altitude: int) -> Path:
@@ -54,9 +62,9 @@ def load_raw(features_root: Path, request: DataRequest, n_cells: int):
     map_raw, obs_raw = {}, {}
     for altitude in request.altitudes:
         map_raw[altitude] = np.asarray(_load(spec_dir(features_root, request.descriptor, request.site, map_date,
-                                                      "map", altitude), "gem"), np.float32)
+                                                      "map", altitude), request.feature_file()), np.float32)
         obs = np.asarray(_load(spec_dir(features_root, request.descriptor, request.site, site.obs_date, "obs",
-                                        altitude), "gem"), np.float32)
+                                        altitude), request.feature_file()), np.float32)
         obs_raw[altitude] = obs.reshape(-1, n_cells, obs.shape[-1])
     mask_altitude = MASK_ALTITUDE if MASK_ALTITUDE in request.altitudes else request.altitudes[0]
     quality = {}
