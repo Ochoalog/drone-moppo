@@ -20,6 +20,7 @@ dependencies = [
   "tqdm",
   "tensorboard",
   "threadpoolctl",
+  "pyarrow",
 ]
 
 [build-system]
