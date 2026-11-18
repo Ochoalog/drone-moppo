@@ -1,0 +1,48 @@
+{
+ "gate": "G2",
+ "episodes": 1000,
+ "device": "cpu",
+ "git_commit": "e4b65688d89a63dbf9cdb21637c854f462ce4539",
+ "config_hash": "f181878eca756120",
+ "baselines": {
+  "straight": {
+   "n": 1000,
+   "identical_trajectories": 1000,
+   "max_belief_abs_diff": 9.36979470844701e-07,
+   "success_cpu": 0.7,
+   "success_batched": 0.699999988079071,
+   "passed": true
+  },
+  "lawnmower": {
+   "n": 1000,
+   "identical_trajectories": 1000,
+   "max_belief_abs_diff": 5.191004506244212e-07,
+   "success_cpu": 0.571,
+   "success_batched": 0.5709999799728394,
+   "passed": true
+  }
+ },
+ "ppo": {
+  "seed0": {
+   "success_batched": 0.809,
+   "success_recorded": 0.809,
+   "episodes_identical_outcome": 1000
+  },
+  "seed1": {
+   "success_batched": 0.644,
+   "success_recorded": 0.644,
+   "episodes_identical_outcome": 1000
+  },
+  "seed2": {
+   "success_batched": 0.667,
+   "success_recorded": 0.667,
+   "episodes_identical_outcome": 1000
+  },
+  "pooled_success": 0.7066666666666667,
+  "report_ci": [
+   0.6342983142187913,
+   0.7964300738087357
+  ]
+ },
+ "passed": true
+}

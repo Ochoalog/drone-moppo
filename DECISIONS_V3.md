@@ -34,7 +34,7 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 |---|---|---|
 | G0 | dados (prior, terceira área, evento externo) | **relatório recebido** (branch `colab/results`, `colab_out/g0_data_check/`, 18/11 12:32). Aprovado **com condições** (ver §5): prior do Taquari a refazer só com fontes ≤ 06/05/2024; terceira área e evento externo aguardam decisão do Vitor (recomendação da IA-2: Canoas e Valência/EMSR773) |
 | G1 preliminar | DINOv2 zero-shot × hand (S1 0,409; S2 0,269) na spec `legacy_50m` | spec publicada; caminho de avaliação conferido (o hand da v1 dá 0,409 e 0,269 pelo `scripts/eval_retrieval_v3.py`) |
-| G2 | paridade do ambiente em lote | versão de 100 episódios **passou** (trajetórias idênticas para a reta e o zigue-zague; a PPO da PoC reproduz episódio a episódio o sucesso e os passos gravados); gate completo de 1000 episódios em execução |
+| G2 | paridade do ambiente em lote | **PASSOU** (18/11, `results_v3/gates/G2.json`): 1000 episódios de teste de S2; reta e zigue-zague com 1000/1000 trajetórias idênticas (crença até 9,4e-7); PPO da PoC, seeds 0–2, com 1000/1000 episódios de resultado idêntico ao gravado (0,809 / 0,644 / 0,667; média 0,707, dentro do IC do REPORT.md [0,634; 0,796]) |
 | G3 | controle: reta ≥ 90% | pendente |
 | G4 | ≥ 5.000 passos/s na T4 | pendente |
 
