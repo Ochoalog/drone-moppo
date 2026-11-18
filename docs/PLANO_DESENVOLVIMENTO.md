@@ -1,320 +1,247 @@
-# Plano de desenvolvimento: finalização do projeto (v2)
+# Plano de desenvolvimento v3: versão final para a disciplina (entrega 25/11/2026)
 
-**Projeto:** localização global ativa de drone sem GNSS com RL sobre mapas desatualizados (enchentes do RS, 2024)
+**Projeto:** localização global ativa de drone sem GNSS sobre mapas desatualizados por enchentes (RS, 2023–2024)
 **Repositório:** https://github.com/Ochoalog/drone-moppo
-**Versão:** v2, de 18/11/2026. Substitui a v1 (mesmo arquivo, histórico no git). As mudanças estão resumidas na §0.
-**Situação:** PoC (PPO), bateria zero-shot em Porto Alegre e extensão multiobjetivo (MOPPO à la AMOR) com resultados. A revisão científica de 18/11 encontrou problemas que **invalidam a extensão MO do jeito que está** e afetam a forma de reportar a PoC. Antes do artigo, faltam as correções científicas, a tabela canônica e o congelamento dos resultados. A refatoração vem depois.
-**Prazo:** apresentação na semana de 23/11 (**confirmar o dia com o professor hoje**: o cronograma da §5 muda conforme o dia).
+**Versão:** v3, de 18/11/2026. Substitui a v2 (preservada em `docs/PLANO_DESENVOLVIMENTO_v2.md`). A v1 editada está em `docs/PLANO_DESENVOLVIMENTO_v1.md`.
+**Prazo:** **quarta, 25/11/2026**: artigo final (PDF), código com release `v1.0`, apresentação. Não depende de aprovação do orientador.
+**Equipe:** Vitor (tempo integral), **IA-1** (Claude Code, 24/7, máquina local + GitHub), **IA-2** (Gemini no Google Colab, GPU T4). Colegas do grupo, se houver: revisão cruzada e seções do artigo.
 
 ---
 
-## 0. O que mudou da v1 para a v2
+## 0. O que muda da v2 para a v3
+
+A v2 corrigia o estudo existente. A v3 transforma o estudo num **artigo de método**, com o roteiro que estava previsto para o ICUAS 2027 comprimido em 7 dias. O desenvolvimento não é o gargalo: o gargalo é **tempo de máquina** e **pontos de decisão**. Por isso o plano é organizado por gates diários, com uma ordem de corte definida.
 
 | # | Mudança | Motivo |
 |---|---|---|
-| 1 | Ordem: **ciência → congelamento → artigo**. A refatoração roda em paralelo numa branch e só entra depois do congelamento | Na v1, a refatoração terminava no mesmo dia do congelamento, e um erro dela mudaria números já citados no artigo |
-| 2 | A pendência MO deixa de ser "presets idênticos" e vira um pacote de 5 problemas (§2.1–2.4) | Gate de condicionamento que falhou e foi ignorado, orçamento desigual, throughput 11× menor, desenho inválido do H6 e vereditos fora do critério. A troca para avaliação estocástica, feita no diagnóstico de 18/11, ganha regras (§2.1) |
-| 3 | Bootstrap hierárquico (seed → janela) em todos os ICs (§2.5) | Os ICs atuais ignoram a variação entre seeds (7,3 p.p. em S2) e a dependência espacial das janelas |
-| 4 | Tabela canônica e glossário de métricas (§2.6) | Há números divergentes entre `REPORT.md`, `REPORT_POA.md` e `REPORT_MO.md` |
-| 5 | Análise de mecanismo e índice de mudança no Taquari (§2.7) | É o que explica os resultados negativos; estava nos planos antigos e sumiu da v1 |
-| 6 | Correção da apresentação e da errata da MO (§2.8) | `PRESENTATION_MO.md` afirma que "o MOPPO domina", o que os dados contradizem |
-| 7 | Regra de segurança da refatoração ganha teste de carga dos modelos e determinismo (§4) | Mover módulos quebra o `PPO.load` do SB3 (classe do extrator salva por caminho de módulo) |
-| 8 | Plano B explícito para a MO e cronograma por data da apresentação (§5) | O dia da apresentação ainda não está confirmado |
+| 1 | O estudo atual (PoC, Porto Alegre, MO) vira o **"estudo v1"**: congelado hoje com a tag `v1-study-final` e usado como linha de base e motivação | Já está corrigido pela v2 (errata, conciliação, ICs hierárquicos) e explica por que o método novo é necessário |
+| 2 | **Descritor aprendido** (DINOv2, depois ajuste fino contrastivo) no lugar do "hand" | Responder à crítica "a reta só é difícil de bater porque a percepção é fraca" |
+| 3 | **Ambiente realista**: grade de 25 m, footprint de câmera derivado da altitude e do FOV, deslocamento dentro da célula, erro de yaw e inclinação, ruído fotométrico, **deriva de odometria** | Avaliadores de UAV cobram sensor e movimento plausíveis |
+| 4 | **Filtro e política cientes da mudança** (CA, de *change-aware*), usando a delimitação de inundação do Copernicus EMS | Ataca o mecanismo que o estudo v1 identificou: o planejamento falha onde o mapa mudou |
+| 5 | **Altitude como ação** (60, 100 e 150 m) | Contribuição nova: subir mostra estruturas grandes que sobrevivem à enchente |
+| 6 | **Ambiente vetorizado em GPU** (PyTorch) no Colab | Torna viáveis 10 seeds, validação cruzada espacial e as ablações em dias, não semanas |
+| 7 | **10 seeds** nos resultados principais, com rliable (IQM, bootstrap estratificado, probabilidade de melhora), e **validação cruzada espacial em 3 faixas** | Variação entre seeds grande (IC da PPO − reta em S2 passou de [−2,7; +4,0] para [−6,1; +9,8] p.p. com o bootstrap hierárquico) e um único corte geográfico |
+| 8 | **Terceira área** da enchente de 2024 no RS e, se os dados existirem, **um evento externo** | Generalização entre domínios e eventos |
+| 9 | A **extensão multiobjetivo sai do texto principal**: vai para um apêndice curto como resultado negativo, com a errata. O retreino P3 da v2 está **cancelado** | É a parte mais fraca e não ataca o mecanismo encontrado |
+| 10 | A refatoração dos módulos antigos (renomeações, subpacotes) fica **para depois de 25/11**. O código novo nasce no padrão do `CONTRIBUTING.md` | Não gastar a semana em estética de código antigo |
 
 ---
 
-## 1. Princípios
+## 1. Princípios (valem para as duas IAs)
 
-1. **Nenhum número muda sem registro.** Os resultados protegidos (`results/`, `results_poa/`, `runs/overnight/`, `data*/`, `configs*/`, manifestos em `../checkpoints/`) **não** são alterados. Tudo que é novo vai para diretórios novos (§3).
-2. **Critérios antes da avaliação.** Todo critério novo ou alterado é escrito em `DECISIONS_*.md` e commitado **antes** de rodar a avaliação correspondente. Critérios originais nunca são apagados: o novo entra com data e motivo, e os vereditos são reportados **pelos dois**.
-3. **Usamos "pré-especificado", não "pré-registrado".** Não houve registro público, e o critério do HP1 mudou depois do smoke.
-4. **Nenhuma afirmação sem número.** Todo número do artigo, da apresentação e dos relatórios vem de um CSV versionado na tag `results-final`.
-5. **Resultado negativo é resultado.** Se uma correção não couber no prazo, o item é reportado como limitação, com o mecanismo explicado. Nunca com o veredito antigo.
+1. **Nada protegido muda.** `results/`, `results_poa/`, `runs/overnight/`, `data*/`, `configs*/` e os manifestos de `../checkpoints/` continuam intocados. Tudo da v3 vai para `*_v3/` (§6).
+2. **Critérios antes da avaliação.** As hipóteses v3 (§4) são escritas em `DECISIONS_V3.md` e commitadas **antes** de rodar a matriz completa. Alterações posteriores entram com data e motivo, e os vereditos são reportados pelos dois critérios.
+3. **"Pré-especificado", nunca "pré-registrado".**
+4. **Todo número vem de um CSV** com `source_file`, `protocol`, `n_episodes`, `seeds`, `fold`, `region`, `git_commit` e `config_hash`.
+5. **O prior de mudança não pode vir da imagem que a câmera vê.** A delimitação de inundação vem de uma fonte independente (Copernicus EMS ou Sentinel-1) com data **anterior ou igual** à do voo simulado. Usar a imagem Maxar pós-evento para construir o prior seria vazamento.
+6. **Paridade antes de confiar.** O ambiente em GPU só é usado depois de reproduzir o ambiente em CPU no modo legado (§3.2, gate G2).
+7. **Um gate que falha marca a execução como `INVALID_GATE`** e nenhum veredito sai dela.
+8. **Ordem de corte definida** (§8). Ninguém corta fora da ordem sem registrar em `DECISIONS_V3.md`.
 
 ---
 
-## 2. Pendências científicas (prioridade máxima, nesta ordem)
+## 2. Divisão de trabalho e protocolo entre as IAs
 
-> Responsáveis: preencher na reunião de hoje. A coluna "Saída" diz onde o resultado fica.
-
-### 2.1 P1: condicionamento da MO (diagnóstico feito em 18/11; falta a leitura correta)
-
-**Evidência inicial:** no `REPORT_MO.md`, `safe` dá **exatamente** os mesmos números que `unif` no Taquari (60,0% / 25,0% / 1019,7 m), no Centro e nas ilhas.
-
-**Diagnóstico de 18/11** (`scripts/diagnose_mo_conditioning.py`):
-- **O gate de condicionamento falhou aos 25% do treino** (`fast` = `safe` = 1096,3 m, IC [0, 0]; `runs_mo/moppo_S2_hand_s0/gate_check_25pct.json`) e o pipeline **seguiu mesmo assim**.
-- O `w` chega à rede corretamente (`mo_eval.run_episode` → `reset(options={"w": w})`). A hipótese de bug no preset está descartada.
-- A escala dos objetivos não explica o problema (desvio do retorno de custo 2,55; os outros ~0,4–0,5).
-- A distribuição de ações muda com `w` (variação total média de até 0,26), **mas o argmax é o mesmo em 100% dos estados** entre `unif`, `fast` e `safe` (89% para `only_cost`).
-- Correção adotada: avaliação **amostrada** (`deterministic=False`), com semente do torch fixa por episódio, em `results_mo/stochastic/`.
-
-**Leitura científica (o que muda na v2):**
-1. **O condicionamento é fraco, e isso é um achado do treino, não só da avaliação.** O próprio gate pré-especificado falhou. A avaliação amostrada pode revelar diferenças, mas elas vêm de deslocamentos pequenos na distribuição de ações. A frase "a avaliação com argmax apagou o condicionamento" só pode ser usada junto com "o gate de condicionamento falhou no treino".
-2. **A troca de protocolo é post hoc.** Ela foi decidida depois de ver os resultados. Regras:
-   - registrar em `DECISIONS_MO_V2.md`, com data, como alteração de protocolo;
-   - aplicar o **mesmo** modo a **todas** as políticas aprendidas da comparação (MO, PPOs fixos **e** PPO da PoC). Comparar a MO amostrada com a PPO da PoC em argmax não é justo: a amostragem muda sucesso, passos e localização falsa;
-   - reportar os dois modos (argmax e amostrado) em todas as tabelas da MO; o modo principal é o amostrado, por ser o do treino, e isso é dito no texto;
-   - manter a semente comum por episódio entre todos os `w` e métodos (números aleatórios comuns).
-3. **Regra nova para todo treino:** se um gate falhar, o script marca a execução como inválida (`INVALID_GATE` no log e no nome do diretório de resultados) e não gera vereditos a partir dela.
-4. O teste D continua valendo para o retreino: a normalização `(w − 0,25) × 4` leva os vértices do simplex a 3, região pouco vista no treino com Dirichlet(1). Registrar a distribuição de `w` vista no treino.
-
-Saída: `docs/diagnostico_mo.md` (diagnóstico + leitura acima). Os resultados amostrados dos modelos v1 vão para `results_mo_v1fix/` (ou ficam em `results_mo/stochastic/`, com nota no `docs/conciliacao_numeros.md`). **Prazo: hoje.**
-
-### 2.2 P2: throughput do MOPPO
-
-**Evidência:** o MOPPO rodou a ~43 fps; o PPO da PoC (SB3, mesma CPU) rodou a ~500 fps. Por isso a MO treinou só 348k passos e os PPOs fixos 225k, contra 1,4M da PoC.
-
-1. Perfilar 20k passos com `py-spy record` ou `cProfile`.
-2. Suspeitos, em ordem: serialização de observações grandes no `AsyncVectorEnv` (testar `SyncVectorEnv` com o mesmo n_envs, e `float32` em vez de `float64`); conversões `numpy ↔ torch` e `.cpu()` passo a passo; avaliação ou logging dentro do loop de coleta; `torch.set_num_threads` brigando com os processos dos envs.
-3. **Meta:** ≥ 300 fps. Registrar antes/depois em `DECISIONS_MO_V2.md`.
-4. A otimização não pode mudar a matemática: os testes (a), (b) e (c) do MOPPO e a propriedade de soma da recompensa continuam passando.
-
-Saída: commit `perf:` e linha no `DECISIONS_MO_V2.md`. **Prazo: hoje/amanhã cedo.** Se não chegar a 150 fps, ir para o plano B (§2.9).
-
-### 2.3 P3: retreino justo da MO (noite de 19→20)
-
-Todos com **1,4M passos** (o mesmo da PoC), mesmos hiperparâmetros, mesma arquitetura, mesma memória de 8 ações, ≤ 3 checkpoints por execução. Saídas em `runs_mo_v2/` e `results_mo_v2/`. Os resultados v1 ficam como histórico.
-
-| Prioridade | Execução | Para quê |
+| Quem | Onde roda | Responsável por |
 |---|---|---|
-| 1 | MO com memória, seed 0 | política principal |
-| 2 | PPO fixo `unif` (mesma implementação, w fixo), seed 0 | H4 e controle contra a PPO da PoC |
-| 3 | PPO fixo `safe`, seed 0 | H4 |
-| 4 | PPO fixo `fast`, seed 0 | H4 |
-| 5 | MO sem memória, seed 0 | ablação da memória |
-| 6 | MO com memória, seed 1 | variação entre seeds |
+| **IA-1** (Claude Code, 24/7) | Máquina local (CPU) + GitHub | Todo o código em `src/dal/v3/` com testes; ambiente GPU (desenvolvido e testado em CPU com PyTorch); testes de paridade; filtro CA; altitude; scripts de orquestração; notebooks em `colab/` para a IA-2 rodar; avaliação, estatística, figuras, tabelas LaTeX e relatórios gerados |
+| **IA-2** (Gemini no Colab, T4) | Google Colab + Google Drive | Rodar os notebooks de `colab/`: extração de recortes direto dos COGs no S3, descritores DINOv2, ajuste fino contrastivo, treino da matriz de PPO, avaliação em GPU. Em paralelo: conferir referências e rascunhar os trabalhos relacionados |
+| **Vitor** | — | Decisões nos gates, revisão dos PRs, introdução e discussão, conferência visual de figuras e dados, apresentação |
 
-Orçamento: 6 × 1,4M = 8,4M passos. A 400 fps, ~5,8 h; a 300 fps, ~7,8 h. Se não couber, corte de baixo para cima e registre. **Observação para o texto:** cada execução recebe o mesmo número de passos. Isso é conservador para a MO (o AMOR relata que o MOPPO converge mais devagar); dizer isso no artigo.
-
-Gates do treino (mantidos da v1, agora nos 25% do orçamento novo): sucesso ≥ 0,5 em `unif` no treino; e distância de `fast` × `safe` com IC da diferença que exclui 0. Os gates são medidos **nos dois modos** (argmax e amostrado); o de condicionamento passa se passar no modo amostrado, e o resultado em argmax é registrado. Gate que falha marca a execução como `INVALID_GATE` (§2.1, item 3). Se o gate de condicionamento falhar, **não** gastar a noite toda: interromper as execuções 1, 5 e 6, terminar 2–4 e ir para o plano B.
-
-**Critérios v2, escritos em `DECISIONS_MO_V2.md` e commitados antes da avaliação:**
-- **H4:** para cada um dos 3 presets, IC 95% (bootstrap hierárquico, §2.5) da diferença do retorno escalarizado médio r·w_k entre MO(w_k) e PPO-fixo(w_k). Suportada se todos contêm 0 ou favorecem a MO; não suportada se algum for inteiramente desfavorável; inconclusiva nos demais casos. Reportar também pelo critério original (2 presets), com nota de que o 3º foi cortado na v1.
-- **H5:** inalterado (existe w na grade com sucesso ≥ −3 p.p., localização falsa ≤ 0 e distância < 0 pelos limites do IC), com Holm sobre os 38 pesos.
-- **H6:** **varredura 1-D dedicada**: w_risco ∈ {0; 0,1; …; 1} com os outros três pesos = (1 − w_risco)/3, e o mesmo para w_custo. São 11 pontos × 300 episódios pareados. Estatística: ρ de Spearman entre o peso e a taxa (localização falsa ou distância) sobre os 11 pontos, com IC por bootstrap de episódios dentro de cada ponto. Critério original mantido: os dois ρ < 0 com IC que exclui 0. Motivo da mudança: com a grade de passo ¼, só existem 2 pontos com "os outros pesos iguais".
-- **H7:** inalterado.
-- **Hipervolume e EUM:** o **EUM** é a métrica principal, com IC por bootstrap. O hipervolume só compara conjuntos do **mesmo tamanho** (a MO avaliada nos 3 presets × os 3 PPOs fixos), com o ponto de referência fixado a priori: sucesso = 0, localização falsa = 1, distância = 4000 m (80 passos × 50 m).
-
-### 2.4 P4: errata dos vereditos v1 (sem retreino, hoje)
-
-Recalcular os vereditos v1 **pelos critérios que estavam no `DECISIONS_MO.md`** e publicar em `REPORT_MO_ERRATA.md` (não reescrever o `REPORT_MO.md`, que é histórico):
-
-| Hipótese | v1 dizia | Pelo critério | Motivo |
-|---|---|---|---|
-| H4 | suportada | **não avaliável** | o gate de condicionamento falhou aos 25% e o treino seguiu; orçamentos diferentes (348k × 225k × 1,4M da PoC); o veredito usou sucesso/falsa/distância, não o IC de r·w_k; critério reduzido de 3 para 2 presets |
-| H5 | não suportada | não suportada | — |
-| H6 | parcial | **não suportada** | ρ(w_custo, distância) = +0,87, sinal oposto ao previsto; ρ(w_risco) sem variância; a grade não permite o desenho |
-| H7 | parcialmente suportada | **não suportada** | IC da diferença inclui 0; o critério exige o IC inteiramente abaixo de 0 |
-
-Remover também a atribuição causal "disparidade radiométrica insular": nos mesmos episódios, a PPO-S2 da PoC faz 71,3% nas ilhas e a MO faz 49,0%. A queda é da política MO, não do domínio.
-
-### 2.5 P5: estatística (todos os relatórios)
-
-1. **Bootstrap hierárquico** em `src/dal/evaluation/statistics.py` (função nova; a antiga continua existindo): B = 2000; reamostrar seeds com reposição (quando houver ≥ 2) e, dentro delas, **janelas** com reposição (episódios da mesma janela saem juntos). Nas diferenças pareadas, os dois métodos usam as mesmas reamostragens.
-2. Se o CSV de episódios não tiver o id da janela, reconstruí-lo a partir da semente do episódio (2024 + i) reproduzindo o sorteio; testar que bate com as trajetórias salvas.
-3. Tabelas com **resultado por seed** ao lado do agregado.
-4. **Seeds extras (opcional, noite de 20→21):** PPO S1 e S2, seeds 3 e 4, em `runs/overnight_extra/` (nunca em `runs/overnight/`). ~4 × 47 min.
-5. Recalcular os ICs da PoC, de Porto Alegre e da MO v2 em `results_final/stats/`. Os vereditos H1–H3 e HP1–HP3 são recalculados com os ICs novos e reportados **ao lado** dos originais.
-
-### 2.6 P6: tabela canônica e glossário de métricas
-
-Script `scripts/make_canonical_tables.py` → `paper/tables/*.csv`, com as colunas `source_file`, `protocol`, `n_episodes`, `seeds`, `region`, `scenario` em toda linha.
-
-Glossário (vale para tudo que for novo; registrar as definições antigas onde diferirem):
-
-| Métrica | Definição |
-|---|---|
-| `success` | massa da crença ≥ 0,9 num raio de 100 m **e** erro ≤ 100 m, no passo em que a crença concentra |
-| `false_localization` | a crença concentrou (massa ≥ 0,9 num raio de 100 m) a mais de 100 m da posição real |
-| `timeout` | não concentrou em 80 passos |
-| `steps_success_median` | mediana de passos só nos episódios com sucesso (definição do `REPORT.md`) |
-| `steps_penalized` | passos, com falha = 81 (usado no Wilcoxon) |
-| `distance_mean_all` | distância média em todos os episódios |
-| `distance_mean_success` | distância média só nos episódios com sucesso (**nova**; é a que sustenta a frase "metade da distância") |
-
-Conciliar explicitamente: PPO-S2 nas ilhas P1 = 62,1% (`REPORT_POA`) × 71,3% (`REPORT_MO`); mediana de passos da reta em S2 = 26 (`REPORT.md`) × 34 (`REPORT_MO`). Dizer de onde vem cada diferença (seeds, n, definição) em `docs/conciliacao_numeros.md`.
-
-### 2.7 P7: mecanismo e índice de mudança no Taquari
-
-1. **Índice de mudança no Taquari**, com a mesma função de Porto Alegre, em modo somente leitura sobre `data/`. Figura única "sucesso × índice de mudança (quintis)" para os dois locais.
-2. **Covariável independente do descritor:** fração de água (já existe em Porto Alegre) e, no Taquari, a diferença de cor média por célula depois de igualar os histogramas das duas datas. Serve para mostrar que a queda de sucesso não é só tautologia do descritor.
-3. **Mecanismo (exploratório, critério escrito antes):** reavaliar PPO-S2 (3 seeds) e reta em S2, e nas ilhas e no Centro P1, registrando a célula de cada passo. Para cada episódio: média da **distintividade do mapa** e do **índice de mudança** das células visitadas. Hipótese M1: nos episódios de localização falsa, a PPO visita células de distintividade mais alta **e** mudança mais alta do que nos episódios de sucesso, e mais do que a reta. Saída em `results_final/mechanism/`.
-
-### 2.8 P8: apresentação e textos já escritos
-
-1. Corrigir `PRESENTATION_MO.md`: remover "Por que o MOPPO domina os outros métodos?", "validando a Hipótese H4" e "superioridade"; usar os vereditos da errata (§2.4).
-2. Corrigir a decisão nº 12 do `DECISIONS_MO.md` acrescentando uma linha de errata (não apagar a original).
-3. Conferir o texto dos vídeos (`poa_ilhas_presentation_deck.mp4` e similares). Se algum quadro afirmar superioridade, regenerar com o texto corrigido ou não usar o vídeo.
-
-### 2.9 Plano B da MO
-
-Se P2 não chegar a 150 fps, ou se o gate de condicionamento falhar no retreino:
-- reportar a MO como **resultado negativo preliminar**: "o condicionamento em preferências não foi demonstrado com o orçamento disponível";
-- usar só a errata (§2.4), o diagnóstico (§2.1) e a varredura H6 feita sobre o modelo v1 em avaliação amostrada (avaliação apenas, barata), com a PPO da PoC também amostrada para comparação;
-- H4–H7 **não** aparecem como suportadas em lugar nenhum.
-
-### 2.10 P9: ameaças à validade a declarar (sem experimento novo)
-
-- Em Porto Alegre, a padronização dos descritores usa a caixa inteira, incluindo as regiões avaliadas (normalização transdutiva, não supervisionada). No Taquari, só as células de treino.
-- As regiões `ilhas` e `centro` se sobrepõem em 18,7 km², e a recalibração do β "na outra região" não é totalmente disjunta.
-- Erro de alinhamento global de 2,5–5 m (5–10% de uma célula de 50 m). O risco maior é o desalinhamento **local**, como os prédios inclinados no Centro.
-- O critério do HP1 mudou depois do smoke (registrado no checkpoint de 28/10), o que contradiz a decisão nº 14 do `DECISIONS_POA.md`. Conferir no `git log` e reportar os dois critérios.
-
-### 2.11 P10: validação com o professor
-
-O escopo foi validado em 18/11. Ainda confirmar, se não estiver confirmado: o template (o enunciado sugere arXiv/Prime AI; propomos IEEE), o idioma e o dia exato da apresentação. Avisar que a organização do artigo mudou para 3 perguntas de pesquisa (ver `PLANO_ARTIGO.md`), sem mudar o escopo.
+**Protocolo de passagem:**
+- O GitHub é a fonte da verdade do código. Todo notebook começa com `git clone` + `git checkout <commit>` e grava o commit no resultado.
+- Artefatos grandes (recortes, descritores, modelos) vão para `Drive/drone_v3/<etapa>/` com um `MANIFEST.sha256`.
+- Todo job termina gravando `DONE.json` (commit, hash do config, tempo de GPU, métricas resumidas) e copiando os CSVs pequenos para `results_v3/` via commit da IA-1.
+- **Limites do Colab:** sessões caem (tempo máximo de sessão, inatividade, cota de GPU). Todo job precisa ser **retomável**, com checkpoint no Drive a cada ≤ 20 min e jobs de ≤ 3 h. Se a cota de GPU acabar, o fallback é a CPU local com a matriz reduzida (§8).
 
 ---
 
-## 3. Onde fica cada saída nova
+## 3. Componentes técnicos
 
-| Conteúdo | Diretório |
+### 3.1 Descritor aprendido (IA-2 roda, IA-1 escreve)
+
+1. **DINOv2 zero-shot:** ViT-S/14 (ViT-B/14 se couber), características densas agregadas por GeM (ou VLAD, como no AnyLoc), redução por PCA para 128 dimensões ajustada **só nas células de treino**.
+2. **Ajuste fino contrastivo** (InfoNCE, 2–4 h na T4): positivos = a mesma célula em datas diferentes (mapa × pós-evento), com aumentos realistas (§3.3); negativos = outras células do lote. **Só a faixa de treino da dobra correspondente** (§3.6). Sem nenhuma imagem de Porto Alegre ou da terceira área.
+3. **Gate G1 (percepção):** top-1 de recuperação nas células de treino de S1 e S2. O descritor escolhido precisa superar o "hand" (S1: 0,409; S2: 0,269). Ordem de preferência: ajuste fino > zero-shot > hand. Se nenhum superar o hand, o artigo usa o hand e reporta o resultado negativo da percepção.
+4. Os descritores são calculados para **cada altitude** (footprint diferente) e para **cada variante de observação** (§3.3), e salvos em float16.
+
+Estimativa: ~260 mil células de 25 m no Taquari × 3 altitudes × (2 datas de mapa + 4 variantes de observação) ≈ 4,7 M recortes. Na T4, em lote e fp16, é ~1 h de GPU mais a leitura. Ler os COGs uma vez em resolução reduzida (~0,6 m/px), por data, e recortar em memória.
+
+### 3.2 Ambiente vetorizado em GPU (IA-1)
+
+- `src/dal/v3/envs/batched_env.py`: N ambientes em paralelo (N = 512–2048) como tensores PyTorch. Crença, máscara, verossimilhança, predição de movimento e recompensa são operações em lote.
+- A verossimilhança é o produto do descritor da observação (128-d) pelos descritores das células da janela, já em memória da GPU.
+- **Modo legado:** grade de 50 m, descritor hand, sem deriva, altitude fixa, mesmas sementes de episódio (2024 + i).
+- **Gate G2 (paridade):** no modo legado, reta e zigue-zague (determinísticas) produzem **as mesmas trajetórias** que o ambiente em CPU nos 1000 episódios de teste de S2, e as crenças batem com tolerância de 1e-4. A PPO da PoC (argmax), carregada no ambiente GPU, reproduz o sucesso do `REPORT.md` dentro do IC.
+- **Gate G4 (throughput):** ≥ 5.000 passos/s de treino na T4. Abaixo disso, reduzir a matriz (§8).
+- O PPO é o mesmo código PyTorch do MOPPO com m = 1, já validado pelo teste de redução (b) da v2. Ele ganha a opção de rodar com o ambiente em lote.
+
+### 3.3 Sensor e movimento realistas (IA-1)
+
+| Elemento | Modelo |
 |---|---|
-| Retreino MO v2 | `runs_mo_v2/`, `results_mo_v2/`, `configs_mo_v2/` |
-| Reavaliação amostrada dos modelos v1 (MO, PPOs fixos e PPO da PoC no mesmo modo) | `results_mo_v1fix/` (ou `results_mo/stochastic/`, já em andamento) |
-| Seeds extras da PPO | `runs/overnight_extra/` |
-| Estatística, mecanismo, índice no Taquari | `results_final/` |
-| Tabelas e figuras do artigo | `paper/tables/`, `paper/figures/` |
-| Decisões | `DECISIONS_MO_V2.md`, `DECISIONS_FINAL.md` |
-| Diagnósticos e conciliação | `docs/diagnostico_mo.md`, `docs/conciliacao_numeros.md` |
-| Errata | `REPORT_MO_ERRATA.md` |
+| Footprint | largura = 2·h·tan(FOV/2), FOV horizontal de 84°: 108 m a 60 m, 180 m a 100 m, 270 m a 150 m. Recorte reamostrado para 224 px |
+| Posição | contínua; a célula é a de 25 m que contém o drone. Cada variante de observação tem um deslocamento uniforme dentro da célula (±12,5 m) |
+| Orientação | norte para cima pela bússola, com erro de yaw ~ N(0, 5°) |
+| Inclinação | roll e pitch ≤ 5°, como homografia |
+| Fotometria | brilho e contraste ±15%, desfoque gaussiano σ ∈ [0; 1,5] px, ruído |
+| Variantes | K = 4 por célula e por altitude, pré-calculadas; o ambiente sorteia uma por passo |
+| Movimento | passo horizontal de 50 m (2 células) em 8 direções; deslocamento real = comandado × (1 + ε_escala) + erro de rumo, com deriva de **2% da distância** (ablação: 0% e 5%) |
+| Predição do filtro | convolução da crença com uma gaussiana de σ proporcional ao deslocamento comandado |
+| Tempo de voo | horizontal 50 m a 10 m/s (5 s) + 1 s de captura; subir ou descer um nível ~15 s. É a métrica de custo principal |
 
-Disco: manter `runs_mo_v2/` + `results_mo_v2/` abaixo de 1 GB; rodar `df -h .` antes de cada noite.
+O β (com κ) é recalibrado **por altitude** e **por descritor**, só no treino, com a regra da PoC (maximizar sucesso − localização falsa de uma política aleatória).
 
----
+### 3.4 Filtro e política cientes da mudança (IA-1)
 
-## 4. Refatoração (em paralelo, sem mudar nenhum número)
+- **Prior de mudança m_x ∈ [0, 1]:** fração da célula marcada como inundada.
+  - Fonte principal: delimitação do Copernicus EMS (ativação **EMSR720**, rapid mapping do RS, e **EMSN194**, Porto Alegre).
+  - Fallback: máscara de água de Sentinel-1 (por exemplo, o produto GFM do GloFAS) ou a mancha de inundação mapeada pela UFRGS/IPH, se disponível.
+  - **Gate G0 (dados, hoje):** conferir a cobertura de cada fonte sobre a AOI do Taquari (Encantado, Roca Sales, Muçum), sobre as ilhas e o Centro de Porto Alegre e sobre a terceira área, e a data de cada produto (≤ 07/05/2024 no Taquari, ≤ 09/05/2024 em Porto Alegre).
+- **Filtro CA:** verossimilhança com mistura robusta, L_x ∝ (1 − ρ_x)·exp(β·s_x) + ρ_x·ū, com ρ_x = α·m_x e ū = média de exp(β·s) na janela. O α vem de {0; 0,25; 0,5; 0,75; 1}, calibrado no treino com a mesma regra do κ.
+- **Política CA:** a entrada da PPO ganha o canal m. Isso permite separar o efeito do **filtro** CA (vale para todos os métodos, inclusive a reta) do efeito da **política** CA.
+- `greedy_map` também ganha versão CA: o ganho de informação previsto usa a verossimilhança CA.
 
-### 4.1 Diagnóstico do código atual
+### 3.5 Altitude como ação (IA-1)
 
-| Tema | Situação | O que muda |
+- Espaço de ações: 8 direções horizontais + subir + descer (10 ações), com h ∈ {60, 100, 150} m e início a 100 m.
+- A verossimilhança em cada passo usa os descritores do mapa **da mesma altitude**.
+- A recompensa de custo usa o **tempo de voo** (§3.3), para que subir tenha preço.
+- Métricas de comportamento: fração de passos em cada altitude; correlação entre altitude escolhida e índice de mudança local.
+
+### 3.6 Dados e divisões
+
+| Local | Papel | Situação |
 |---|---|---|
-| Idioma dos identificadores | Quase tudo em inglês, com mistura de português (`mo_poa_nuvem_video.py`, `generate_taquari_nuvem_comparison_video`, `success_ilhas`, `centro_minus_ilhas`, `adv_ilhas`) | Tudo em inglês: `nuvem` → `cloud`, `ilhas` → `islands`, `centro` → `downtown`. Os nomes das regiões continuam em português só como **valores** (rótulos nos CSVs) |
-| Idioma dos comentários | ~776 comentários e as docstrings em inglês | Comentários e docstrings em **português** |
-| Organização | 26 módulos soltos em `src/dal/`; ~3.000 linhas de vídeo e PPTX misturadas com o núcleo | Subpacotes (§4.3) |
-| Duplicação | Cinco geradores de vídeo repetem quadro, legenda e mapa | `presentation/rendering.py` comum |
-| Funções longas | 15 funções com mais de 100 linhas (`train_moppo` 254, `run_pipeline` 190, …) | Quebrar em funções de ~40 linhas; prioridade para o núcleo |
-| Nomes curtos | `dados_enchente/analyze_v2.py`, `apresentacao_grupo/*.py` (`m`, `pa`, `pb`, `cb`, `inl`, `d`) | Mover para `legacy/` e documentar que estão fora do pipeline |
-| Commits | Português e inglês misturados | Conventional Commits em inglês: `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `test:` |
-| Lint | Não há | `ruff` com regras `E,F,I,N,B,UP` |
+| Taquari (S1: mar/23 → mai/24; S2: out/23 → mai/24) | treino e teste | dados prontos; refazer recortes no Colab a partir dos COGs |
+| Porto Alegre P1 (fev/24 → 09/05/24), ilhas e Centro | teste zero-shot | dados prontos |
+| **Terceira área do RS** (Canoas, São Leopoldo ou Eldorado do Sul) | teste zero-shot | **Gate G0:** procurar no catálogo do OpenAerialMap um par antes/depois Maxar a ~0,3 m/px; escolher a área com melhor cobertura |
+| **Evento externo** (furacão Helene 2024, Maxar Open Data; ou Valência 2024, se estiver no programa aberto) | teste zero-shot | **Gate G0:** existe par antes/depois ≤ 0,5 m/px com sobreposição ≥ 30 km² e prior de mudança independente? Se não, sai |
 
-### 4.2 Convenções (valem para todo o grupo)
+**Validação cruzada espacial no Taquari:** 3 faixas de latitude com largura igual (≥ 3,2 km cada, para caber a janela) e uma margem de 200 m entre elas. Cada dobra treina em 2 faixas e testa na terceira. A dobra A (teste na faixa sul) reproduz a divisão do estudo v1.
 
-1. **Identificadores** (módulos, classes, funções, variáveis, constantes, chaves de config, colunas novas de CSV): **inglês**, `snake_case`, `PascalCase` para classes, `UPPER_CASE` para constantes.
-2. **Comentários e docstrings:** **português**. A docstring diz *o que* a função faz e *por quê*. Referências: `# Ver AMOR (Alegre et al., 2025), §5`.
-3. **Clean code:** uma função faz uma coisa (~40 linhas, ~5 parâmetros; mais que isso, `dataclass` de configuração); nada de números mágicos; nomes que revelam intenção; type hints nas funções públicas; sem código morto.
-4. **Glossário do código:**
+### 3.7 Matriz de experimentos (`DECISIONS_V3.md` antes de rodar)
 
-| Conceito | Nome no código |
-|---|---|
-| crença / histograma | `belief` |
-| localização falsa | `false_localization` |
-| sucesso | `success` |
-| passo | `step` |
-| vetor de pesos (preferência) | `preference_weights` (`w` só dentro de fórmulas) |
-| nuvem | `cloud` |
-| ilhas / centro | `islands` / `downtown` (rótulo de dado: `"ilhas"` / `"centro"`) |
-| linha reta / zigue-zague | `straight` / `lawnmower` |
+Todos no ambiente realista, com o descritor escolhido no G1, deriva de 2%, cenário de treino S2 (S1 avaliado também).
 
-5. **Exemplo:**
+| Bloco | Métodos | Seeds | Dobras | Para quê |
+|---|---|---|---|---|
+| Principal | PPO, PPO-CA, PPO-CA-ALT | 10 | A | H3, H4 |
+| Validação espacial | PPO-CA, PPO-CA-ALT | 3 | B, C | robustez espacial |
+| Ablação de percepção | PPO-CA com hand | 3 | A | H1 no nível da tarefa |
+| Ablação de deriva | PPO-CA com deriva 0% e 5% | 3 | A | sensibilidade |
+| Baselines | reta, zigue-zague, aleatória, greedy_map, cada uma com filtro padrão e filtro CA (e ALT para a reta: "sobe para 150 m e voa reto") | — | A, B, C | H2, H3 |
+| Zero-shot | os modelos da dobra A, sem retreino | os mesmos | — | H5 |
 
-```python
-def compute_false_localization_rate(episodes: pd.DataFrame) -> float:
-    """Calcula a fração de episódios em que a crença convergiu para o lugar errado.
-
-    Um episódio conta como localização falsa quando a massa da crença passa de 0,9
-    num raio de 100 m em torno de um ponto a mais de 100 m da posição real.
-    """
-    # Episódios truncados por limite de passos não contam como localização falsa.
-    finished = episodes[episodes["terminated"]]
-    return float(finished["false_localization"].mean())
-```
-
-### 4.3 Estrutura alvo
-
-```
-drone-moppo/
-├── README.md, CONTRIBUTING.md, pyproject.toml
-├── configs/                     # taquari/, poa/, moppo/, moppo_v2/
-├── src/dal/
-│   ├── geo/                     # data.py, align.py, grid.py
-│   ├── localization/            # features.py, calibrate.py, filter.py
-│   ├── envs/                    # env.py, mo_env.py
-│   ├── agents/                  # train.py (PPO), mo_ppo.py (MOPPO), baselines.py
-│   ├── evaluation/              # evaluate.py, mo_eval.py, poa.py, mo_poa_eval.py, statistics.py
-│   ├── reporting/               # report.py, poa_report.py, mo_report.py, figures.py
-│   ├── pipelines/               # mo_pipeline.py e CLIs
-│   └── _compat.py               # aliases dos caminhos antigos (§4.4, item 3)
-├── presentation/                # vídeos e PPTX; rendering.py comum
-├── scripts/, tests/, docs/
-├── legacy/                      # dados_enchente/, apresentacao_grupo/
-└── paper/                       # LaTeX, tables/, figures/, make_figures.py
-```
-
-### 4.4 Regras de segurança da refatoração
-
-1. Tag `v0-pre-refactor` (já existe) e os manifestos sha256 em `../checkpoints/` passam antes e depois de cada PR.
-2. **Golden determinístico:** `scripts/smoke.sh`, `scripts/smoke_poa.sh` e `scripts/run_mo_smoke.sh` com seed fixa, `torch.set_num_threads(1)` e `torch.use_deterministic_algorithms(True)`; CSVs de episódios em `tests/golden/`; `tests/test_regression_golden.py` compara com `pd.testing.assert_frame_equal` (tolerância só nas colunas de tempo). Rodar o golden 2× seguidas antes de confiar nele.
-3. **Teste de carga dos modelos** (`tests/test_model_loading.py`, marcado `@pytest.mark.data`): carregar os 9 modelos de `runs/overnight/`, os da MO (v1 e v2) e reproduzir 20 episódios com resultado idêntico ao gravado. O SB3 guarda a classe do extrator CNN pelo caminho do módulo; mover o módulo quebra o `PPO.load`. Solução: `src/dal/_compat.py` registra os caminhos antigos em `sys.modules`. **Nunca retreinar por causa da refatoração.**
-4. Cada PR precisa de `pytest -q`, golden, teste de carga e `ruff check` verdes.
-5. **Nenhum PR de refatoração entra na `main` antes da tag `results-final`.** Até lá, a refatoração vive na branch `refactor/integration`.
+Orçamento: 1,4M passos por execução (aumentar para 3M se o G4 der folga). Avaliação: 1000 episódios pareados por (método × local × dobra). Número total de execuções de treino: 30 + 12 + 3 + 6 = 51.
 
 ---
 
-## 5. Cronograma
+## 4. Hipóteses v3 (escrever em `DECISIONS_V3.md` e commitar antes da matriz completa)
 
-> Hoje é quarta, 18/11. D = dia da apresentação. A tabela assume **D ≥ quarta 25/11**. Para D mais cedo, ver §5.1.
-
-| Quando | Entrega | Responsáveis |
+| Id | Hipótese | Critério |
 |---|---|---|
-| **Qua 18/11** | ✅ Escopo validado. ✅ Diagnóstico P1. Hoje ainda: regras da avaliação amostrada (§2.1) e reavaliação da PPO da PoC no mesmo modo; P2 (throughput); P4 (errata); confirmar template, idioma e dia (P10) | Vitor (P10), A (P1, P4), B (P2) |
-| **Qui 19/11** | P5 (bootstrap hierárquico), P6 (tabela canônica), P8 (apresentação). `DECISIONS_MO_V2.md` com critérios v2 **commitado antes** de qualquer avaliação. Varredura H6 sobre o modelo v1 corrigido (só avaliação). **Noite 19→20:** P3 (retreino) | A, B; C começa `refactor/integration` |
-| **Sex 20/11** | Avaliação v2 (§5.4 do prompt MO + varredura H6), vereditos H4–H7 v2, P7 (mecanismo e índice no Taquari). **Noite 20→21 (opcional):** seeds extras da PPO | A, B |
-| **Sáb 21/11** | Tabelas recalculadas com as seeds extras (se houver). **Congelamento:** tag `results-final`, `paper/make_figures.py` gera tudo | A |
-| **Sáb 21 – Seg 23/11** | Rascunho completo do artigo (ver `PLANO_ARTIGO.md`). Refatoração: PRs (1) renomeações e (2) comentários entram na `main` depois do congelamento, com todos os testes verdes | todos; C na refatoração |
-| **Seg 23 – Ter 24/11** | Revisão cruzada do artigo, slides, ensaio | todos |
-| **D − 1** | PDF final e release `v1.0` com modelos e features como assets | Vitor |
+| **H1** | O descritor aprendido supera o hand | top-1 de recuperação no teste (S1 e S2, dobra A), IC por bootstrap de células com limite inferior da diferença > 0 |
+| **H2** | O filtro CA reduz a localização falsa | para a reta **e** para a PPO, no Taquari S2 e nas ilhas: IC da diferença de localização falsa (CA − padrão) < 0, com perda de sucesso ≥ −2 p.p. |
+| **H3** (principal) | Com percepção forte e modelo realista, a PPO-CA paga a pena contra a melhor heurística CA | **superioridade:** probabilidade de melhora em sucesso > 0,5 com IC que exclui 0,5 (rliable, 10 seeds); ou **não inferioridade com eficiência:** limite inferior da diferença de sucesso ≥ −3 p.p. **e** IC da diferença de tempo de voo < 0. Reportar qual das duas, por local, com Holm entre locais |
+| **H4** | A altitude ajuda onde o mapa mais mudou | PPO-CA-ALT × PPO-CA: (a) sucesso não inferior (−3 p.p.) e tempo de voo menor, **ou** sucesso superior; (b) a altitude média escolhida cresce com o índice de mudança da janela (Spearman > 0 com IC que exclui 0) |
+| **H5** | A relação do H3 se mantém zero-shot | vale em ≥ 2 de 3 regiões (ilhas, Centro, terceira área); o evento externo é exploratório |
+| **M1** | Mecanismo (estudo v1): as localizações falsas da PPO v1 acontecem em células distintivas no mapa antigo e mudadas | critério já fixado em `DECISIONS_FINAL.md` (F3) |
 
-**Regra de corte:** artigo e números corretos vêm antes da estética do código. Os PRs (3) mover `presentation/` e `legacy/`, (4) subpacotes e (5) funções longas ficam para depois da entrega se atrasarem. Os PRs (1) e (2) são obrigatórios antes da release `v1.0`, mas nunca antes do congelamento.
-
-### 5.1 Se a apresentação for antes de quarta 25/11
-
-| D | O que cai |
-|---|---|
-| Ter 24/11 | Seeds extras da PPO; P7 fica só com o índice no Taquari (sem mecanismo). Congelamento na sexta 20 à noite |
-| Seg 23/11 | Também o retreino P3: a MO vai pelo plano B (§2.9). Congelamento na sexta 20 à tarde |
+Estatística: IQM e probabilidade de melhora entre seeds (rliable), bootstrap estratificado por dobra e região, e bootstrap hierárquico seeds → janelas nas diferenças pareadas. Os ICs antigos nunca aparecem sozinhos.
 
 ---
 
-## 6. Fluxo de trabalho no GitHub
+## 5. Cronograma (hoje, quarta 18/11, até quarta 25/11)
 
-- `main` protegida. Branches `fix/...`, `perf/...`, `science/...`, `docs/...`, `refactor/...`; um revisor do grupo por PR.
-- Uma issue por item das §2 e §4, com os rótulos `science`, `refactor`, `paper`, `presentation`.
-- Dados (`data*/`, ~1,4 GB) e modelos (`runs*/`) **fora** do git. São reproduzidos por `scripts/prepare_data.sh`.
-- **Risco de reprodutibilidade:** o bucket de origem se chama `oin-hotosm-temp` (temporário). Na release `v1.0`, anexar como assets os modelos finais, as features derivadas (`data/`, `data_poa/`) e um arquivo com o sha256 de cada TIF de origem.
-- Dados Maxar/OpenAerialMap sob **CC BY-NC 4.0**: citar no README e no artigo.
+> Cada dia termina com um gate. Se o gate falhar, aplica-se a §8 **no mesmo dia**, para não acumular atraso.
 
-## 7. Definição de pronto
+| Dia | IA-1 (local, 24/7) | IA-2 (Colab T4) | Vitor | Gate do dia |
+|---|---|---|---|---|
+| **Qua 18** (tarde e noite) | Fechar o estudo v1: M1 e índice de mudança no Taquari (F1–F3), tabelas canônicas, `REPORT_MO_ERRATA` já pronto; merge de `chore/conventions` e `science/plan-v2-review` na `main`; tag **`v1-study-final`**. Esqueleto de `src/dal/v3/` e do ambiente em lote | **G0:** conferir dados (terceira área, evento externo, cobertura do EMSR720/EMSN194, datas). DINOv2 zero-shot na grade de 50 m atual (top-1 em S1 e S2) | Confirmar o dia da apresentação e o template; decidir a terceira área e o evento externo | **G0** (dados) |
+| **Qui 19** | Ambiente em lote + modo legado + testes; teste de paridade em CPU; sensor e movimento realistas; filtro CA; recortes e variantes (código) | Recortes multialtitude a 25 m e variantes; descritores zero-shot; ajuste fino contrastivo (dobra A primeiro) | Revisar `DECISIONS_V3.md` (hipóteses, matriz) e aprovar | **G1** (percepção) e **G2** (paridade) |
+| **Sex 20** | Altitude como ação; baselines no ambiente realista (CPU e GPU); calibração de β, κ e α; **commit de `DECISIONS_V3.md` antes da matriz** | Medir throughput (G4); treinos piloto (1 seed por método) para conferir os gates de aprendizado; ajuste fino das dobras B e C | Conferir visualmente recortes, variantes e prior de mudança | **G3** (sanidade: no controle S0, a reta ≥ 90%) e **G4** (throughput) |
+| **Sáb 21** | Avaliação dos pilotos; scripts de avaliação em lote e rliable; figuras automáticas | **Bloco principal** (30 execuções) e ablações | Rascunho de Método e Formulação | pilotos passam no gate de aprendizado |
+| **Dom 22** | Avaliação completa (Taquari, dobras, Porto Alegre, terceira área, evento externo); estatística; mecanismo e comportamento de altitude | **Validação espacial** (12 execuções) + zero-shot | Rascunho de Resultados com os números que forem saindo | matriz completa avaliada |
+| **Seg 23** | **Congelamento às 12:00: tag `results-final`.** `paper/make_figures.py` e tabelas LaTeX; release candidata | Reexecuções só para bug confirmado | Introdução, Discussão, Conclusão | artigo completo em rascunho |
+| **Ter 24** | Conferência número a número (registro de afirmações); README v3; vídeo curto de trajetórias | Revisão do texto (segunda leitura); conferência de referências | Revisão final, slides, ensaio | checklist da §9 |
+| **Qua 25** | Release **`v1.0`** com modelos, descritores e manifestos | — | PDF final e apresentação | entrega |
+
+Se a apresentação for **antes** de 25/11, apresentar o estado congelado mais recente (o estudo v1 como resultado e a v3 como andamento) e manter o 25/11 para o artigo.
+
+---
+
+## 6. Repositório e saídas
+
+- Branch `feat/v3-change-aware` a partir da `main` depois do merge de hoje. PRs pequenos com revisão do Vitor (ou de um colega).
+- Código novo em `src/dal/v3/`: `descriptors/` (DINOv2, ajuste fino), `envs/` (ambiente em lote, sensor, movimento), `localization/` (filtro padrão e CA), `agents/` (PPO em lote), `evaluation/` (rliable, bootstrap hierárquico), `reporting/`. Identificadores em inglês; comentários e docstrings em português (`CONTRIBUTING.md`).
+- Notebooks em `colab/` numerados: `01_data_and_crops.ipynb`, `02_dinov2_features.ipynb`, `03_contrastive_finetune.ipynb`, `04_train_matrix.ipynb`, `05_evaluate.ipynb`.
+- Saídas: `configs_v3/`, `runs_v3/` (só os modelos finais no disco local; o resto no Drive), `results_v3/`, `paper/`.
+- Decisões: `DECISIONS_V3.md` (decisão, motivo, alternativa descartada).
+- Dados: Maxar/OpenAerialMap sob **CC BY-NC 4.0**; produtos do Copernicus EMS com atribuição. Citar no README e no artigo. Os recortes derivados vão como asset da release com os hashes das fontes, porque o bucket de origem (`oin-hotosm-temp`) é temporário.
+
+### 6.1 Testes obrigatórios (`tests/test_v3_*.py`)
+
+- paridade do ambiente em lote com o de CPU no modo legado (G2);
+- a verossimilhança CA com α = 0 é idêntica à padrão;
+- o prior de mudança não lê nenhum arquivo da imagem pós-evento (teste de proveniência);
+- o ajuste fino e o PCA só usam células da faixa de treino da dobra (teste de vazamento);
+- footprint correto para cada altitude; deriva com a média e o desvio configurados;
+- as variantes são determinísticas dada a semente;
+- teste de proteção: nada em `results/`, `results_poa/`, `data*/`, `runs/overnight/` ou `configs*/` muda;
+- golden e teste de carga dos modelos v1 continuam passando.
+
+---
+
+## 7. O que acontece com o trabalho da v2
+
+| Item da v2 | Situação | Na v3 |
+|---|---|---|
+| Errata da MO, diagnóstico, conciliação, critérios v2 | feitos | entram no apêndice e no histórico; nada a refazer |
+| Reavaliação amostrada (`results_mo_v1fix/`) | feita | tabela do apêndice da MO |
+| Retreino P3 da MO (`configs_mo_v2/`) | não iniciado | **cancelado** (registrar em `DECISIONS_V3.md`) |
+| Throughput do MOPPO (P2) | otimizações commitadas, medição pendente | medir só se sobrar CPU; não bloqueia nada |
+| ICs hierárquicos, tabela canônica (P5, P6) | feitos | o mesmo código serve para a v3 |
+| Índice de mudança no Taquari e M1 (P7, F1–F3) | critérios commitados | **terminar hoje**: é a motivação do método |
+| Refatoração dos módulos antigos | comentários feitos | renomeações e subpacotes ficam para depois de 25/11 |
+
+---
+
+## 8. Ordem de corte e plano B
+
+Cortar nesta ordem, só o necessário, registrando em `DECISIONS_V3.md`:
+
+1. evento externo;
+2. ablação de deriva;
+3. ajuste fino contrastivo (fica o DINOv2 zero-shot);
+4. validação espacial com 3 seeds (fica só a dobra A);
+5. altitude como ação (H4 vira trabalho futuro);
+6. terceira área do RS;
+7. 10 seeds → 5 seeds.
+
+**Se o G2 (paridade) falhar até sexta ao meio-dia:** abandonar o ambiente em GPU e rodar o ambiente realista na CPU local com a matriz mínima: PPO e PPO-CA, 3 seeds, dobra A, sem altitude.
+
+**Mínimo para a entrega de 25/11:** descritor aprendido (pelo menos zero-shot) + ambiente realista com deriva + filtro CA para todos os métodos + PPO-CA × baselines CA + Porto Alegre zero-shot + estatística com rliable. Com isso o artigo já tem método, ablação e transferência.
+
+---
+
+## 9. Definição de pronto (25/11)
 
 Ciência:
-- [ ] `docs/diagnostico_mo.md` com o diagnóstico do P1 e a leitura da §2.1 (gate que falhou + regras da avaliação amostrada)
-- [ ] Todas as políticas aprendidas da comparação MO avaliadas no mesmo modo (argmax e amostrado)
-- [ ] Scripts de treino marcam a execução como inválida quando um gate falha
-- [ ] `REPORT_MO_ERRATA.md` publicado e vereditos v1 recalculados pelo critério original
-- [ ] MO v2 avaliada com critérios v2 commitados antes, **ou** plano B documentado
-- [ ] ICs por bootstrap hierárquico e resultados por seed em todas as tabelas
-- [ ] `paper/tables/` gerado por script, com `source_file`, `protocol`, `n_episodes` e `seeds` em toda linha
-- [ ] `docs/conciliacao_numeros.md` explica toda divergência entre relatórios
-- [ ] `PRESENTATION_MO.md` e vídeos sem afirmações que os dados contradizem
-- [ ] Manifestos do Taquari e de Porto Alegre passando
-- [ ] Tag `results-final`
+- [ ] Tag `v1-study-final` (estudo v1 fechado com errata, conciliação e M1)
+- [ ] G0–G4 registrados em `DECISIONS_V3.md`, com o desfecho de cada um
+- [ ] `DECISIONS_V3.md` com as hipóteses commitado antes da matriz completa
+- [ ] Todos os testes v3 verdes; manifestos protegidos passando
+- [ ] Tag `results-final` (congelamento de segunda, 23/11)
+- [ ] `paper/tables/` e `paper/figures/` gerados por script a partir de `results_v3/`
 
 Código:
-- [ ] `ruff check` sem erros; `pytest -q` verde, incluindo golden e teste de carga dos modelos
-- [ ] Nenhum identificador em português (regra N do `ruff` e grep pelo glossário)
-- [ ] Comentários e docstrings em português
-- [ ] README em português, com reprodução passo a passo
-- [ ] Release `v1.0` com modelos, features e hashes das fontes
+- [ ] Código novo no padrão do `CONTRIBUTING.md`, `ruff check` sem erros
+- [ ] Notebooks do Colab reproduzíveis a partir de um commit
+- [ ] README com reprodução da v3 (local + Colab)
+- [ ] Release `v1.0` com modelos, descritores, recortes derivados e hashes das fontes
 
-Artigo:
-- [ ] PDF no template aprovado pelo professor, em `paper/`
+Artigo e apresentação:
+- [ ] PDF final no template confirmado
+- [ ] Toda afirmação conferida contra o registro (`PLANO_ARTIGO.md` §4)
+- [ ] Slides e vídeo curto de trajetórias
