@@ -66,17 +66,16 @@ def footprint_m(altitude_m: float) -> float:
 
 def load_site(name: str) -> Site:
     """Taquari e Porto Alegre a partir das configs da v1 (só leitura)."""
+    # Deslocamentos copiados de data*/align.json (fora do git) para um arquivo versionado: o Colab precisa deles.
+    raw = json.loads((ROOT / "configs_v3" / "alignment_offsets.json").read_text())
+    if name in raw:
+        offsets = {k: ((v["dx_m"], v["dy_m"]) if v["applied"] else (0.0, 0.0)) for k, v in raw[name].items()}
     if name == "taquari":
-        from dal.align import load_offsets
-
         config = load_config("configs/default.yaml")
-        offsets = load_offsets()
         return Site("taquari", config["data"]["aoi"], "post", ("pre_mar23", "pre_oct23", "post"),
                     config["data"]["sources"], offsets)
     if name == "poa":
         config = load_config("configs_poa/poa.yaml")
-        raw = json.loads((ROOT / "data_poa" / "align.json").read_text())
-        offsets = {k: ((v["dx_m"], v["dy_m"]) if v.get("applied") else (0.0, 0.0)) for k, v in raw.items()}
         return Site("poa", config["data"]["aoi"], "poa_post", ("poa_pre_feb24", "poa_pre_dec22", "poa_post"),
                     config["data"]["sources"], offsets)
     raise ValueError(f"local desconhecido: {name}")

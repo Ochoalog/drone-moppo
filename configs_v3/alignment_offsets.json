@@ -1,0 +1,36 @@
+{
+ "taquari": {
+  "post": {
+   "dx_m": 0.0,
+   "dy_m": 0.0,
+   "applied": false
+  },
+  "pre_mar23": {
+   "dx_m": 2.2230529988953585,
+   "dy_m": 1.2174582492649813,
+   "applied": true
+  },
+  "pre_oct23": {
+   "dx_m": 4.922536174184599,
+   "dy_m": 0.8504268107004802,
+   "applied": true
+  }
+ },
+ "poa": {
+  "poa_post": {
+   "dx_m": 0.0,
+   "dy_m": 0.0,
+   "applied": false
+  },
+  "poa_pre_feb24": {
+   "dx_m": -0.4363292487683835,
+   "dy_m": 2.8003795951733226,
+   "applied": true
+  },
+  "poa_pre_dec22": {
+   "dx_m": 0.39953973047620467,
+   "dy_m": -0.549660880918585,
+   "applied": false
+  }
+ }
+}
