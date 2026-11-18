@@ -1,6 +1,6 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 13:05. **Etapa:** A (fechamento do estudo v1: testes finais rodando antes do merge) + B (base da v3).
+**Última atualização:** 18/11/2026, 13:25. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
@@ -9,6 +9,8 @@
 3. **Decidir a terceira área e o evento externo.** A IA-2 recomenda **Canoas** (par Maxar 09/05/2024 × 02/02/2024; prior do EMSN194) e **Valência** (Maxar Open Data, 26/10 × 31/10/2024; prior do EMSR773). O furacão Helene foi descartado (sem ativação do Copernicus EMS).
 4. **Token do GitHub** nos *secrets* do Colab (`GITHUB_TOKEN`), se ainda não estiver: o commit do G0 saiu com a sua conta, então parece que já está.
 5. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma): confirmar com o professor.
+6. **Revisar o rascunho das hipóteses e da matriz** em `docs/DECISIONS_V3_hipoteses_RASCUNHO.md` (quinta). Os pontos marcados com "[definido aqui]" foram operacionalizados pela IA-1 e precisam do seu aval. Depois da revisão, o texto vai para a §2 do `DECISIONS_V3.md` e fica pré-especificado.
+7. **Nome do prior refeito do Taquari:** pedir à IA-2 que grave o raster refeito (só fontes ≤ 06/05/2024) como `MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif`; os jobs de calibração usam esse nome.
 
 ## Gates
 
@@ -16,16 +18,19 @@
 |---|---|---|
 | G0 (dados) | relatório recebido; **aprovado com condições** (prior do Taquari a refazer) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
 | G1 preliminar | spec e job prontos; aguardando a IA-2 rodar `g1_legacy_dinov2` | referência hand: S1 0,409, S2 0,269 |
-| G2 (paridade) | **reta e zigue-zague: 1000/1000 trajetórias idênticas** (crença até 9,4e-7); PPO da PoC: 100/100 episódios iguais no teste; versão com 1000 episódios e 3 seeds roda de novo depois do merge na `main` | — |
+| G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
 | G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
 | G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |
 
 ## Rodando agora
 
-- **Local:** `pytest -q` completo + manifestos na branch do estudo v1, antes do merge na `main` e da tag `v1-study-final`.
-- **Colab:** à espera do `g1_legacy_dinov2`.
+- **Local:** nada pesado.
+- **Colab (fila):** `g1_legacy_dinov2` → 6 × `v3_extract_*` → `finetune_A` → 6 × `v3_extract_ft_*` → `calibrate_A_*` (precisa do prior refeito).
 
 ## Feito hoje
+
+- **Merge do estudo v1 na `main` e tag `v1-study-final`** (`pytest` 69/69, manifestos OK).
+- **v3, parte 2:** ajuste fino contrastivo (notebook 03), jobs de calibração, treino e avaliação (notebooks 04 e 05), PCA do Taquari reaplicada no zero-shot, G1 calculado no próprio Colab.
 
 - **Estudo v1 fechado:**
   - F1: índice de mudança no Taquari;
@@ -52,6 +57,7 @@ Nenhum.
 
 ## Próximos passos (IA-1)
 
-1. Merge do estudo v1 na `main` + tag `v1-study-final` (assim que os testes passarem); merge da `main` na `feat/v3-change-aware`; G2 completo.
-2. Notebooks 01 (specs v3 + descritores multialtitude), 03 (ajuste fino contrastivo), 04 (treino) e 05 (avaliação).
-3. Avaliar o G1 assim que a IA-2 publicar os descritores.
+1. Conferir o G1 preliminar quando a IA-2 publicar (`colab_out/g1_legacy_dinov2/`).
+2. Esqueleto LaTeX em `paper/` com macros de números lidas dos CSVs; Fig. 1 em rascunho.
+3. Avaliação, estatística (rliable) e geração de vereditos e figuras da v3 a partir dos episódios.
+4. Depois da sua revisão: §2 do `DECISIONS_V3.md` commitada; pilotos (G3, G4) e matriz.
