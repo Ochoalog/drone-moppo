@@ -75,7 +75,7 @@ Active localization, reinforcement learning, UAV, visual geo-localization, outda
 ### III. Preliminary Study: Why Active Localization Fails on Outdated Maps (~0,8 página)
 - O cenário do estudo v1 em um parágrafo (grade de 50 m, descritor hand, PPO à la ANL, Taquari e Porto Alegre).
 - Três achados, com números canônicos:
-  1. a PPO não se distingue da reta em sucesso (IC hierárquico da diferença em S2: [−6,1; +9,8] p.p.), com menos passos e ~2/3 da distância **nos sucessos** (1,25 × 1,89 km), mas mais localizações falsas (20,2% × 13,0%);
+  1. a PPO não se distingue da reta em sucesso (IC hierárquico da diferença em S2: [−7,1; +9,8] p.p.; *corrigido em 18/11 pela IA-1: o [−6,1; +9,8] veio de uma rodada de teste com B = 200; use a macro `\vOneDiffSuccessSTwoLow`*), com menos passos e ~2/3 da distância **nos sucessos** (1,25 × 1,89 km), mas mais localizações falsas (20,2% × 13,0%);
   2. o sucesso de todos os métodos cai com o índice de mudança (F1), e a covariável independente do descritor aponta na mesma direção (F2);
   3. mecanismo M1 (se suportado): as localizações falsas da PPO acontecem em células distintivas no mapa antigo e mudadas.
 - **Fig. 2:** sucesso × quintil do índice de mudança (Taquari e Porto Alegre) + painel do M1.
@@ -133,7 +133,7 @@ Responder às 3 perguntas. Trabalhos futuros: teste em voo real, dinâmica e sim
 | Afirmação | Pode? | Forma correta e evidência |
 |---|---|---|
 | "O RL reduz a distância voada pela metade" (estudo v1) | **não** | "Nos episódios com sucesso, a PPO voa ~2/3 da distância da reta (1,25 × 1,89 km)" (`docs/conciliacao_numeros.md` nº 7) |
-| "Sucesso equivalente à reta" (estudo v1) | **não** | "Não distinguível: IC hierárquico da diferença [−6,1; +9,8] p.p." |
+| "Sucesso equivalente à reta" (estudo v1) | **não** | "Não distinguível: IC hierárquico da diferença [−7,1; +9,8] p.p." (*corrigido em 18/11; macros `\vOneDiffSuccessSTwoLow`/`High`*) |
 | "A PPO generaliza do norte para o sul" (estudo v1) | sim | S2: 0,701 → 0,707; S1: 0,917 → 0,840, com a reta também caindo |
 | "A dificuldade é governada pela mudança do mapa" | sim, como associação | F1 e F2; nunca causal |
 | "O filtro CA reduz a localização falsa" | só se H2 for suportada | IC da diferença por método e local |
