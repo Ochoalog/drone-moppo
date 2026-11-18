@@ -35,7 +35,7 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 | Gate | Critério | Situação |
 |---|---|---|
 | G0 | dados (prior, terceira área, evento externo) | **Aprovado** para o prior (18/11 13:42, commit `e9355bc` da `colab/results`; ver §5). Terceira área e evento externo aguardam decisão do Vitor (recomendação da IA-2: Canoas e Valência/EMSR773) |
-| G1 preliminar | DINOv2 zero-shot × hand (S1 0,409; S2 0,269) na spec `legacy_50m` | spec publicada; caminho de avaliação conferido (o hand da v1 dá 0,409 e 0,269 pelo `scripts/eval_retrieval_v3.py`) |
+| G1 preliminar | DINOv2 zero-shot × hand (S1 0,409; S2 0,269) na spec `legacy_50m` | **DINOv2 zero-shot não supera o hand** (18/11, job `g1_legacy_dinov2`, `DONE.json` validado; `results_v3/g1/`). Top-1 no treino, GeM / CLS / hand nos mesmos pixels: S0 0,816 / 0,752 / 0,998; S1 0,139 / 0,114 / 0,411; S2 0,063 / 0,055 / 0,270. O hand nos pixels do COG reproduz a v1 (0,411 × 0,409; 0,270 × 0,269). Diagnóstico: S0 = 0,82 com a mesma imagem mostra que o pooling global não separa células vizinhas (ver V20) |
 | G2 | paridade do ambiente em lote | **PASSOU** (18/11, `results_v3/gates/G2.json`): 1000 episódios de teste de S2; reta e zigue-zague com 1000/1000 trajetórias idênticas (crença até 9,4e-7); PPO da PoC, seeds 0–2, com 1000/1000 episódios de resultado idêntico ao gravado (0,809 / 0,644 / 0,667; média 0,707, dentro do IC do REPORT.md [0,634; 0,796]) |
 | G3 | controle: reta ≥ 90% | pendente |
 | G4 | ≥ 5.000 passos/s na T4 | pendente |

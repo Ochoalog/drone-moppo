@@ -1,0 +1,25 @@
+{
+ "job_id": "g1_legacy_dinov2",
+ "git_commit": "dafba610a737866116c0aeff287ce907d41bd41c",
+ "config_hash": "217d676bd6f916b7",
+ "gpu_minutes": 22.31,
+ "started_at": "2026-11-18T18:21:52+00:00",
+ "finished_at": "2026-11-18T18:44:11+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "n_rows": 323595,
+  "rendered_this_session": 323595,
+  "descriptors": [
+   "gem",
+   "cls",
+   "valid_frac",
+   "cloud_frac",
+   "hand"
+  ],
+  "crops_per_second": 241.70110216919574,
+  "device": "cuda",
+  "gpu_name": "Tesla T4"
+ },
+ "artifacts": "/content/drive/MyDrive/drone_v3/features/legacy_50m/dinov2_vits14"
+}
