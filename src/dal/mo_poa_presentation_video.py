@@ -139,10 +139,9 @@ def render_slide_how(w=1920, h=1080) -> np.ndarray:
         ("PILAR 3: MEMÓRIA CURTA DE AÇÕES (ANL)",
          "• Buffer FIFO com o histórico das últimas 8 ações.\n\n"
          "• Inspirado no Active Neural Localization (ICLR 2018).\n\n"
-         "• Resolve o problema de simetria:\n"
-         "  Impede que o drone fique em círculos sobre água\n"
-         "  uniforme, incentivando a fuga ativa para a terra!\n\n"
-         "• Multiplica o hipervolume da fronteira em ~300%!",
+         "• Hipótese: ajuda a quebrar a simetria sobre água\n"
+         "  uniforme (não demonstrada: 1 seed, orçamentos diferentes).\n\n"
+         "• Efeito no hipervolume: inconclusivo (ver errata).",
          "#a6e3a1", 0.68),
     ]
 
@@ -222,17 +221,15 @@ def render_slide_conclusion(w=1920, h=1080) -> np.ndarray:
     ax.text(0.5, 0.81, "Principais conclusões do estudo de localização ativa sob choque morfológico nas Ilhas de POA", ha="center", color="#89dceb", fontsize=14)
 
     conclusions = (
-        "1. NAVEGAÇÃO ATIVA É INDISPENSÁVEL EM CENÁRIOS DE CALAMIDADE:\n"
-        "   Padrões cegos de varredura (reta e zigue-zague) assumem que qualquer terreno serve.\n"
-        "   Quando a água cobre as ilhas, voar reto significa ficar preso no mar de lama.\n"
-        "   O MOPPO ativamente detecta a ausência de marcos e busca refúgio nas margens estruturadas.\n\n"
-        "2. MULTIOBJETIVO SUPERA OBJETIVOS ESCALARES ÚNICOS:\n"
-        "   A parametrização explícita de risco permite adaptar o drone às exigências da missão:\n"
-        "   pode-se ordenar voo rápido quando a bateria está no fim ou voo ultrasseguro em missões críticas,\n"
-        "   sem necessidade de retreinar uma nova rede neural para cada cenário.\n\n"
-        "3. GENERALIZAÇÃO ZERO-SHOT ENTRE BACIAS HIDROGRÁFICAS:\n"
-        "   Mesmo treinada a 120 km de distância (Vale do Taquari), a política transferiu-se diretamente\n"
-        "   para Porto Alegre sem retreino, preservando a capacidade de leitura geométrica do relevo."
+        "1. A LINHA RETA É UMA BASELINE DIFÍCIL QUANDO O MAPA ESTÁ DESATUALIZADO:\n"
+        "   Nas ilhas (300 episódios), a PPO-S2 faz 71,3% de sucesso, a reta 67,7% e a MO 49,0%.\n"
+        "   Estratégias que confiam no mapa antigo herdam os erros dele onde o mapa mais mudou.\n\n"
+        "2. O CONDICIONAMENTO EM PREFERÊNCIAS NÃO FOI DEMONSTRADO NA V1:\n"
+        "   O gate de condicionamento falhou no treino, e os presets safe e unif deram números idênticos.\n"
+        "   H7 não suportada: localização falsa do safe 19,7% × 21,3% da PPO-S2, IC da diferença inclui 0.\n\n"
+        "3. TRANSFERÊNCIA ZERO-SHOT:\n"
+        "   As políticas treinadas no Taquari rodam em Porto Alegre sem retreino; o desempenho\n"
+        "   depende da região (melhor no Centro, pior nas ilhas)."
     )
     ax.text(0.5, 0.44, conclusions, ha="center", va="center", color="#cdd6f4", fontsize=12.5,
             bbox=dict(boxstyle="round,pad=1.2", facecolor="#1e1e2e", edgecolor="#a6e3a1", lw=2.0))
