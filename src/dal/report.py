@@ -1,4 +1,4 @@
-"""Tables, statistics, figures and REPORT.md. Every number comes from files in the results dir."""
+"""Tabelas, estatística, figuras e REPORT.md. Todo número sai de arquivos na pasta de resultados."""
 from __future__ import annotations
 
 import argparse
@@ -24,7 +24,7 @@ LABEL = {"ppo": "PPO", "greedy": "greedy IG (oracle obs.)", "greedy_map": "greed
          "lawnmower": "lawnmower", "straight": "straight", "random": "random"}
 
 
-# ============================================================================ statistics
+# ============================================================================ estatística
 def boot_ci(x: np.ndarray, n: int, rng: np.random.Generator, stat=np.mean) -> tuple[float, float]:
     x = np.asarray(x, float)
     x = x[~np.isnan(x)]
@@ -36,12 +36,12 @@ def boot_ci(x: np.ndarray, n: int, rng: np.random.Generator, stat=np.mean) -> tu
 
 
 def penalized_steps(df: pd.DataFrame, max_steps: int) -> pd.Series:
-    """Steps to success, failures (incl. false localization) counted as max_steps + 1."""
+    """Passos até o sucesso; falhas (inclusive localização falsa) contam como max_steps + 1."""
     return df.steps_to_success.fillna(max_steps + 1)
 
 
 def per_episode(df: pd.DataFrame, max_steps: int) -> pd.DataFrame:
-    """One row per (scenario, method, episode); PPO seeds are averaged per episode."""
+    """Uma linha por (cenário, método, episódio); os seeds do PPO são promediados por episódio."""
     d = df.assign(pen=penalized_steps(df, max_steps), success=df.success.astype(float),
                   false_loc=df.false_loc.astype(float))
     return d.groupby(["scenario", "method", "episode"])[["success", "false_loc", "pen"]].mean().reset_index()
@@ -70,7 +70,7 @@ def summary_table(df: pd.DataFrame, n_boot: int, seed: int = 0) -> pd.DataFrame:
 
 
 def paired_tests(df: pd.DataFrame, max_steps: int, n_boot: int, ref: str = "ppo", seed: int = 1) -> pd.DataFrame:
-    """Wilcoxon signed-rank on penalized steps and paired bootstrap of the success difference."""
+    """Wilcoxon pareado nos passos penalizados e bootstrap pareado da diferença de sucesso."""
     rng = np.random.default_rng(seed)
     pe = per_episode(df, max_steps)
     rows = []
@@ -93,7 +93,7 @@ def paired_tests(df: pd.DataFrame, max_steps: int, n_boot: int, ref: str = "ppo"
     return pd.DataFrame(rows)
 
 
-# ============================================================================ figures
+# ============================================================================ figuras
 def fig_success_curves(df: pd.DataFrame, max_steps: int, path: Path) -> None:
     scens = sorted(df.scenario.unique())
     fig, axes = plt.subplots(1, len(scens), figsize=(5 * len(scens), 4), sharey=True, squeeze=False)
@@ -102,7 +102,7 @@ def fig_success_curves(df: pd.DataFrame, max_steps: int, path: Path) -> None:
         g = df[df.scenario == scen]
         for m in [m for m in ORDER if m in set(g.method)]:
             s = g[g.method == m].steps_to_success.values
-            curve = [(s <= k).mean() for k in t]  # NaN (failures) compare False
+            curve = [(s <= k).mean() for k in t]  # NaN (falhas) dá False na comparação
             ax.plot(t, curve, label=LABEL[m], color=COLORS[m], lw=2 if m in ("ppo", "greedy") else 1.3)
         ax.set_title(scen)
         ax.set_xlabel("steps (1 step = 50 m)")
@@ -169,8 +169,8 @@ def fig_training(run_roots: list[Path], path: Path) -> bool:
 
 def fig_trajectories(traj_dir: Path, cfg: dict, split: str, path: Path, methods=("ppo", "greedy", "lawnmower"),
                      episode: int | None = None) -> list[str]:
-    """One figure per scenario; rows = methods, columns = belief at t = 0, T/2, T. By default the
-    saved episode with the longest mean trajectory across methods is shown (more informative)."""
+    """Uma figura por cenário; linhas = métodos, colunas = crença em t = 0, T/2, T. Por padrão mostra o
+    episódio salvo com a maior trajetória média entre os métodos (mais informativo)."""
     from .data import load_date
     from .grid import Grid
     from .viz import thumb_extent_km
@@ -237,13 +237,13 @@ def fig_trajectories(traj_dir: Path, cfg: dict, split: str, path: Path, methods=
     return made
 
 
-# ============================================================================ hypotheses
+# ============================================================================ hipóteses
 CEILING = 0.98
 
 
 def ceiling_scenarios(summ: pd.DataFrame) -> list[str]:
-    """Degenerate scenarios: every simple baseline succeeds >= CEILING with median <= 2 steps, so no
-    policy can be shown better in success or steps (excluded from H1/H3)."""
+    """Cenários degenerados: toda baseline simples tem sucesso >= CEILING com mediana <= 2 passos, então
+    nenhuma política pode se mostrar melhor em sucesso ou passos (ficam fora de H1/H3)."""
     out = []
     for scen, g in summ.groupby("scenario"):
         g = g[g.method.isin(SIMPLE)]
@@ -274,7 +274,7 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
                 continue
             r = T.loc[(scen, m)]
             steps_ok = r.wilcoxon_p < alpha and r.ref_better_steps
-            if S.loc[(scen, m)].success >= CEILING:  # baseline at the success ceiling: compare speed
+            if S.loc[(scen, m)].success >= CEILING:  # baseline no teto de sucesso: compara a rapidez
                 ok = r.success_diff >= -0.01 and steps_ok
             else:
                 ok = r.success_diff_lo > 0 and steps_ok
@@ -297,7 +297,7 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
                     "success: Δsuccess ≥ −1 pp and significantly fewer steps) AND Δsuccess vs greedy ≥ −5 pp. "
                     f"Holds in {sum(per)}/{len(per)} discriminative scenarios." + ceil_note + "\n\n"
                  + "\n".join(f"- {l}" for l in lines))
-    # ---- H2: advantage over the best simple baseline grows S0 < S1 < S2
+    # ---- H2: a vantagem sobre a melhor baseline simples cresce S0 < S1 < S2
     adv = {}
     for scen in ("S0", "S1", "S2"):
         if (scen, "ppo") not in S.index:
@@ -309,14 +309,14 @@ def verdicts(summ: pd.DataFrame, tests: pd.DataFrame, summ_train: pd.DataFrame |
     if len(adv) == 3:
         d = [adv[s][1] for s in ("S0", "S1", "S2")]
         mono = d[0] < d[1] < d[2]
-        sep = adv["S2"][2] > adv["S0"][3]  # CIs of S2 and S0 do not overlap
+        sep = adv["S2"][2] > adv["S0"][3]  # os ICs de S2 e S0 não se sobrepõem
         v = "supported" if mono and sep else "inconclusive" if (mono or d[2] > d[0]) else "not supported"
     else:
         v = "inconclusive"
     out["H2"] = (v, "Criterion: the advantage increases monotonically S0 < S1 < S2 and the 95% CIs of S0 and S2 do "
                     "not overlap (supported); monotone or S2 > S0 without separation (inconclusive); otherwise not "
                     "supported.\n\n" + "\n".join(lines))
-    # ---- H3: generalization north → south
+    # ---- H3: generalização norte → sul
     if summ_train is None or tests_train is None or tests_train.empty:
         out["H3"] = ("inconclusive", "No evaluation on the training region was available for comparison.")
         return out
@@ -375,7 +375,7 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
     md = [f"# REPORT: active global localization of a drone with RL on outdated maps\n",
           "*Generated automatically by `python -m dal.report`. Every number below is read from files in "
           f"`{rel(results)}/`.*{title_note}\n"]
-    # ---------------- data
+    # ---------------- dados
     ds = results / "data_stats.json"
     if ds.exists():
         s = json.loads(ds.read_text())
@@ -391,7 +391,7 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
                                                 "offset_m", "applied"]))
         if (figs / "data_overview.png").exists():
             md.append(f"\n![data overview]({rel(figs / 'data_overview.png')})\n")
-    # ---------------- retrieval
+    # ---------------- recuperação
     rp = results / "retrieval.csv"
     if rp.exists():
         r = pd.read_csv(rp)
@@ -416,7 +416,7 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
         md.append(md_table(piv, list(piv.columns)))
         fl = gc.pivot_table(index=["descriptor", "scenario"], columns="method", values="false_loc").reset_index()
         md.append("\nFalse-localization rate:\n\n" + md_table(fl, list(fl.columns)))
-    # ---------------- main results
+    # ---------------- resultados principais
     ep_test = results / "episodes_test.csv"
     verdict = None
     if ep_test.exists():
@@ -463,7 +463,7 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
             md.append(md_table(summ_tr, ["scenario", "method", "episodes", "success", "false_loc",
                                          "steps_median", "decision_ms"]))
         verdict = verdicts(summ, tests, summ_tr, tests_tr)
-    # ---------------- training curves
+    # ---------------- curvas de treino
     if fig_training(run_roots, figs / "training_curves.png"):
         md.append("\n## 6. Training curves\n")
         metas = [json.loads((d / "train_meta.json").read_text()) for r in run_roots if r.exists()
@@ -471,7 +471,7 @@ def build(cfg: dict, results: Path, run_roots: list[Path], out_md: Path, title_n
         if metas:
             md.append(md_table(pd.DataFrame(metas), ["name", "timesteps", "seconds", "fps"]))
         md.append(f"\n![training]({rel(figs / 'training_curves.png')})\n")
-    # ---------------- hypotheses
+    # ---------------- hipóteses
     md.append("\n## 7. Hypotheses\n")
     if verdict is None:
         md.append("No test-region evaluation available: H1/H2/H3 **inconclusive**.\n")

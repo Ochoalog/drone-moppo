@@ -1,5 +1,5 @@
-"""Retrieval quality of the descriptors and calibration of the likelihood temperature beta,
-both on TRAIN windows only."""
+"""Qualidade de recuperação dos descritores e calibração da temperatura beta da verossimilhança,
+ambas só em janelas de TREINO."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,7 @@ BETAS = np.round(np.geomspace(1, 300, 40), 3)
 
 def window_stats(data: ScenarioData, W: int, n_windows: int, seed: int, min_valid: float,
                  n_beta_q: int = 200) -> dict:
-    """Top-k retrieval (exact cell and within 1 cell) and log-lik of the true cell per beta."""
+    """Recuperação top-k (célula exata e a até 1 célula) e log-verossimilhança da célula real para cada beta."""
     rng = np.random.default_rng(seed)
     wins = data.windows("train", W, min_valid)
     sel = wins[rng.choice(len(wins), size=min(n_windows, len(wins)), replace=False)]
@@ -29,7 +29,7 @@ def window_stats(data: ScenarioData, W: int, n_windows: int, seed: int, min_vali
         mok = np.asarray(data.map_ok[sl]).ravel()
         both = mok & np.asarray(data.obs_ok[sl]).ravel()
         M = np.asarray(data.map_desc[sl], np.float32).reshape(W * W, -1)[mok]
-        midx = np.flatnonzero(mok)  # map-cell index -> window cell index
+        midx = np.flatnonzero(mok)  # índice da célula no mapa -> índice da célula na janela
         pos = {c: i for i, c in enumerate(midx)}
         q = np.flatnonzero(both)
         rr, cc = q // W, q % W
@@ -43,7 +43,7 @@ def window_stats(data: ScenarioData, W: int, n_windows: int, seed: int, min_vali
                 hits[kk].append(rank < kk)
             best = midx[S.argmax(1)]
             near1.append(np.maximum(np.abs(best // W - rr), np.abs(best % W - cc)) <= 1)
-            sub = rng.choice(len(q), size=min(n_beta_q, len(q)), replace=False)  # beta: subsample queries
+            sub = rng.choice(len(q), size=min(n_beta_q, len(q)), replace=False)  # beta: subamostra as consultas
             Ss, st = S[sub], s_true[sub]
             ll.append(np.stack([b * st - logsumexp(b * Ss, axis=1) for b in BETAS], 1))
             chance.append(np.full(len(q), 1.0 / len(midx)))
@@ -83,10 +83,10 @@ def _kappa_job(task) -> dict:
 
 
 def calibrate_kappa(data: ScenarioData, fcfg: dict, episodes: int, workers: int) -> tuple[float, list[dict]]:
-    """Sequence-level tempering: kappa (beta = kappa * beta_1) maximizing success - false-localization
-    rate (the terminal utility of the reward) of a random policy on TRAIN windows; ties -> largest kappa.
-    Single-step beta_1 ignores that successive observations have correlated errors, which makes
-    the filter overconfident (frequent early false localizations)."""
+    """Temperamento por sequência: escolhe kappa (beta = kappa * beta_1) que maximiza sucesso - localização falsa
+    (a utilidade terminal da recompensa) de uma política aleatória em janelas de TREINO; empate -> maior kappa.
+    O beta_1 de um passo ignora que observações sucessivas têm erros correlacionados, o que deixa
+    o filtro confiante demais (muitas localizações falsas precoces)."""
     from multiprocessing import get_context
 
     seeds = 50_000 + np.arange(episodes)
@@ -104,7 +104,7 @@ def calibrate_kappa(data: ScenarioData, fcfg: dict, episodes: int, workers: int)
 
 def run(cfg: dict, descriptors: list[str], n_windows: int = 30, kappa_only: bool = False) -> pd.DataFrame:
     c = copy.deepcopy(cfg)
-    c["filter"]["beta"] = 1.0  # placeholder while calibrating
+    c["filter"]["beta"] = 1.0  # valor provisório durante a calibração
     rows, betas = [], {}
     path = DATA / "beta.json"
     if path.exists():

@@ -1,9 +1,9 @@
-"""Estimate the translation between each map date and `post` by phase correlation on
-gradient-magnitude images, using structured (high-gradient) tiles valid in both dates.
+"""Estima a translação entre cada data de mapa e `post` por correlação de fase sobre imagens de
+magnitude do gradiente, usando blocos estruturados (gradiente alto) válidos nas duas datas.
 
-Convention: `offset_m = (dx, dy)` (east, north) such that a ground feature located at UTM
-point p in `post` appears at p + offset in the map date. Crops of the map date are therefore
-sampled at p + offset to be registered with `post`.
+Convenção: `offset_m = (dx, dy)` (leste, norte), tal que um detalhe do terreno no ponto UTM p de
+`post` aparece em p + offset na data do mapa. Por isso os recortes da data do mapa são
+amostrados em p + offset, para ficarem registrados com `post`.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def grad_image(img: np.ndarray) -> np.ndarray:
 
 
 def phase_shift_px(ref: np.ndarray, mov: np.ndarray) -> tuple[float, float, float]:
-    """(sx, sy, response) with mov(u) ~= ref(u - s), in pixel units (x right, y down)."""
+    """(sx, sy, resposta) com mov(u) ~= ref(u - s), em pixels (x para a direita, y para baixo)."""
     win = cv2.createHanningWindow((ref.shape[1], ref.shape[0]), cv2.CV_32F)
     (sx, sy), resp = cv2.phaseCorrelate(ref.astype(np.float32), mov.astype(np.float32), win)
     return float(sx), float(sy), float(resp)
@@ -34,7 +34,7 @@ def phase_shift_px(ref: np.ndarray, mov: np.ndarray) -> tuple[float, float, floa
 
 def estimate_offset(post: Raster, other: Raster, ok_both: np.ndarray, grid: Grid, tile_cells: int = 12,
                     n_tiles: int = 60, min_resp: float = 0.05, seed: int = 0) -> dict:
-    """Median offset (m) over the most structured fully valid tiles."""
+    """Deslocamento mediano (m) sobre os blocos mais estruturados e totalmente válidos."""
     cands = []
     for r in range(0, grid.nrows - tile_cells + 1, tile_cells):
         for c in range(0, grid.ncols - tile_cells + 1, tile_cells):
@@ -54,7 +54,7 @@ def estimate_offset(post: Raster, other: Raster, ok_both: np.ndarray, grid: Grid
     rows = []
     for score, box, a, b in cands[:n_tiles]:
         sx, sy, resp = phase_shift_px(grad_image(a), grad_image(b))
-        # b(u) = a(u - s): feature at pixel u in post appears at u + s in the other date.
+        # b(u) = a(u - s): o detalhe no pixel u de post aparece em u + s na outra data.
         rows.append(dict(box=box, score=score, dx_m=sx * post.res, dy_m=-sy * post.res, resp=resp))
     good = [r for r in rows if r["resp"] >= min_resp]
     use = good if len(good) >= 5 else rows
@@ -90,7 +90,7 @@ def run(cfg: dict) -> dict:
 
 
 def load_offsets() -> dict[str, tuple[float, float]]:
-    """Offset to apply when sampling each date (zero when below the application threshold)."""
+    """Deslocamento a aplicar ao amostrar cada data (zero quando fica abaixo do limiar de aplicação)."""
     a = json.loads((DATA / "align.json").read_text())
     return {k: ((v["dx_m"], v["dy_m"]) if v.get("applied") else (0.0, 0.0)) for k, v in a.items()}
 

@@ -1,4 +1,4 @@
-"""Figures that depend only on data products (overview, trajectories over thumbnails)."""
+"""Figuras que dependem só dos produtos de dados (visão geral, trajetórias sobre as miniaturas)."""
 from __future__ import annotations
 
 import json
@@ -17,7 +17,7 @@ DATE_LABEL = {"post": "post (2024-05-07)", "pre_mar23": "pre_mar23 (2023-03-02)"
 
 
 def thumb_extent_km(t: Raster, grid: Grid) -> list[float]:
-    """imshow extent of a thumbnail in km, origin at the grid's top-left corner (y = km south)."""
+    """Extent do imshow de uma miniatura em km, com origem no canto superior esquerdo da grade (y = km ao sul)."""
     H, W = t.img.shape[:2]
     x0 = (t.x_origin - grid.x0) / 1000
     y0 = (grid.y1 - t.y_origin) / 1000

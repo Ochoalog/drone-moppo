@@ -1,10 +1,11 @@
-"""MOPPO (Multi-Objective PPO) implementation in PyTorch (AMOR / Alegre et al., SIGGRAPH 2025)."""
+"""Implementação do MOPPO (PPO multiobjetivo) em PyTorch (AMOR, Alegre et al., SIGGRAPH 2025)."""
 from __future__ import annotations
 
 import argparse
 import json
 import os
 import time
+import warnings
 from pathlib import Path
 
 import gymnasium as gym
@@ -15,20 +16,20 @@ import torch.optim as optim
 import yaml
 from torch.distributions.categorical import Categorical
 
-from .config import DATA, RUNS, load_config
-from .mo_env import DroneLocMOEnv, make_mo_env
+from .config import RUNS, load_config
+from .mo_env import make_mo_env
 
 
 # ============================================================================
-# Neural Network
+# Rede neural
 # ============================================================================
 class LocExtractor(nn.Module):
-    """3 strided convs over (C, W, W) map + balanced vector projection trunk."""
+    """3 convoluções com stride sobre o mapa (C, W, W) + tronco com projeção balanceada do vetor."""
 
     def __init__(self, c_in: int, h: int, w: int, nv: int, features_dim: int = 256):
         super().__init__()
         self.cnn = nn.Sequential(
-            # ~1.3 M MAC per sample: 64 -> 16 -> 8 -> 4
+            # ~1,3 M MAC por amostra: 64 -> 16 -> 8 -> 4
             nn.Conv2d(c_in, 16, 4, stride=4),
             nn.ReLU(),
             nn.Conv2d(16, 32, 3, stride=2, padding=1),
@@ -41,7 +42,7 @@ class LocExtractor(nn.Module):
             dummy = torch.zeros(1, c_in, h, w)
             n_flat = self.cnn(dummy).shape[1]
 
-        # Balanced 128 CNN + 128 vector projections to avoid overpowering w
+        # Projeções balanceadas (128 da CNN + 128 do vetor) para a CNN não abafar o w
         self.cnn_proj = nn.Sequential(
             nn.Linear(n_flat, features_dim // 2),
             nn.ReLU(),
@@ -54,7 +55,7 @@ class LocExtractor(nn.Module):
 
     def forward(self, obs_map: torch.Tensor, obs_vec: torch.Tensor) -> torch.Tensor:
         cnn_feat = self.cnn_proj(self.cnn(obs_map))
-        # Normalize w component to zero-mean unit scale (§8 conditioning)
+        # Normaliza o w para média zero e escala unitária (condicionamento, §8)
         if obs_vec.shape[1] >= 4:
             w_norm = (obs_vec[:, :4] - 0.25) * 4.0
             vec_norm = torch.cat([w_norm, obs_vec[:, 4:]], dim=1)
@@ -65,7 +66,7 @@ class LocExtractor(nn.Module):
 
 
 class MOPPONetwork(nn.Module):
-    """Multi-Objective Actor-Critic with vector critic V(s, w) in R^M (AMOR Eq. 4)."""
+    """Ator-crítico multiobjetivo com crítico vetorial V(s, w) em R^M (AMOR, Eq. 4)."""
 
     def __init__(
         self,
@@ -83,7 +84,7 @@ class MOPPONetwork(nn.Module):
         self.action_dim = action_dim
         self.extractor = LocExtractor(c_in, h, w, nv, features_dim=features_dim)
 
-        # Actor and Critic heads receive both features and normalized w directly (AMOR §4.1 / §5)
+        # As cabeças do ator e do crítico recebem as features e também o w normalizado diretamente (AMOR §4.1 / §5)
         in_dim = features_dim + num_objectives
         self.actor = nn.Sequential(
             nn.Linear(in_dim, hidden_dim),
@@ -108,7 +109,7 @@ class MOPPONetwork(nn.Module):
         return self.extractor(obs["map"], obs["vec"])
 
     def get_value(self, obs: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Returns V(s, w) of shape (B, num_objectives)."""
+        """Retorna V(s, w) com forma (B, num_objectives)."""
         feat = self.get_features(obs)
         head_in = self._get_head_input(feat, obs["vec"])
         return self.critic(head_in)
@@ -140,7 +141,7 @@ class MOPPONetwork(nn.Module):
 
 
 # ============================================================================
-# GAE & Loss Functions
+# GAE e funções de perda
 # ============================================================================
 def compute_vector_gae(
     rewards: np.ndarray | torch.Tensor,  # (T, num_envs, M)
@@ -149,9 +150,9 @@ def compute_vector_gae(
     gamma: float = 0.99,
     gae_lambda: float = 0.95,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Calculates vector generalized advantage estimation (GAE) across M objectives.
+    """Calcula a estimativa de vantagem generalizada (GAE) vetorial sobre os M objetivos.
 
-    Returns:
+    Retorna:
         advantages: (T, num_envs, M)
         returns:    (T, num_envs, M)
     """
@@ -183,7 +184,7 @@ def compute_scalar_gae(
     gamma: float = 0.99,
     gae_lambda: float = 0.95,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Standard scalar GAE for verification (spec §3a)."""
+    """GAE escalar padrão, usado para verificação (especificação §3a)."""
     if isinstance(rewards, np.ndarray):
         rewards = torch.from_numpy(rewards).float()
     if isinstance(values, np.ndarray):
@@ -216,20 +217,20 @@ def compute_losses(
     vf_coef: float = 0.5,
     ent_coef: float = 0.01,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Computes MOPPO policy loss, value loss, entropy bonus, and total loss."""
+    """Calcula as perdas do MOPPO: política, valor, bônus de entropia e perda total."""
     _, new_logprob, entropy, new_value = net.get_action_and_value(obs, actions)
 
-    # Normalize scalarized advantage per mini-batch (AMOR §4.2)
+    # Normaliza a vantagem escalarizada por mini-lote (AMOR §4.2)
     adv_norm = (adv_scalar - adv_scalar.mean()) / (adv_scalar.std() + 1e-8)
 
-    # Policy loss (clipped surrogate)
+    # Perda da política (objetivo substituto com clipping)
     logratio = new_logprob - old_logprobs
     ratio = torch.exp(logratio)
     pg_loss1 = -adv_norm * ratio
     pg_loss2 = -adv_norm * torch.clamp(ratio, 1.0 - clip_range, 1.0 + clip_range)
     pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
-    # Value loss: sum over objectives of MSE(V_i, R_i) (spec §3)
+    # Perda do valor: soma sobre os objetivos de MSE(V_i, R_i) (especificação §3)
     if net.num_objectives == 1 and target_returns.dim() == 1:
         v_loss = 0.5 * ((new_value.squeeze(-1) - target_returns) ** 2).mean()
     else:
@@ -242,7 +243,7 @@ def compute_losses(
 
 
 # ============================================================================
-# Environment Factory for AsyncVectorEnv
+# Fábrica de ambientes para o AsyncVectorEnv
 # ============================================================================
 def _make_env_fn(
     descriptor: str,
@@ -275,7 +276,7 @@ def _make_env_fn(
 
 
 # ============================================================================
-# Evaluation / Gate Check
+# Avaliação e gates
 # ============================================================================
 def evaluate_moppo(
     net: MOPPONetwork,
@@ -288,8 +289,12 @@ def evaluate_moppo(
     seed_base: int = 2024,
     memory: bool = True,
     scale_factors: np.ndarray | None = None,
+    deterministic: bool = True,
 ) -> dict[str, float | list[float]]:
-    """Evaluates a MOPPO network for a fixed weight w on paired episodes."""
+    """Avalia uma rede MOPPO com um w fixo em episódios pareados.
+
+    Com `deterministic=False` as ações são amostradas, com a semente do torch fixada pelo seed do episódio.
+    """
     net.eval()
     env = make_mo_env(
         descriptor,
@@ -309,6 +314,8 @@ def evaluate_moppo(
     with torch.no_grad():
         for i in range(n_episodes):
             ep_seed = seed_base + i
+            if not deterministic:
+                torch.manual_seed(ep_seed)
             obs, _ = env.reset(seed=ep_seed, options={"w": w})
             done = False
             while not done:
@@ -316,7 +323,7 @@ def evaluate_moppo(
                     "map": torch.from_numpy(obs["map"]).unsqueeze(0).float(),
                     "vec": torch.from_numpy(obs["vec"]).unsqueeze(0).float(),
                 }
-                action = net.act(t_obs, deterministic=True)
+                action = net.act(t_obs, deterministic=deterministic)
                 obs, _, term, trunc, info = env.step(action)
                 done = term or trunc
 
@@ -350,34 +357,34 @@ def run_gate_checks(
     scale_factors: np.ndarray | None = None,
     log_file: Path | None = None,
 ) -> dict:
-    """Checks the learning gate and conditioning gate at 25% of training (§8).
+    """Verifica os gates de aprendizado e de condicionamento aos 25% do treino (§8).
 
-    - Gate de aprendizado: sucesso no treino >= 0.5 em S2 com w_uniforme (aleatório faz ~0.42).
-    - Gate de condicionamento: distancia difere entre w_rapido e w_seguro (IC exclui 0).
+    - Gate de aprendizado: sucesso no treino >= 0,5 em S2 com w uniforme (a aleatória faz ~0,42).
+    - Gate de condicionamento: a distância difere entre w_fast e w_safe (IC exclui 0).
     """
     w_unif = np.array([0.25, 0.25, 0.25, 0.25], dtype=np.float32)
     w_fast = np.array([0.15, 0.55, 0.15, 0.15], dtype=np.float32)
     w_safe = np.array([0.15, 0.15, 0.15, 0.55], dtype=np.float32)
 
-    # 1. Learning gate check (50 episodes)
+    # 1. Gate de aprendizado (50 episódios)
     res_unif = evaluate_moppo(
         net, cfg, scenario, descriptor, split, w_unif, n_episodes=50, seed_base=5000,
         memory=memory, scale_factors=scale_factors
     )
     learn_pass = bool(res_unif["success"] >= 0.50)
 
-    # 2. Conditioning gate check (50 paired episodes)
+    # 2. Gate de condicionamento (50 episódios pareados)
     res_fast = evaluate_moppo(
         net, cfg, scenario, descriptor, split, w_fast, n_episodes=50, seed_base=6000,
-        memory=memory, scale_factors=scale_factors
+        memory=memory, scale_factors=scale_factors, deterministic=False
     )
     res_safe = evaluate_moppo(
         net, cfg, scenario, descriptor, split, w_safe, n_episodes=50, seed_base=6000,
-        memory=memory, scale_factors=scale_factors
+        memory=memory, scale_factors=scale_factors, deterministic=False
     )
 
     diff_dist = np.array(res_safe["raw_distances"]) - np.array(res_fast["raw_distances"])
-    # 95% bootstrap CI
+    # IC de 95% por bootstrap
     rng = np.random.default_rng(42)
     boot_means = [rng.choice(diff_dist, size=len(diff_dist), replace=True).mean() for _ in range(1000)]
     ci_lo = float(np.percentile(boot_means, 2.5))
@@ -415,7 +422,7 @@ def run_gate_checks(
 
 
 # ============================================================================
-# Training Routine
+# Rotina de treino
 # ============================================================================
 def train_moppo(
     cfg: dict,
@@ -426,7 +433,7 @@ def train_moppo(
     total_timesteps: int | None = None,
     seed: int | None = None,
 ) -> Path:
-    """Trains a MOPPO policy on Taquari S2 north using AsyncVectorEnv."""
+    """Treina uma política MOPPO no Taquari S2 (norte) com AsyncVectorEnv."""
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "config.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False))
 
@@ -467,7 +474,7 @@ def train_moppo(
     ]
     envs = gym.vector.AsyncVectorEnv(env_fns)
 
-    # Observation space dimensions
+    # Dimensões do espaço de observação
     c_in, h, w = envs.single_observation_space["map"].shape
     nv = envs.single_observation_space["vec"].shape[0]
     action_dim = int(envs.single_action_space.n)
@@ -481,7 +488,7 @@ def train_moppo(
     )
     optimizer = optim.Adam(net.parameters(), lr=lr, eps=1e-5)
 
-    # Buffers
+    # Buffers do rollout
     obs_map = torch.zeros((n_steps, n_envs, c_in, h, w), dtype=torch.float32)
     obs_vec = torch.zeros((n_steps, n_envs, nv), dtype=torch.float32)
     actions = torch.zeros((n_steps, n_envs), dtype=torch.long)
@@ -491,7 +498,7 @@ def train_moppo(
     values = torch.zeros((n_steps + 1, n_envs, num_objectives), dtype=torch.float32)
     step_weights = torch.zeros((n_steps, n_envs, num_objectives), dtype=torch.float32)
 
-    # CSV loggers
+    # Logs em CSV
     progress_file = out_dir / "progress.csv"
     progress_cols = [
         "step", "timesteps", "fps", "time_elapsed", "policy_loss", "value_loss",
@@ -500,7 +507,7 @@ def train_moppo(
     progress_f = open(progress_file, "w")
     progress_f.write(",".join(progress_cols) + "\n")
 
-    # Checkpoint management: max 3 checkpoints per run (§0)
+    # Checkpoints: no máximo 3 por execução (§0)
     ck_dir = out_dir / "checkpoints"
     ck_dir.mkdir(parents=True, exist_ok=True)
     num_rollouts = total_timesteps // (n_steps * n_envs)
@@ -522,7 +529,7 @@ def train_moppo(
     global_step = 0
 
     for rollout in range(num_rollouts):
-        # 1. Rollout collection (1 thread avoids thread contention with worker processes)
+        # 1. Coleta do rollout (1 thread evita disputa com os processos dos ambientes)
         torch.set_num_threads(1)
         net.eval()
         for step in range(n_steps):
@@ -531,7 +538,7 @@ def train_moppo(
             obs_vec[step] = next_obs_vec
             dones[step] = next_done
 
-            # Active weight for each env is the first 4 dims of obs_vec
+            # O w ativo de cada ambiente são as 4 primeiras dimensões de obs_vec
             step_weights[step] = next_obs_vec[:, :num_objectives]
 
             with torch.no_grad():
@@ -549,21 +556,21 @@ def train_moppo(
             next_obs_map = torch.from_numpy(next_obs["map"]).float()
             next_obs_vec = torch.from_numpy(next_obs["vec"]).float()
 
-        # Terminal bootstrap value
+        # Valor de bootstrap no fim do rollout
         with torch.no_grad():
             cur_obs = {"map": next_obs_map, "vec": next_obs_vec}
             values[n_steps] = net.get_value(cur_obs)
 
-        # 2. Vector GAE calculation
+        # 2. GAE vetorial
         all_dones = torch.cat([dones, next_done.unsqueeze(0)], dim=0)
         advantages, returns = compute_vector_gae(
             rewards_vec, values, all_dones, gamma=gamma, gae_lambda=gae_lambda
         )
 
-        # Scalarize advantages: A_scalar = A · w (AMOR §4.2)
+        # Escalariza as vantagens: A_escalar = A · w (AMOR §4.2)
         adv_scalar = (advantages * step_weights).sum(dim=-1)
 
-        # 3. Mini-batch updates
+        # 3. Atualizações por mini-lote
         b_obs_map = obs_map.reshape(-1, c_in, h, w)
         b_obs_vec = obs_vec.reshape(-1, nv)
         b_actions = actions.reshape(-1)
@@ -601,7 +608,7 @@ def train_moppo(
                 nn.utils.clip_grad_norm_(net.parameters(), max_grad_norm)
                 optimizer.step()
 
-                # Metrics
+                # Métricas
                 with torch.no_grad():
                     _, new_logp, _, _ = net.get_action_and_value(mb_obs, mb_actions)
                     logratio = new_logp - mb_logprobs
@@ -618,7 +625,7 @@ def train_moppo(
         elapsed = time.time() - t0
         fps = global_step / max(1e-3, elapsed)
 
-        # Logging
+        # Registro
         progress_f.write(
             f"{rollout},{global_step},{fps:.1f},{elapsed:.1f},"
             f"{np.mean(epoch_pg_losses):.5f},{np.mean(epoch_v_losses):.5f},"
@@ -634,14 +641,14 @@ def train_moppo(
                 f"| PGLoss: {np.mean(epoch_pg_losses):.4f} | VLoss: {np.mean(epoch_v_losses):.4f}"
             )
 
-        # Checkpoints (at most 3 checkpoints: ~25%, ~50%, ~75%)
+        # Checkpoints (no máximo 3: ~25%, ~50%, ~75%)
         if rollout in ck_steps:
             ck_idx = ck_steps.index(rollout) + 1
             ck_file = ck_dir / f"moppo_step_{global_step}_ck{ck_idx}.pt"
             torch.save(net.state_dict(), ck_file)
             print(f"[checkpoint] Saved checkpoint {ck_idx}/3 to {ck_file.name}")
 
-        # Gate check at 25% of training (§8)
+        # Gates aos 25% do treino (§8)
         if not gate_checked_25 and rollout >= ck_steps[0] and memory and default_w is None:
             gate_checked_25 = True
             print("[GATE] Checking learning and conditioning gates at 25% training...")
@@ -650,11 +657,19 @@ def train_moppo(
                 scale_factors=scale_factors, log_file=out_dir / "gates.log"
             )
             (out_dir / "gate_check_25pct.json").write_text(json.dumps(gate_results, indent=2))
+            if not gate_results["conditioning_gate"]["passed"]:
+                # Antes, a falha deste gate passava em silêncio e o colapso só apareceu no relatório final.
+                (out_dir / "CONDITIONING_GATE_FAILED").write_text(json.dumps(gate_results["conditioning_gate"]))
+                warnings.warn(
+                    f"Gate de condicionamento falhou em {out_dir.name}: a política não responde a w. "
+                    "Os resultados multiobjetivo desta execução não devem ser usados sem investigação.",
+                    stacklevel=1,
+                )
 
     envs.close()
     progress_f.close()
 
-    # Save final model
+    # Salva o modelo final
     torch.save(net.state_dict(), out_dir / "final_model.pt")
 
     train_meta = {

@@ -1,9 +1,9 @@
-"""Camera footprints (crops) and descriptors, precomputed once for every cell.
+"""Footprints da câmera (recortes) e descritores, pré-calculados uma vez para cada célula.
 
-Map: 1 descriptor per cell per map date (crop centered on the cell, no augmentation).
-Observation (`post`): K variants per cell with +-jitter, +-rotation and photometric noise.
-Raw descriptors are stored as float16; `load_descriptors` standardizes them per date with
-train-region statistics and L2-normalizes them.
+Mapa: 1 descritor por célula e por data de mapa (recorte centrado na célula, sem aumento de dados).
+Observação (`post`): K variantes por célula, com deslocamento, rotação e ruído fotométrico.
+Os descritores brutos ficam em float16; `load_descriptors` os padroniza por data com
+estatísticas da região de treino e os normaliza em L2.
 """
 from __future__ import annotations
 
@@ -23,10 +23,10 @@ from .grid import Grid
 FEAT = DATA / "features"
 
 
-# ----------------------------------------------------------------------------- crops
+# ----------------------------------------------------------------------------- recortes
 def crop(r: Raster, x: float, y: float, footprint_m: float, out_px: int, theta_deg: float = 0.0) -> np.ndarray:
-    """Square north-up footprint centered at UTM (x, y), rotated by theta, resampled to out_px."""
-    s = footprint_m / out_px / r.res  # input px per output px
+    """Footprint quadrado orientado ao norte, centrado em UTM (x, y), girado de theta e reamostrado para out_px."""
+    s = footprint_m / out_px / r.res  # pixels de entrada por pixel de saída
     t = math.radians(theta_deg)
     a, b = s * math.cos(t), s * math.sin(t)
     cu, cv = r.world_to_px(x, y)
@@ -44,13 +44,13 @@ def photometric(img: np.ndarray, rng: np.random.Generator, gain: float, noise: f
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
-# ----------------------------------------------------------------------------- hand descriptor
+# ----------------------------------------------------------------------------- descritor artesanal (hand)
 HAND_BINS = 8
 HAND_GRID = 4
 
 
 def hand_descriptor(batch: np.ndarray) -> np.ndarray:
-    """(B, H, W, 3) uint8 -> (B, 4*4*8 + 4*4*6) gradient-orientation histograms + Lab mean/std per cell."""
+    """(B, H, W, 3) uint8 -> (B, 4*4*8 + 4*4*6): histogramas de orientação do gradiente + média/desvio Lab por subcélula."""
     B, H, W, _ = batch.shape
     g = HAND_GRID
     gray = batch.astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
@@ -59,16 +59,16 @@ def hand_descriptor(batch: np.ndarray) -> np.ndarray:
     gx[:, :, 1:-1] = gray[:, :, 2:] - gray[:, :, :-2]
     gy[:, 1:-1, :] = gray[:, 2:, :] - gray[:, :-2, :]
     mag = np.sqrt(gx * gx + gy * gy)
-    ang = np.mod(np.arctan2(gy, gx), np.pi)  # unsigned orientation
+    ang = np.mod(np.arctan2(gy, gx), np.pi)  # orientação sem sinal
     bins = np.minimum((ang / np.pi * HAND_BINS).astype(np.int64), HAND_BINS - 1)
-    # group index = ((b * g + gy) * g + gx) * bins + bin, histogram via one weighted bincount
+    # índice do grupo = ((b * g + gy) * g + gx) * bins + bin; o histograma sai de um único bincount ponderado
     rows = (np.arange(H) // (H // g))[:, None]
     cols = (np.arange(W) // (W // g))[None, :]
     cell = (rows * g + cols)[None]
     idx = ((np.arange(B)[:, None, None] * g * g + cell) * HAND_BINS + bins).ravel()
     hog = np.bincount(idx, weights=mag.ravel(), minlength=B * g * g * HAND_BINS).astype(np.float32)
-    hog = np.sqrt(hog.reshape(B, -1) / (H * W / g / g))  # Hellinger-like compression
-    lab = cv2.cvtColor(batch.reshape(B * H, W, 3), cv2.COLOR_RGB2LAB).astype(np.float32)  # one call
+    hog = np.sqrt(hog.reshape(B, -1) / (H * W / g / g))  # compressão no estilo Hellinger
+    lab = cv2.cvtColor(batch.reshape(B * H, W, 3), cv2.COLOR_RGB2LAB).astype(np.float32)  # uma única chamada
     lab = lab.reshape(B, g, H // g, g, W // g, 3).transpose(0, 1, 3, 2, 4, 5).reshape(B, g, g, -1, 3)
     mu = lab.mean(axis=3)
     sd = np.sqrt(np.maximum((lab * lab).mean(axis=3) - mu * mu, 0))
@@ -76,9 +76,9 @@ def hand_descriptor(batch: np.ndarray) -> np.ndarray:
     return np.concatenate([hog, col], axis=1)
 
 
-# ----------------------------------------------------------------------------- CNN descriptor
+# ----------------------------------------------------------------------------- descritor CNN
 class CNNDescriptor:
-    """ResNet18 (ImageNet) global-average-pooled 512-d features."""
+    """Features de 512 dimensões da ResNet18 (ImageNet) com pooling médio global."""
 
     def __init__(self, device: str = "cpu"):
         import torch
@@ -100,7 +100,7 @@ class CNNDescriptor:
             return self.model(x).cpu().numpy()
 
 
-# ----------------------------------------------------------------------------- precompute
+# ----------------------------------------------------------------------------- pré-cálculo
 def _cells(grid: Grid) -> tuple[np.ndarray, np.ndarray]:
     rr, cc = np.mgrid[0 : grid.nrows, 0 : grid.ncols]
     return rr.ravel(), cc.ravel()
@@ -108,7 +108,7 @@ def _cells(grid: Grid) -> tuple[np.ndarray, np.ndarray]:
 
 def compute_set(r: Raster, grid: Grid, fcfg: dict, offset: tuple[float, float], extractors: dict,
                 augment: bool, rng: np.random.Generator, batch: int = 256) -> dict[str, np.ndarray]:
-    """Descriptors for every cell (row-major) of one image, one variant."""
+    """Descritores de todas as células (em ordem de linha) de uma imagem, para uma variante."""
     rr, cc = _cells(grid)
     x, y = grid.center(rr, cc)
     x = x + offset[0]
@@ -137,7 +137,7 @@ def compute_set(r: Raster, grid: Grid, fcfg: dict, offset: tuple[float, float], 
 
 def precompute(cfg: dict, descriptors: list[str] | None = None, limit_rows: int | None = None,
                out_dir: Path = FEAT) -> dict:
-    """Compute and save map descriptors (all map dates) and K observation variants (post)."""
+    """Calcula e salva os descritores do mapa (todas as datas) e as K variantes de observação (post)."""
     import torch
 
     torch.set_num_threads(int(__import__("os").environ.get("DAL_TORCH_THREADS", __import__("os").cpu_count() or 1)))
@@ -182,7 +182,7 @@ def precompute(cfg: dict, descriptors: list[str] | None = None, limit_rows: int 
     return meta
 
 
-# ----------------------------------------------------------------------------- loading
+# ----------------------------------------------------------------------------- carregamento
 def _standardize(x: np.ndarray, train_idx: np.ndarray) -> np.ndarray:
     x = x.astype(np.float32)
     ref = x[..., train_idx, :] if x.ndim == 3 else x[train_idx]
@@ -195,7 +195,7 @@ def _standardize(x: np.ndarray, train_idx: np.ndarray) -> np.ndarray:
 
 def load_descriptors(desc: str, map_date: str, grid: Grid, train_rows: np.ndarray, feat_dir: Path = FEAT
                      ) -> tuple[np.ndarray, np.ndarray]:
-    """(map (R, C, D), obs (K, R, C, D)) float32, standardized per date with train cells, L2-normed."""
+    """(mapa (R, C, D), obs (K, R, C, D)) em float32, padronizados por data com as células de treino e normalizados em L2."""
     train_idx = (train_rows[:, None] * grid.ncols + np.arange(grid.ncols)[None]).ravel()
     m = _standardize(np.load(feat_dir / f"{desc}_{map_date}_map.npy"), train_idx)
     o = _standardize(np.load(feat_dir / f"{desc}_post_obs.npy"), train_idx)

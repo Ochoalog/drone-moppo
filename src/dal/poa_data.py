@@ -1,6 +1,6 @@
-"""Porto Alegre data products: overview windows, cell masks (valid / cloud / water), alignment,
-data-gate statistics and the overview figure. Everything is written under the POA data/results
-folders of the config (`paths:`); the Taquari folders are never touched.
+"""Produtos de dados de Porto Alegre: janelas de overview, máscaras por célula (válida / nuvem / água),
+alinhamento, estatísticas do gate de dados e a figura de visão geral. Tudo é gravado nas pastas de
+dados e resultados de POA da config (`paths:`); as pastas do Taquari nunca são tocadas.
 """
 from __future__ import annotations
 
@@ -17,14 +17,14 @@ from .data import Raster, cell_fractions, cloud_mask, load_raster, read_box, sav
 from .grid import Grid, lonlat_to_utm
 
 
-# ============================================================================ grid and regions
+# ============================================================================ grade e regiões
 def poa_grid(cfg: dict) -> Grid:
     d = cfg["data"]
     return Grid.from_aoi(**d["aoi"], cell=d["cell_m"])
 
 
 def region_slices(cfg: dict, grid: Grid | None = None) -> dict[str, tuple[slice, slice]]:
-    """(rows, cols) slices of every region inside the POA grid (cells fully inside the lon/lat box)."""
+    """Fatias (linhas, colunas) de cada região dentro da grade de POA (células inteiras dentro do retângulo lon/lat)."""
     grid = grid or poa_grid(cfg)
     out = {}
     for name, b in cfg["regions"].items():
@@ -78,10 +78,10 @@ def download(cfg: dict, force: bool = False) -> None:
                   f"-> {p.stat().st_size / 1e6:.0f} MB", flush=True)
 
 
-# ============================================================================ water
+# ============================================================================ água
 def water_mask(img: np.ndarray, w: dict) -> np.ndarray:
-    """Water by colour + texture: homogeneous (low local std) and either dark or brown/reddish
-    (sediment-laden flood water), then a morphological opening to drop small dark objects."""
+    """Água por cor e textura: homogênea (desvio local baixo) e escura ou marrom/avermelhada
+    (água de enchente com sedimento), seguida de abertura morfológica para tirar objetos escuros pequenos."""
     m = np.zeros(img.shape[:2], np.uint8)
     step = 2048
     k = int(w["texture_win"])
@@ -102,11 +102,11 @@ def water_mask(img: np.ndarray, w: dict) -> np.ndarray:
     return m.astype(bool)
 
 
-# ============================================================================ clouds (POA variant)
+# ============================================================================ nuvens (variante de POA)
 def cloud_mask_poa(img: np.ndarray, c: dict) -> np.ndarray:
-    """PoC detector (bright & unsaturated) OR smooth haze (moderately bright, unsaturated, low local
-    std: thin grey clouds), opened with a larger disk (urban white roofs are bigger than in the
-    Taquari) and dilated with a ~120 m halo for the soft edges."""
+    """Detector da PoC (claro e pouco saturado) OU névoa lisa (moderadamente clara, pouco saturada, desvio
+    local baixo: nuvens cinzas finas), com abertura por um disco maior (telhados brancos urbanos são
+    maiores que no Taquari) e dilatação com halo de ~120 m para as bordas suaves."""
     m = np.zeros(img.shape[:2], np.uint8)
     step, k = 2048, int(c["std_win"])
     for r in range(0, img.shape[0], step):
@@ -126,7 +126,7 @@ def cloud_mask_poa(img: np.ndarray, c: dict) -> np.ndarray:
     return m.astype(bool)
 
 
-# ============================================================================ masks + stats
+# ============================================================================ máscaras e estatísticas
 def build_masks(cfg: dict) -> dict:
     d = cfg["data"]
     grid = poa_grid(cfg)
@@ -162,7 +162,7 @@ def build_masks(cfg: dict) -> dict:
         if date == obs:
             continue
         a, b = vals[obs], vals[date]
-        h, w = min(a.shape[0], b.shape[0]), min(a.shape[1], b.shape[1])  # same snapped grid, same res
+        h, w = min(a.shape[0], b.shape[0]), min(a.shape[1], b.shape[1])  # mesma grade alinhada, mesma resolução
         stats[date]["overlap_km2"] = float((a[:h, :w] & b[:h, :w]).sum() * (stats[date]["res_m"] / 1000) ** 2)
     pd_ = P["data"]
     pd_.mkdir(parents=True, exist_ok=True)
@@ -176,7 +176,7 @@ def load_masks(cfg: dict) -> dict[str, np.ndarray]:
     return {k: z[k] for k in z.files if k != "grid"}
 
 
-# ============================================================================ alignment
+# ============================================================================ alinhamento
 def align(cfg: dict) -> dict:
     from .align import estimate_offset
 
@@ -214,7 +214,7 @@ def load_offsets(cfg: dict) -> dict[str, tuple[float, float]]:
 
 
 def data_gate(cfg: dict) -> dict:
-    """Measured vs hand-checked facts (+-30 %) and alignment <= align_max_m; written to results."""
+    """Gate de dados: fatos medidos vs conferidos à mão (±30%) e alinhamento <= align_max_m; gravado em results."""
     d = cfg["data"]
     P = paths(cfg)
     st = json.loads((P["data"] / "masks_stats.json").read_text())
@@ -245,7 +245,7 @@ def data_gate(cfg: dict) -> dict:
     return res
 
 
-# ============================================================================ figures
+# ============================================================================ figuras
 DATE_LABEL = {"poa_post": "poa_post (2024-05-09, flood)", "poa_pre_feb24": "poa_pre_feb24 (2024-02-02)",
               "poa_pre_dec22": "poa_pre_dec22 (2022-12-12)"}
 
@@ -321,7 +321,7 @@ def fig_overview(cfg: dict) -> Path:
 
 
 def fig_mask_check(cfg: dict, date: str, box_lonlat: tuple[float, float, float, float], name: str) -> Path:
-    """Zoom on the working resolution image with cloud (red) and water (blue) contours: visual QA."""
+    """Zoom na imagem de trabalho com contornos de nuvem (vermelho) e água (azul), para inspeção visual."""
     import matplotlib
 
     matplotlib.use("Agg")

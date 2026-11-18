@@ -1,4 +1,4 @@
-"""End-to-end pipeline runner for Multi-Objective training, evaluation, and reporting."""
+"""Pipeline completo do multiobjetivo: treino, avaliação e relatório."""
 from __future__ import annotations
 
 import argparse
@@ -28,7 +28,7 @@ from .mo_report import (
 
 
 def verify_manifests() -> tuple[bool, str]:
-    """Verifies that Taquari and POA checksum manifests match exactly."""
+    """Confere se os manifestos sha256 do Taquari e de POA batem exatamente."""
     cmd_t = "sha256sum -c ../checkpoints/taquari_2026-10-28.sha256 --quiet"
     cmd_p = "sha256sum -c ../checkpoints/poa_2026-10-28.sha256 --quiet"
     res_t = subprocess.run(cmd_t, shell=True, cwd=ROOT, capture_output=True, text=True)
@@ -48,7 +48,7 @@ def evaluate_poa_zero_shot(
     episodes: int = 300,
     seed_base: int = 2024,
 ) -> pd.DataFrame:
-    """Evaluates MO with memory zero-shot on POA P1 (centro and ilhas) using Taquari PCA/beta."""
+    """Avalia o MO com memória, zero-shot, em POA P1 (centro e ilhas) usando a PCA e o beta do Taquari."""
     try:
         from .poa import load_poa_scenario, POA_CACHE
         from .poa_data import regions
@@ -63,10 +63,10 @@ def evaluate_poa_zero_shot(
         "unif": np.array([0.25, 0.25, 0.25, 0.25], dtype=np.float32),
     }
 
-    # Evaluate on P1 in centro and ilhas
+    # Avalia em P1, nas regiões centro e ilhas
     for region in ["centro", "ilhas"]:
         for p_name, w in presets.items():
-            # Quick paired evaluation if scenario data loads
+            # Avaliação pareada rápida, se os dados do cenário carregarem
             pass
 
     return pd.DataFrame(results)
@@ -92,9 +92,9 @@ def run_pipeline(
     figs_dir.mkdir(parents=True, exist_ok=True)
     traj_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Budget and steps configuration
+    # 1. Orçamento e número de passos de treino
     if smoke:
-        t_mo = timesteps_mo or 51200  # ~50k steps (multiple of 2048)
+        t_mo = timesteps_mo or 51200  # ~50k passos (múltiplo de 2048)
         t_nomem = 0
         t_fixed = 0
         n_eval_episodes = episodes or 20
@@ -105,15 +105,15 @@ def run_pipeline(
         ]
         save_traj_count = 3
     else:
-        # Full overnight run adhering to the measured throughput (~43 FPS, < 8h CPU budget)
-        t_mo = timesteps_mo or 348160     # ~350k steps
-        t_nomem = 245760                  # ~250k steps
-        t_fixed = timesteps_fixed or 225280  # ~225k steps
+        # Execução noturna completa, dimensionada pela vazão medida (~43 FPS, orçamento < 8 h de CPU)
+        t_mo = timesteps_mo or 348160     # ~350k passos
+        t_nomem = 245760                  # ~250k passos
+        t_fixed = timesteps_fixed or 225280  # ~225k passos
         n_eval_episodes = episodes or 300
         grid = generate_simplex_grid(step=0.25)
         save_traj_count = 10
 
-    # 2. Training Stage (Resumable: skips if final_model.pt already exists)
+    # 2. Etapa de treino (retomável: pula se final_model.pt já existe)
     print("\n" + "=" * 60)
     print(f"STAGE 1: TRAINING ({'SMOKE' if smoke else 'FULL OVERNIGHT'})")
     print("=" * 60)
@@ -137,7 +137,7 @@ def run_pipeline(
         print(f"[pipeline] Training MOPPO com memória seed 0 ({t_mo} timesteps)...")
         train_moppo(cfg, dir_mo_mem, memory=True, total_timesteps=t_mo, seed=0)
 
-    # (b) MO sem memória (ablação), seed 0 (only in full run)
+    # (b) MO sem memória (ablação), seed 0 (só na execução completa)
     dir_mo_nomem = runs_mo / "moppo_nomem_S2_hand_s0"
     if not smoke:
         if is_trained(dir_mo_nomem, t_nomem):
@@ -146,7 +146,7 @@ def run_pipeline(
             print(f"[pipeline] Training MOPPO sem memória seed 0 ({t_nomem} timesteps)...")
             train_moppo(cfg, dir_mo_nomem, memory=False, total_timesteps=t_nomem, seed=0)
 
-    # (c) PPOs de peso fixo (w_rapido and w_seguro, seed 0)
+    # (c) PPOs de peso fixo (w_fast e w_safe, seed 0)
     dir_fixed_fast = runs_mo / "ppo_fixed_fast_s0"
     dir_fixed_safe = runs_mo / "ppo_fixed_safe_s0"
     if not smoke:
@@ -164,7 +164,7 @@ def run_pipeline(
             print(f"[pipeline] Training PPO fixo seguro seed 0 ({t_fixed} timesteps)...")
             train_moppo(cfg, dir_fixed_safe, memory=True, default_w=w_safe, total_timesteps=t_fixed, seed=0)
 
-    # 3. Evaluation Stage (§5.4)
+    # 3. Etapa de avaliação (§5.4)
     print("\n" + "=" * 60)
     print(f"STAGE 2: EVALUATION ({n_eval_episodes} paired episodes per point)")
     print("=" * 60)
@@ -183,12 +183,12 @@ def run_pipeline(
             label="mo_ppo_nomem"
         )
 
-    # Reference Baselines (Straight and PoC PPO)
+    # Referências (linha reta e PPOs da PoC)
     summary_ref, ep_ref = evaluate_reference_methods(
         cfg, episodes=n_eval_episodes, traj_dir=traj_dir, save_traj_count=save_traj_count
     )
 
-    # Fixed PPO Evaluation
+    # Avaliação dos PPOs de peso fixo
     summary_fixed, ep_fixed = None, None
     if not smoke and (dir_fixed_fast / "final_model.pt").exists() and (dir_fixed_safe / "final_model.pt").exists():
         fixed_rows = []
@@ -209,36 +209,36 @@ def run_pipeline(
         fixed_rows.append(s_fs)
         summary_fixed = pd.concat(fixed_rows, ignore_index=True)
 
-    # Combine summaries and save CSV
+    # Junta os resumos e salva o CSV
     all_summaries = [s for s in [summary_mo, summary_nomem, summary_fixed, summary_ref] if s is not None]
     df_all_summary = pd.concat(all_summaries, ignore_index=True)
     df_all_summary.to_csv(results_mo / "summary_test.csv", index=False)
     print(f"[eval] Saved summary table to {results_mo}/summary_test.csv")
 
-    # 4. Figures and Metrics Generation (§6)
+    # 4. Figuras e métricas (§6)
     print("\n" + "=" * 60)
     print("STAGE 3: FIGURES AND REPORT GENERATION")
     print("=" * 60)
 
-    # Pareto Frontiers
+    # Fronteiras de Pareto
     fig_f, fig_d, pareto_pts = generate_pareto_figures(df_all_summary, figs_dir)
     print(f"[figures] Generated Pareto projections: {fig_f.name}, {fig_d.name}")
 
-    # Behavior Adaptation (H6)
+    # Adaptação de comportamento (H6)
     fig_h6, h6_stats = generate_behavior_adaptation_figure(summary_mo, figs_dir)
     print(f"[figures] Generated Behavior Adaptation plot: {fig_h6.name}")
 
-    # Hypervolume and EUM (§6.2)
+    # Hipervolume e EUM (§6.2)
     hv_eum_stats = compute_normalized_hv_eum(summary_mo, summary_nomem, summary_fixed, summary_ref)
     (results_mo / "hypervolume_eum.json").write_text(json.dumps(hv_eum_stats, indent=2))
     print(f"[metrics] Hypervolume MO (com memória): {hv_eum_stats['hv']['mo_mem']:.4f} | EUM: {hv_eum_stats['eum']['mo_mem']:.4f}")
 
-    # Training curves
+    # Curvas de treino
     fig_tc = generate_training_curves_figure(runs_mo, figs_dir)
     if fig_tc:
         print(f"[figures] Generated training curves: {fig_tc.name}")
 
-    # Manifest verification
+    # Verificação dos manifestos sha256
     manifests_ok, manifest_msg = verify_manifests()
     validation_output = (
         f"Manifest check:\n{manifest_msg}\n"
@@ -248,7 +248,7 @@ def run_pipeline(
         f"Protected folders status: UNTOUCHED (Verified)\n"
     )
 
-    # Build REPORT_MO.md
+    # Gera o REPORT_MO.md
     build_report_markdown(
         summary_mo,
         summary_nomem,

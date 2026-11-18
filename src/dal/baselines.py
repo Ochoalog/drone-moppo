@@ -1,6 +1,6 @@
-"""Baseline policies. All share the interface `reset(ep, rng)` / `act(ep) -> action index`,
-where `ep` is a `dal.env.Episode`. Policies only use what the drone knows: its belief, the map,
-the step counter and the geofence signal (`ep.blocked_axes`), never `ep.pos`."""
+"""Políticas de referência (baselines). Todas seguem a interface `reset(ep, rng)` / `act(ep) -> índice da ação`,
+em que `ep` é um `dal.env.Episode`. As políticas só usam o que o drone sabe: a crença, o mapa,
+o contador de passos e o sinal de geocerca (`ep.blocked_axes`), nunca `ep.pos`."""
 from __future__ import annotations
 
 import numpy as np
@@ -28,7 +28,7 @@ class RandomPolicy(Policy):
 
 
 class StraightPolicy(Policy):
-    """Random fixed heading; reflects the blocked component(s) at the window border."""
+    """Rumo fixo sorteado; reflete a(s) componente(s) bloqueada(s) na borda da janela."""
 
     name = "straight"
 
@@ -44,7 +44,7 @@ class StraightPolicy(Policy):
 
 
 class LawnmowerPolicy(Policy):
-    """Boustrophedon: legs of `leg` cells along a random cardinal axis, `strip` cells between legs."""
+    """Zigue-zague (boustrofédon): faixas de `leg` células ao longo de um eixo cardeal sorteado, com `strip` células entre faixas."""
 
     name = "lawnmower"
 
@@ -61,9 +61,9 @@ class LawnmowerPolicy(Policy):
 
     def act(self, ep) -> int:
         if any(ep.blocked_axes) and ep.t > 0:
-            if self.phase == "leg":  # hit the border along the leg: start the transverse move now
+            if self.phase == "leg":  # bateu na borda ao longo da faixa: começa já o deslocamento transversal
                 self.phase, self.k = "across", 0
-            else:  # hit the border across: sweep back the other way
+            else:  # bateu na borda no sentido transversal: varre de volta no sentido oposto
                 self.across = (-self.across[0], -self.across[1])
         if self.phase == "leg" and self.k >= self.leg:
             self.phase, self.k = "across", 0
@@ -75,10 +75,10 @@ class LawnmowerPolicy(Policy):
 
 
 class GreedyInfoGain(Policy):
-    """One-step expected entropy reduction, Monte Carlo over M cells sampled from the predicted
-    belief. `source="obs"` uses the precomputed `post` observation of each sampled cell (spec;
-    privileged when the map is outdated). `source="map"` predicts it with the map descriptor
-    (only what a real drone knows)."""
+    """Gulosa: maximiza a redução esperada de entropia em um passo, por Monte Carlo sobre M células
+    sorteadas da crença predita. `source="obs"` usa a observação `post` pré-calculada de cada célula
+    (informação privilegiada quando o mapa está desatualizado). `source="map"` a prevê com o
+    descritor do mapa (só o que um drone real sabe)."""
 
     def __init__(self, samples: int = 32, source: str = "obs"):
         self.M = samples
@@ -107,7 +107,7 @@ class GreedyInfoGain(Policy):
             post = bp[None] * L[a]
             post /= post.sum(axis=(1, 2), keepdims=True)
             h = np.array([entropy(p) for p in post])
-            h[~oks[a]] = entropy(bp)  # uninformative observation
+            h[~oks[a]] = entropy(bp)  # observação não informativa
             exp_h[a] = h.mean()
         best = np.flatnonzero(exp_h <= exp_h.min() + 1e-9)
         return int(self.rng.choice(best))

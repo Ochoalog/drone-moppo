@@ -1,7 +1,7 @@
-"""Download AOI windows from remote COGs (overview levels only), build cell masks.
+"""Baixa janelas da AOI de COGs remotos (só níveis de overview) e monta as máscaras por célula.
 
-Only windows are read through `/vsicurl/`; reads are clipped to the dataset bounds and the
-rest is zero-filled (boundless reads are very slow on these huge rasters).
+Só as janelas são lidas por `/vsicurl/`; as leituras são recortadas aos limites do dataset e o
+resto é preenchido com zeros (leituras sem limite são muito lentas nesses rasters enormes).
 """
 from __future__ import annotations
 
@@ -42,19 +42,19 @@ RAW = DATA / "raw"
 
 @dataclass
 class Raster:
-    """In-memory RGB image with an axis-aligned UTM georeference."""
+    """Imagem RGB em memória com georreferência UTM alinhada aos eixos."""
 
     img: np.ndarray  # (H, W, 3) uint8
-    x_origin: float  # UTM x of the left edge
-    y_origin: float  # UTM y of the top edge
+    x_origin: float  # x UTM da borda esquerda
+    y_origin: float  # y UTM da borda superior
     res: float  # m / px
 
     def world_to_px(self, x, y):
-        """Continuous pixel coordinates (pixel centers at integers, OpenCV convention)."""
+        """Coordenadas contínuas de pixel (centros dos pixels nos inteiros, convenção do OpenCV)."""
         return (np.asarray(x) - self.x_origin) / self.res - 0.5, (self.y_origin - np.asarray(y)) / self.res - 0.5
 
     def window(self, xmin: float, ymin: float, xmax: float, ymax: float) -> np.ndarray:
-        """Nearest-pixel sub-array covering a UTM box (clipped to the array)."""
+        """Submatriz pelo pixel mais próximo que cobre um retângulo UTM (recortada aos limites da matriz)."""
         c0 = int(math.floor((xmin - self.x_origin) / self.res))
         c1 = int(math.ceil((xmax - self.x_origin) / self.res))
         r0 = int(math.floor((self.y_origin - ymax) / self.res))
@@ -64,16 +64,16 @@ class Raster:
 
 
 def _open(url: str, factor: int):
-    level = int(round(math.log2(factor))) - 1  # overview_level 0 -> factor 2
+    level = int(round(math.log2(factor))) - 1  # overview_level 0 -> fator 2
     path = url if url.startswith("/") or url.startswith("/vsi") else "/vsicurl/" + url
     return rasterio.open(path, overview_level=level) if level >= 0 else rasterio.open(path)
 
 
 def read_box(url: str, bounds: tuple[float, float, float, float], factor: int, workers: int = 8,
              chunk: int = 2048) -> Raster:
-    """Read a UTM box at an overview level, snapped to the dataset pixel grid.
+    """Lê um retângulo UTM num nível de overview, alinhado à grade de pixels do dataset.
 
-    Chunks are read in parallel threads, each with its own dataset handle.
+    Os pedaços são lidos em threads paralelas, cada uma com seu próprio handle do dataset.
     """
     xmin, ymin, xmax, ymax = bounds
     with _open(url, factor) as ds:
@@ -106,7 +106,7 @@ def read_box(url: str, bounds: tuple[float, float, float, float], factor: int, w
 
 
 def save_raster(r: Raster, path: Path, jpeg: bool = True) -> None:
-    """Tiled GeoTIFF (JPEG q95 for imagery to save disk, DEFLATE otherwise)."""
+    """Grava GeoTIFF em blocos (JPEG q95 para imagens, para economizar disco; DEFLATE nos demais)."""
     prof = dict(driver="GTiff", width=r.img.shape[1], height=r.img.shape[0], count=3, dtype="uint8",
                 crs=CRS, transform=Affine(r.res, 0, r.x_origin, 0, -r.res, r.y_origin), tiled=True,
                 blockxsize=512, blockysize=512)
@@ -127,7 +127,7 @@ def load_date(date: str, thumb: bool = False) -> Raster:
 
 
 def valid_mask(img: np.ndarray) -> np.ndarray:
-    """Pixel has data. JPEG ringing leaves tiny non-zero values in nodata, hence > 3."""
+    """Pixel com dado. O ringing do JPEG deixa valores pequenos diferentes de zero no nodata, daí o > 3."""
     return img.max(axis=2) > 3
 
 
@@ -136,10 +136,10 @@ def _disk(k: int) -> np.ndarray:
 
 
 def cloud_mask(img: np.ndarray, v_min: int, s_max: int, dilate_px: int, open_px: int = 0) -> np.ndarray:
-    """Bright & unsaturated pixels (HSV: V > v_min, S < s_max), optionally opened (removes
-    small bright objects such as white roofs, which are not clouds) and dilated (soft edges)."""
+    """Máscara de nuvem: pixels claros e pouco saturados (HSV: V > v_min, S < s_max), com abertura opcional
+    (remove objetos claros pequenos, como telhados brancos, que não são nuvem) e dilatação (bordas suaves)."""
     m = np.zeros(img.shape[:2], np.uint8)
-    step = 2048  # row blocks to bound memory
+    step = 2048  # blocos de linhas, para limitar o uso de memória
     for r in range(0, img.shape[0], step):
         hsv = cv2.cvtColor(img[r : r + step], cv2.COLOR_RGB2HSV)
         m[r : r + step] = ((hsv[..., 2] > v_min) & (hsv[..., 1] < s_max)).astype(np.uint8)
@@ -151,7 +151,7 @@ def cloud_mask(img: np.ndarray, v_min: int, s_max: int, dilate_px: int, open_px:
 
 
 def cell_fractions(mask: np.ndarray, r: Raster, grid: Grid, size_m: float) -> np.ndarray:
-    """Fraction of True pixels in a size_m box centered on every cell (pixels outside count False)."""
+    """Fração de pixels True num quadrado de size_m centrado em cada célula (pixels fora contam como False)."""
     ii = cv2.integral(mask.astype(np.uint8), sdepth=cv2.CV_32S)  # (H+1, W+1)
     H, W = mask.shape
     x, y = grid.centers
@@ -166,7 +166,7 @@ def cell_fractions(mask: np.ndarray, r: Raster, grid: Grid, size_m: float) -> np
 
 
 def download(cfg: dict, force: bool = False) -> None:
-    """Fetch AOI (+margin) at the working overview and the thumbnail overview for all dates."""
+    """Baixa a AOI (com margem) no overview de trabalho e no overview de miniatura, para todas as datas."""
     d = cfg["data"]
     grid = Grid.from_aoi(**d["aoi"], cell=d["cell_m"])
     m = d["margin_m"]
@@ -186,7 +186,7 @@ def download(cfg: dict, force: bool = False) -> None:
 
 
 def build_masks(cfg: dict) -> dict:
-    """Per-date, per-cell valid/cloud fractions (150 m footprint) and AOI-level stats."""
+    """Frações de validade e de nuvem por data e por célula (footprint de 150 m) e estatísticas da AOI."""
     d = cfg["data"]
     grid = Grid.from_aoi(**d["aoi"], cell=d["cell_m"])
     fp = cfg["features"]["footprint_m"]
@@ -240,7 +240,7 @@ def main() -> None:
 
 
 def export_stats(cfg: dict, out: Path) -> None:
-    """Data facts used by the report (copied into results/ so REPORT numbers come from there)."""
+    """Fatos dos dados usados no relatório (copiados para results/, de onde saem os números do REPORT)."""
     d = cfg["data"]
     grid = Grid.from_aoi(**d["aoi"], cell=d["cell_m"])
     train, test = grid.split_rows(d["split_lat"], d["split_margin_m"])

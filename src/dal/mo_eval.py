@@ -1,4 +1,4 @@
-"""Multi-Objective evaluation, Pareto metrics, Hypervolume, EUM, and baselines."""
+"""Avaliação multiobjetivo: métricas de Pareto, hipervolume, EUM e baselines."""
 from __future__ import annotations
 
 import argparse
@@ -17,13 +17,14 @@ from .mo_ppo import MOPPONetwork
 
 
 # ============================================================================
-# Simplex Grid Generation (§5.4)
+# Grade sobre o simplex (§5.4)
 # ============================================================================
 def generate_simplex_grid(step: float = 0.25) -> list[np.ndarray]:
-    """Generates the 4D simplex grid with given step (35 points for step=0.25) + 3 presets = 38 points."""
+    """Gera a grade do simplex 4D com o passo dado (35 pontos para step=0,25) + os presets fast e safe = 37 pontos
+    (o unif já está na grade)."""
     k = int(round(1.0 / step))
     grid = []
-    # All non-negative integer partitions summing to k
+    # Todas as partições inteiras não negativas que somam k
     for p0 in range(k + 1):
         for p1 in range(k + 1 - p0):
             for p2 in range(k + 1 - p0 - p1):
@@ -31,11 +32,11 @@ def generate_simplex_grid(step: float = 0.25) -> list[np.ndarray]:
                 pt = np.array([p0, p1, p2, p3], dtype=np.float32) * step
                 grid.append(pt)
 
-    # Add the 3 presets from §5.3
+    # Acrescenta os 3 presets da §5.3 (os que já estão na grade não se repetem)
     presets = [
-        np.array([0.15, 0.55, 0.15, 0.15], dtype=np.float32),  # w_rapido (cost)
-        np.array([0.15, 0.15, 0.15, 0.55], dtype=np.float32),  # w_seguro (risk)
-        np.array([0.25, 0.25, 0.25, 0.25], dtype=np.float32),  # w_uniforme
+        np.array([0.15, 0.55, 0.15, 0.15], dtype=np.float32),  # w_fast (custo)
+        np.array([0.15, 0.15, 0.15, 0.55], dtype=np.float32),  # w_safe (risco)
+        np.array([0.25, 0.25, 0.25, 0.25], dtype=np.float32),  # w_unif
     ]
 
     out = []
@@ -50,21 +51,21 @@ def generate_simplex_grid(step: float = 0.25) -> list[np.ndarray]:
 
 
 # ============================================================================
-# Hypervolume & EUM (§6.2)
+# Hipervolume e EUM (§6.2)
 # ============================================================================
 def compute_hypervolume_2d(points: np.ndarray, ref_point: np.ndarray) -> float:
-    """Exact 2D hypervolume calculation for maximization problems."""
-    # Filter points dominating the reference point
+    """Hipervolume 2D exato para problemas de maximização."""
+    # Mantém só os pontos que dominam o ponto de referência
     valid = [p for p in points if np.all(p >= ref_point)]
     if not valid:
         return 0.0
 
-    # Sort descending by first objective
+    # Ordena de forma decrescente pelo primeiro objetivo
     pts = sorted(valid, key=lambda x: -x[0])
     hv = 0.0
     cur_y = ref_point[1]
 
-    # Compute step-wise rectangular area
+    # Soma a área em degraus retangulares
     for p in pts:
         if p[1] > cur_y:
             hv += (p[0] - ref_point[0]) * (p[1] - cur_y)
@@ -74,12 +75,12 @@ def compute_hypervolume_2d(points: np.ndarray, ref_point: np.ndarray) -> float:
 
 
 def compute_hypervolume_3d(points: np.ndarray, ref_point: np.ndarray) -> float:
-    """Exact 3D hypervolume via 2D slicing for maximization problems."""
+    """Hipervolume 3D exato, por fatias 2D, para problemas de maximização."""
     valid = np.array([p for p in points if np.all(p >= ref_point)])
     if len(valid) == 0:
         return 0.0
 
-    # Sort unique z values ascending
+    # Ordena os valores únicos de z de forma crescente
     z_vals = np.unique(valid[:, 2])
     z_all = np.sort(np.concatenate([[ref_point[2]], z_vals]))
 
@@ -91,7 +92,7 @@ def compute_hypervolume_3d(points: np.ndarray, ref_point: np.ndarray) -> float:
         if delta_z <= 0:
             continue
 
-        # Points that have z >= z_hi contribute in this slice
+        # Os pontos com z >= z_hi contribuem nesta fatia
         slice_pts = valid[valid[:, 2] >= z_hi][:, :2]
         if len(slice_pts) > 0:
             area_2d = compute_hypervolume_2d(slice_pts, ref_point[:2])
@@ -105,22 +106,22 @@ def compute_eum(
     n_samples: int = 1000,
     seed: int = 42,
 ) -> float:
-    """Expected Utility Metric (EUM) over Dirichlet(alpha=1) weights (AMOR/MORL-Baselines).
+    """Métrica de utilidade esperada (EUM) sobre pesos Dirichlet(alpha=1) (AMOR / MORL-Baselines).
 
-    utilities: (N, M) matrix of utility points on the Pareto front.
+    utilities: matriz (N, M) com os pontos de utilidade da fronteira de Pareto.
     """
     rng = np.random.default_rng(seed)
     M = utilities.shape[1]
     weights = rng.dirichlet(np.ones(M), size=n_samples)  # (1000, M)
 
-    # For each sampled weight, find the max scalarized utility across all policies
+    # Para cada w sorteado, pega a maior utilidade escalarizada entre todas as políticas
     scalarized = weights @ utilities.T  # (1000, N)
     max_util = scalarized.max(axis=1)   # (1000,)
     return float(np.mean(max_util))
 
 
 # ============================================================================
-# Bootstrap Confidence Intervals
+# Intervalos de confiança por bootstrap
 # ============================================================================
 def boot_ci(x: np.ndarray | list[float], n: int = 1000, seed: int = 0, stat=np.mean) -> tuple[float, float]:
     arr = np.asarray(x, dtype=float)
@@ -134,10 +135,10 @@ def boot_ci(x: np.ndarray | list[float], n: int = 1000, seed: int = 0, stat=np.m
 
 
 # ============================================================================
-# Evaluation Pipeline
+# Pipeline de avaliação
 # ============================================================================
 def load_mo_model(model_path: Path, memory: bool = True) -> MOPPONetwork:
-    """Loads a trained MOPPONetwork state dict."""
+    """Carrega o state dict de uma MOPPONetwork treinada."""
     c_in = 7
     h, w = 64, 64
     nv = 69 if memory else 5
@@ -155,8 +156,15 @@ def run_episode(
     seed: int,
     is_ppo_mo: bool = True,
     save_traj: bool = False,
+    deterministic: bool = True,
 ) -> tuple[dict, dict | None]:
-    """Runs a single paired episode."""
+    """Roda um episódio pareado.
+
+    Com `deterministic=False` a ação é amostrada de π(·|s, w), como no treino. A semente do torch
+    é fixada pelo seed do episódio: todos os w veem os mesmos números aleatórios (pareamento).
+    """
+    if not deterministic:
+        torch.manual_seed(seed)
     obs, _ = env.reset(seed=seed, options={"w": w})
     done = False
     decision_times = []
@@ -170,7 +178,7 @@ def run_episode(
                 "map": torch.from_numpy(obs["map"]).unsqueeze(0).float(),
                 "vec": torch.from_numpy(obs["vec"]).unsqueeze(0).float(),
             }
-            action = policy.act(t_obs, deterministic=True)
+            action = policy.act(t_obs, deterministic=deterministic)
         else:
             action = policy.act(env.ep)
         dt = time.perf_counter() - t0
@@ -221,8 +229,9 @@ def evaluate_weight_grid(
     traj_dir: Path | None = None,
     save_traj_count: int = 10,
     label: str = "mo_ppo",
+    deterministic: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Evaluates a MOPPO policy over the weight grid with paired episode seeds."""
+    """Avalia uma política MOPPO sobre a grade de pesos, com seeds de episódio pareados."""
     env = make_mo_env("hand", "S2", cfg, split="test", memory=memory)
     all_episodes = []
     summary_rows = []
@@ -249,7 +258,9 @@ def evaluate_weight_grid(
             ep_seed = seed_base + i
             save_traj = bool(traj_dir and is_preset and (i < save_traj_count) and memory)
 
-            ep_info, traj_data = run_episode(env, net, w, ep_seed, is_ppo_mo=True, save_traj=save_traj)
+            ep_info, traj_data = run_episode(
+                env, net, w, ep_seed, is_ppo_mo=True, save_traj=save_traj, deterministic=deterministic
+            )
             ep_info["weight_idx"] = w_idx
             ep_info["w_str"] = w_str
             ep_info["w0"] = w[0]
@@ -310,7 +321,7 @@ def evaluate_reference_methods(
     traj_dir: Path | None = None,
     save_traj_count: int = 10,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Re-evaluates Straight baseline and PoC PPO models from runs/overnight/ on identical 300 episodes."""
+    """Reavalia a linha reta e os PPOs da PoC (runs/overnight/) nos mesmos 300 episódios."""
     from .baselines import StraightPolicy
     from .evaluate import PPOPolicy
 
@@ -318,7 +329,7 @@ def evaluate_reference_methods(
     summary_rows = []
     all_episodes = []
 
-    # 1. Straight Baseline
+    # 1. Baseline da linha reta
     straight = StraightPolicy()
     ep_results = []
     for i in range(episodes):
@@ -361,7 +372,7 @@ def evaluate_reference_methods(
         "decision_ms": float(df_s["decision_ms"].mean()),
     })
 
-    # 2. PoC PPO models (seeds 0, 1, 2)
+    # 2. Modelos PPO da PoC (seeds 0, 1 e 2)
     poc_root = RUNS / "overnight"
     poc_models = [poc_root / f"S2_hand_s{s}" / "final_model.zip" for s in range(3)]
     for s_idx, model_path in enumerate(poc_models):

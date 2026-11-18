@@ -1,32 +1,37 @@
-"""Porto Alegre zero-shot evaluation for Multi-Objective policy (H7).
+"""Avaliação zero-shot da política multiobjetivo em Porto Alegre (H7).
 
-Evaluates MOPPO with memory (seed 0) on POA P1 (centro and ilhas) across presets
-(fast, safe, unif) and compares paired against PPO-S2 and straight baselines.
-Taquari models and POA assets are read in strictly read-only mode.
+Avalia o MOPPO com memória (seed 0) em POA P1 (centro e ilhas) nos presets fast, safe e unif,
+de forma pareada com o PPO-S2 e a linha reta. Os modelos do Taquari e os dados de POA
+são só lidos, nunca alterados.
 """
 from __future__ import annotations
 
 import time
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import torch
 
+from .baselines import StraightPolicy
 from .config import ROOT, load_config
 from .env import Episode
-from .mo_eval import boot_ci, load_mo_model
-from .poa import beta_for, region_data, _policy
 from .evaluate import PPOPolicy
-from .baselines import StraightPolicy
+from .mo_eval import boot_ci, load_mo_model
+from .poa import beta_for, region_data
 
 
 class MOPPOPolicyWrapper:
-    """Wraps MOPPONetwork for evaluation in DroneLoc Episode."""
+    """Adapta a MOPPONetwork à interface de política do Episode (`reset` / `act`).
 
-    def __init__(self, net, w: np.ndarray, memory: bool = True):
+    Com `deterministic=False` a ação é amostrada de π(·|s, w), como no treino.
+    """
+
+    def __init__(self, net, w: np.ndarray, memory: bool = True, deterministic: bool = True):
         self.net = net
         self.w = np.array(w, dtype=np.float32)
         self.memory = memory
+        self.deterministic = deterministic
         self.action_history = np.zeros((8, 8), dtype=np.float32)
 
     def reset(self, ep=None, rng=None):
@@ -44,7 +49,7 @@ class MOPPOPolicyWrapper:
             "map": torch.from_numpy(obs["map"]).unsqueeze(0).float(),
             "vec": torch.from_numpy(vec).unsqueeze(0).float(),
         }
-        action = self.net.act(t_obs, deterministic=True)
+        action = self.net.act(t_obs, deterministic=self.deterministic)
         if self.memory:
             self.action_history[:-1] = self.action_history[1:]
             one_hot = np.zeros(8, dtype=np.float32)
@@ -58,8 +63,15 @@ def evaluate_poa_p1(
     episodes: int = 300,
     seed_base: int = 2024,
     out_csv: Path | None = None,
+    deterministic: bool = True,
+    include_references: bool = True,
 ) -> pd.DataFrame:
-    """Runs paired zero-shot evaluation on POA P1 for centro and ilhas."""
+    """Roda a avaliação zero-shot pareada em POA P1, nas regiões centro e ilhas.
+
+    `deterministic=False` amostra as ações das políticas MO; a semente do torch é fixada pelo seed
+    do episódio, então os presets continuam pareados. `include_references=False` pula a reta e o
+    PPO-S2 (que não dependem dessa opção e já estão em results_mo/poa_summary.csv).
+    """
     cfg_poa = load_config("configs_poa/poa.yaml")
     net = load_mo_model(mo_model_path, memory=True)
 
@@ -82,15 +94,15 @@ def evaluate_poa_p1(
         data = region_data(cfg_poa, region, "P1", beta, pca_from="S2")
         ep = Episode(data, cfg_poa["filter"], "test", cfg_poa["data"]["cell_m"])
 
-        # Policies to evaluate on this region
+        # Políticas avaliadas nesta região
         policies = {
-            "mo_safe": MOPPOPolicyWrapper(net, presets["mo_safe"], memory=True),
-            "mo_fast": MOPPOPolicyWrapper(net, presets["mo_fast"], memory=True),
-            "mo_unif": MOPPOPolicyWrapper(net, presets["mo_unif"], memory=True),
-            "straight": pol_straight,
+            name: MOPPOPolicyWrapper(net, weights, memory=True, deterministic=deterministic)
+            for name, weights in presets.items()
         }
-        if pol_ppo_s2:
-            policies["ppo_s2"] = pol_ppo_s2
+        if include_references:
+            policies["straight"] = pol_straight
+            if pol_ppo_s2:
+                policies["ppo_s2"] = pol_ppo_s2
 
         for method_name, pol in policies.items():
             t0 = time.time()
@@ -99,6 +111,8 @@ def evaluate_poa_p1(
 
             for i in range(episodes):
                 ep_seed = seed_base + i
+                if not deterministic:
+                    torch.manual_seed(ep_seed)
                 ep.reset(seed=ep_seed)
                 if hasattr(pol, "reset"):
                     pol.reset(ep=ep, rng=np.random.default_rng([ep_seed, 7]))
@@ -154,7 +168,22 @@ def evaluate_poa_p1(
     return df_res
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """CLI: `--stochastic` reavalia só as políticas MO, com amostragem, em results_mo/stochastic/."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Avaliação zero-shot do MOPPO em Porto Alegre (H7)")
+    parser.add_argument("--stochastic", action="store_true", help="amostra as ações das políticas MO")
+    parser.add_argument("--episodes", type=int, default=300)
+    args = parser.parse_args()
+
     mo_model = ROOT / "runs_mo/moppo_S2_hand_s0/final_model.pt"
-    out = ROOT / "results_mo/poa_summary.csv"
-    evaluate_poa_p1(mo_model, episodes=300, out_csv=out)
+    if args.stochastic:
+        out = ROOT / "results_mo/stochastic/poa_summary.csv"
+        evaluate_poa_p1(mo_model, episodes=args.episodes, out_csv=out, deterministic=False, include_references=False)
+    else:
+        evaluate_poa_p1(mo_model, episodes=args.episodes, out_csv=ROOT / "results_mo/poa_summary.csv")
+
+
+if __name__ == "__main__":
+    main()

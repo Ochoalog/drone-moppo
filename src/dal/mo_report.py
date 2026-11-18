@@ -1,4 +1,4 @@
-"""Generates all figures and REPORT_MO.md for the multi-objective evaluation."""
+"""Gera todas as figuras e o REPORT_MO.md da avaliação multiobjetivo."""
 from __future__ import annotations
 
 import argparse
@@ -17,11 +17,11 @@ from .mo_eval import boot_ci, compute_eum, compute_hypervolume_3d
 
 
 def is_pareto_efficient_3d(costs: np.ndarray) -> np.ndarray:
-    """Finds Pareto-efficient points for minimization: costs are (-success, false_loc, distance)."""
+    """Acha os pontos eficientes de Pareto (minimização); os custos são (-sucesso, localização falsa, distância)."""
     is_efficient = np.ones(costs.shape[0], dtype=bool)
     for i, c in enumerate(costs):
         if is_efficient[i]:
-            # Keep any point with a lower cost in at least one dimension
+            # Mantém todo ponto com custo menor em pelo menos uma dimensão
             is_efficient[is_efficient] = np.any(costs[is_efficient] < c, axis=1)
             is_efficient[i] = True
     return is_efficient
@@ -31,18 +31,18 @@ def generate_pareto_figures(
     df_all: pd.DataFrame,
     figs_dir: Path,
 ) -> tuple[Path, Path, list[dict]]:
-    """Generates the 2 Pareto projections: Success x False Loc and Success x Distance."""
+    """Gera as 2 projeções de Pareto: sucesso x localização falsa e sucesso x distância."""
     figs_dir.mkdir(parents=True, exist_ok=True)
 
-    # 3D costs for Pareto: minimize (-success, false_loc, distance_m)
+    # Custos 3D para Pareto: minimizar (-sucesso, localização falsa, distância)
     pts = np.column_stack([-df_all["success"], df_all["false_loc"], df_all["distance_m"]])
     pareto_mask = is_pareto_efficient_3d(pts)
     df_all = df_all.copy()
     df_all["is_pareto"] = pareto_mask
 
-    # 1. Projection: Success x False Loc
+    # 1. Projeção: sucesso x localização falsa
     fig, ax = plt.subplots(figsize=(8, 6), dpi=150)
-    # MO points colored by w_risk
+    # Pontos MO coloridos por w_risco
     mo_pts = df_all[df_all["method"] == "mo_ppo"]
     if len(mo_pts) > 0:
         sc = ax.scatter(
@@ -58,7 +58,7 @@ def generate_pareto_figures(
         cbar = plt.colorbar(sc, ax=ax)
         cbar.set_label("$w_{\\mathrm{risco}}$ (peso do risco)", fontsize=10)
 
-    # Ablation: MO without memory
+    # Ablação: MO sem memória
     mo_nomem = df_all[df_all["method"] == "mo_ppo_nomem"]
     if len(mo_nomem) > 0:
         ax.scatter(
@@ -71,7 +71,7 @@ def generate_pareto_figures(
             label="MOPPO (sem memória)",
         )
 
-    # Baselines
+    # Referências
     markers = {"straight": "s", "ppo_poc_s0": "D", "ppo_fixed_fast": "v", "ppo_fixed_safe": "P"}
     colors = {"straight": "#9467bd", "ppo_poc_s0": "#1f77b4", "ppo_fixed_fast": "#d62728", "ppo_fixed_safe": "#2ca02c"}
     labels = {
@@ -99,7 +99,7 @@ def generate_pareto_figures(
                 label=labels.get(m, m),
             )
 
-    # Highlight Pareto front points
+    # Destaca os pontos da fronteira de Pareto
     pareto_pts = df_all[df_all["is_pareto"]]
     ax.scatter(
         pareto_pts["false_loc"] * 100,
@@ -121,7 +121,7 @@ def generate_pareto_figures(
     plt.savefig(fig_f)
     plt.close()
 
-    # 2. Projection: Success x Distance
+    # 2. Projeção: sucesso x distância
     fig, ax = plt.subplots(figsize=(8, 6), dpi=150)
     if len(mo_pts) > 0:
         sc = ax.scatter(
@@ -193,12 +193,12 @@ def generate_behavior_adaptation_figure(
     df_mo: pd.DataFrame,
     figs_dir: Path,
 ) -> tuple[Path, dict]:
-    """Generates behavior adaptation curves (H6) and calculates Spearman correlation with bootstrap CI."""
+    """Gera as curvas de adaptação de comportamento (H6) e calcula a correlação de Spearman com IC por bootstrap."""
     figs_dir.mkdir(parents=True, exist_ok=True)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), dpi=150)
 
-    # 1. False loc vs w_risk (with w_cost = w_info = w_success = (1 - w_risk)/3)
-    # Filter points where w_info, w_cost, w_success are approximately equal
+    # 1. Localização falsa vs w_risco (com w_custo = w_info = w_sucesso = (1 - w_risco)/3)
+    # Filtra os pontos em que w_info, w_custo e w_sucesso são aproximadamente iguais
     tol = 0.05
     risk_pts = []
     for _, row in df_mo.iterrows():
@@ -208,7 +208,7 @@ def generate_behavior_adaptation_figure(
 
     df_risk = pd.DataFrame(risk_pts).sort_values("w_risk")
     if len(df_risk) < 3:
-        # Fallback to all points sorted by w_risk
+        # Se não houver, usa todos os pontos ordenados por w_risco
         df_risk = df_mo.sort_values("w_risk")
 
     w_risk_vals = df_risk["w_risk"].values
@@ -218,7 +218,7 @@ def generate_behavior_adaptation_figure(
     if np.isnan(rho_risk):
         rho_risk = 0.0
 
-    # Bootstrap CI for Spearman rho
+    # IC por bootstrap para o rho de Spearman
     rng = np.random.default_rng(42)
     n_boot = 1000
     boot_rhos_risk = []
@@ -244,7 +244,7 @@ def generate_behavior_adaptation_figure(
     ax1.set_title(f"Risco vs $w_{{\\mathrm{{risco}}}}$\n$\\rho={rho_risk:.2f}$ (IC 95%: [{rho_risk_lo:.2f}, {rho_risk_hi:.2f}])", fontsize=11)
     ax1.grid(True, linestyle="--", alpha=0.5)
 
-    # 2. Distance vs w_cost
+    # 2. Distância vs w_custo
     cost_pts = []
     for _, row in df_mo.iterrows():
         other = [row["w_info"], row["w_risk"], row["w_success"]]
@@ -304,8 +304,8 @@ def compute_normalized_hv_eum(
     df_fixed: pd.DataFrame | None,
     df_ref: pd.DataFrame,
 ) -> dict:
-    """Computes Hypervolume and EUM normalized across all evaluated methods (§6.2)."""
-    # Combine all methods to find global worst and best across (success, false_loc, distance_m)
+    """Calcula o hipervolume e o EUM normalizados sobre todos os métodos avaliados (§6.2)."""
+    # Junta todos os métodos para achar o pior e o melhor global em (sucesso, localização falsa, distância)
     dfs = [df for df in [df_mo, df_nomem, df_fixed, df_ref] if df is not None and len(df) > 0]
     all_cat = pd.concat(dfs, ignore_index=True)
 
@@ -317,10 +317,10 @@ def compute_normalized_hv_eum(
     max_d = float(all_cat["distance_m"].max())
 
     def normalize_metrics(df: pd.DataFrame) -> np.ndarray:
-        # All 3 objectives normalized to [0, 1] where higher is better:
-        # Success: (s - min_s) / (max_s - min_s)
-        # False loc (invert): (max_f - f) / (max_f - min_f)
-        # Distance (invert): (max_d - d) / (max_d - min_d)
+        # Os 3 objetivos normalizados em [0, 1], com maior = melhor:
+        # Sucesso: (s - min_s) / (max_s - min_s)
+        # Localização falsa (invertida): (max_f - f) / (max_f - min_f)
+        # Distância (invertida): (max_d - d) / (max_d - min_d)
         norm_s = (df["success"].values - min_s) / max(1e-6, max_s - min_s)
         norm_f = (max_f - df["false_loc"].values) / max(1e-6, max_f - min_f)
         norm_d = (max_d - df["distance_m"].values) / max(1e-6, max_d - min_d)
@@ -359,11 +359,11 @@ def generate_training_curves_figure(
     runs_dir: Path,
     figs_dir: Path,
 ) -> Path | None:
-    """Plots training loss and learning progress curves."""
+    """Plota as curvas de perda e de progresso do treino."""
     figs_dir.mkdir(parents=True, exist_ok=True)
     mo_csv = runs_dir / "moppo_S2_hand_s0" / "progress.csv"
     if not mo_csv.exists():
-        # Look for any progress.csv
+        # Procura qualquer progress.csv
         cand = list(runs_dir.glob("*/progress.csv"))
         if not cand:
             return None
@@ -406,10 +406,10 @@ def build_report_markdown(
     validation_output: str,
     out_file: Path,
 ) -> str:
-    """Builds the full REPORT_MO.md report."""
-    # Compute verdicts for H4, H5, H6, H7 strictly by the pre-registered rules in §7
+    """Monta o relatório REPORT_MO.md completo."""
+    # Vereditos de H4 a H7 estritamente pelas regras pré-registradas na §7
 
-    # H4 verdict: MO(w_k) vs PPO_fixo(w_k)
+    # Veredito de H4: MO(w_k) vs PPO de peso fixo(w_k)
     h4_details = []
     h4_supported = True
     h4_inconclusive = False
@@ -417,10 +417,10 @@ def build_report_markdown(
     if df_fixed is not None and len(df_fixed) > 0:
         for w_name, w_vec in [("rapido", [0.15, 0.55, 0.15, 0.15]), ("seguro", [0.15, 0.15, 0.15, 0.55])]:
             sub_fix = df_fixed[df_fixed["preset"] == w_name]
-            # Match MO point
+            # Ponto MO correspondente
             mo_pt = df_mo[df_mo["preset"] == w_name]
             if len(sub_fix) > 0 and len(mo_pt) > 0:
-                ret_fix = sub_fix.iloc[0]["success"]  # scalarized surrogate
+                ret_fix = sub_fix.iloc[0]["success"]  # substituto escalarizado
                 ret_mo = mo_pt.iloc[0]["success"]
                 diff = ret_mo - ret_fix
                 h4_details.append(f"- **Preset {w_name}:** MO={ret_mo*100:.1f}%, Fixo={ret_fix*100:.1f}% (Δ = {diff*100:+.1f} pp)")
@@ -430,7 +430,7 @@ def build_report_markdown(
         h4_supported = True
         h4_details.append("- PPOs fixos avaliados pareadamente na suite de teste.")
 
-    # H5 verdict: Dominance over Straight baseline
+    # Veredito de H5: dominância sobre a linha reta
     straight_row = df_ref[df_ref["method"] == "straight"].iloc[0]
     s_straight = straight_row["success"]
     f_straight = straight_row["false_loc"]
@@ -438,7 +438,7 @@ def build_report_markdown(
 
     h5_candidates = []
     for _, row in df_mo.iterrows():
-        # Rule: diff_success >= -0.03 (lower CI), diff_false_loc <= 0 (upper CI), diff_dist < 0 (upper CI)
+        # Regra: dif_sucesso >= -0,03 (IC inferior), dif_falsa <= 0 (IC superior), dif_dist < 0 (IC superior)
         s_diff_lo = row.get("success_lo", row["success"]) - s_straight
         f_diff_hi = row.get("false_loc_hi", row["false_loc"]) - f_straight
         d_diff_hi = row.get("distance_hi", row["distance_m"]) - d_straight
