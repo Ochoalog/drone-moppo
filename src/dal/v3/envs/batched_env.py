@@ -18,6 +18,7 @@ import numpy as np
 import torch
 
 from dal.filter import ACTIONS, disk_offsets, gaussian_kernel1d
+from dal.v3.localization.ca_filter import change_aware_likelihood
 
 ACTION_DELTAS = torch.tensor(ACTIONS, dtype=torch.long)
 
@@ -65,8 +66,15 @@ class BatchedLocalizationEnv:
     """N episódios de localização em paralelo (modo legado: idêntico à v1)."""
 
     def __init__(self, data, filter_cfg: dict, split: str = "test", cell_m: float = 50.0,
-                 device: str | torch.device = "cpu", dtype: torch.dtype = torch.float64):
+                 device: str | torch.device = "cpu", dtype: torch.dtype = torch.float64,
+                 change_prior=None, alpha: float = 0.0):
+        """`change_prior` (grade inteira, valores em [0, 1]) e `alpha` ativam o filtro CA; α = 0 é o filtro padrão."""
         self.scenario = ScenarioTensors(data, device, dtype)
+        self.alpha = float(alpha)
+        self.change_prior = (None if change_prior is None
+                             else torch.as_tensor(change_prior, dtype=dtype, device=device).reshape(-1))
+        if self.alpha > 0 and self.change_prior is None:
+            raise ValueError("alpha > 0 exige um change_prior")
         self.device, self.dtype = torch.device(device), dtype
         self.cfg = filter_cfg
         self.W = int(filter_cfg["window"])
@@ -142,6 +150,9 @@ class BatchedLocalizationEnv:
         valid_count = valid.sum(dim=1, keepdim=True).clamp(min=1)
         mean_valid = torch.where(valid, likelihood, torch.zeros_like(likelihood)).sum(1, keepdim=True) / valid_count
         likelihood = torch.where(valid, likelihood, mean_valid.expand_as(likelihood))
+        if self.alpha > 0:
+            prior = self.change_prior[self.window_cells]
+            likelihood = change_aware_likelihood(likelihood, prior, self.alpha, valid)
         return likelihood.view(n, W, W)
 
     def _observe(self, active: torch.Tensor) -> None:
