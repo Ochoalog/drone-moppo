@@ -1,0 +1,13 @@
+location,measure,comparison,estimate,ci_low,ci_high,n_first,n_second,holds,contradicts,m1_verdict
+poa_centro,visited_distinct,a_ppo_false_minus_ppo_success,0.012537353779008636,-0.0367988875620517,0.16967619028544897,19,1263,False,False,não suportada
+poa_centro,visited_distinct,b_ppo_false_minus_straight_false,0.07401848226212539,0.017894619534767824,0.21844036255822033,19,13,True,False,não suportada
+poa_centro,visited_change,a_ppo_false_minus_ppo_success,0.19495883333962197,0.04659123900901984,0.4051395811165493,19,1263,True,False,não suportada
+poa_centro,visited_change,b_ppo_false_minus_straight_false,-0.01615022795523713,-0.21278326068637943,0.2153204111245079,19,13,False,False,não suportada
+poa_ilhas,visited_distinct,a_ppo_false_minus_ppo_success,0.0019870381119589386,-0.02317987249735057,0.023879236099584054,316,932,False,False,não suportada
+poa_ilhas,visited_distinct,b_ppo_false_minus_straight_false,0.007439558808104707,-0.013156242103296205,0.027590399172580816,316,101,False,False,não suportada
+poa_ilhas,visited_change,a_ppo_false_minus_ppo_success,0.29148131539479377,0.24357550852113763,0.3322752855599331,316,932,True,False,não suportada
+poa_ilhas,visited_change,b_ppo_false_minus_straight_false,-0.031181610755595335,-0.08096160390915781,0.017899705552661755,316,101,False,False,não suportada
+taquari_S2,visited_distinct,a_ppo_false_minus_ppo_success,-0.03807930727096459,-0.05449212588222523,-0.022401240613793717,605,2120,False,True,não suportada
+taquari_S2,visited_distinct,b_ppo_false_minus_straight_false,0.01531779868522326,-0.0035065574190249046,0.034362927802615996,605,130,False,False,não suportada
+taquari_S2,visited_change,a_ppo_false_minus_ppo_success,0.18803365669044336,0.16168549525736284,0.2196620992555301,605,2120,True,False,não suportada
+taquari_S2,visited_change,b_ppo_false_minus_straight_false,-0.05719253886147657,-0.0932745444816285,-0.019519102716169624,605,130,False,True,não suportada
