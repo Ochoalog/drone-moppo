@@ -1,0 +1,42 @@
+{
+  "job_id": "g0_data_check",
+  "status": "PASSED",
+  "git_commit": "2453803bc3f4b9676e417a135f966c29e0b9eb55",
+  "config_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "gpu_minutes": 0.0,
+  "hardware": {
+    "host": "r2d2",
+    "gpu_target": "NVIDIA T4 (Google Colab)"
+  },
+  "started_at": "2026-11-18T15:00:00Z",
+  "finished_at": "2026-11-18T15:31:00Z",
+  "summary_metrics": {
+    "taquari_aoi_km2": 165.8,
+    "taquari_emsr720_flood_km2": 19.09,
+    "taquari_sentinel1_water_km2": 2.58,
+    "porto_alegre_ilhas_area_km2": 80.0,
+    "porto_alegre_ilhas_flooded_km2": 25.60,
+    "porto_alegre_ilhas_flooded_pct": 32.0,
+    "porto_alegre_centro_area_km2": 41.07,
+    "porto_alegre_centro_flooded_km2": 9.13,
+    "porto_alegre_centro_flooded_pct": 22.2,
+    "porto_alegre_emsn194_total_flooded_km2": 55.67,
+    "porto_alegre_sentinel1_water_km2": 53.58,
+    "third_area_candidate_selected": "Canoas",
+    "canoas_overlap_km2": 512.9,
+    "canoas_3k2_windows_stride1km": 42,
+    "canoas_cloud_pct": 4.94,
+    "external_event_candidate_selected": "Valencia, Spain (Floods-Spain-Oct24)",
+    "valencia_overlap_km2": 225.0,
+    "valencia_copernicus_activation": "EMSR773"
+  },
+  "artifacts_generated": [
+    "MyDrive/drone_v3/prior/taquari_prior_emsr720_10m.tif",
+    "MyDrive/drone_v3/prior/porto_alegre_prior_emsn194_10m.tif",
+    "MyDrive/drone_v3/prior/taquari_sentinel1_water_10m.tif",
+    "MyDrive/drone_v3/prior/porto_alegre_sentinel1_water_10m.tif",
+    "MyDrive/drone_v3/prior/taquari_prior_overlay_preevent.png",
+    "MyDrive/drone_v3/prior/porto_alegre_prior_overlay_preevent.png",
+    "MyDrive/drone_v3/prior/MANIFEST.sha256"
+  ]
+}
