@@ -13,3 +13,8 @@ runs_mo/
 results_mo/traj/
 results_mo/videos/
 
+
+# binários de apresentação (regeneráveis)
+results_mo/*.pptx
+results_mo/*.pdf
+results_mo/pptx_assets/
