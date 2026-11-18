@@ -1,4 +1,4 @@
-"""PPO training (stable-baselines3) with a small custom CNN extractor."""
+"""Treino do PPO (stable-baselines3) com um extrator CNN pequeno e próprio."""
 from __future__ import annotations
 
 import argparse
@@ -22,14 +22,14 @@ from .config import RUNS, load_config
 
 
 class LocExtractor(BaseFeaturesExtractor):
-    """3 strided convs over the (C, W, W) map tensor + MLP, concatenated with the vector input."""
+    """3 convoluções com stride sobre o tensor do mapa (C, W, W) + MLP, concatenadas com a entrada vetorial."""
 
     def __init__(self, observation_space, features_dim: int = 256):
         super().__init__(observation_space, features_dim)
         C, H, W = observation_space["map"].shape
         nv = observation_space["vec"].shape[0]
         self.cnn = nn.Sequential(
-            # ~1.3 M MAC per sample (CPU budget): 64 -> 16 -> 8 -> 4
+            # ~1,3 M MAC por amostra (orçamento de CPU): 64 -> 16 -> 8 -> 4
             nn.Conv2d(C, 16, 4, stride=4), nn.ReLU(),
             nn.Conv2d(16, 32, 3, stride=2, padding=1), nn.ReLU(),
             nn.Conv2d(32, 64, 3, stride=2, padding=1), nn.ReLU(),
@@ -44,7 +44,7 @@ class LocExtractor(BaseFeaturesExtractor):
 
 
 class InfoLogger(BaseCallback):
-    """Logs success / false-localization rates of recent training episodes."""
+    """Registra as taxas de sucesso e de localização falsa dos episódios de treino recentes."""
 
     def _on_rollout_end(self) -> None:
         buf = list(self.model.ep_info_buffer)

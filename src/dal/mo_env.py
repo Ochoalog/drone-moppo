@@ -1,4 +1,4 @@
-"""Multi-objective environment for DroneLocEnv (AMOR / Alegre et al., SIGGRAPH 2025)."""
+"""Ambiente multiobjetivo sobre o DroneLocEnv (AMOR, Alegre et al., SIGGRAPH 2025)."""
 from __future__ import annotations
 
 import gymnasium as gym
@@ -8,18 +8,18 @@ from .env import DroneLocEnv, ScenarioData, make_env
 
 
 class DroneLocMOEnv(gym.Env):
-    """Multi-objective POMDP environment for active drone localization.
+    """POMDP multiobjetivo para a localização ativa do drone.
 
-    Objectives r_t in R^4:
-        0: info:      H_{t-1} - H_t (belief entropy reduction)
-        1: cost:      -step_cost - border_penalty * blocked
-        2: success:   +success_reward at terminal step if success else 0
-        3: risk:      -false_loc_penalty at terminal step if false_loc else 0
+    Objetivos r_t em R^4:
+        0: info:     H_{t-1} - H_t (redução da entropia da crença)
+        1: custo:    -step_cost - border_penalty * bloqueado
+        2: sucesso:  +success_reward no passo terminal, se houve sucesso; senão 0
+        3: risco:    -false_loc_penalty no passo terminal, se houve localização falsa; senão 0
 
-    Observation:
-        map: (C, W, W) float32 in [-1, 1]
-        vec: [w (4), action_history (64, if memory=True), 1 - t/max_steps (1)]
-             Total size: 69 (with memory) or 5 (without memory).
+    Observação:
+        map: (C, W, W) float32 em [-1, 1]
+        vec: [w (4), histórico de ações (64, se memory=True), 1 - t/max_steps (1)]
+             Tamanho total: 69 (com memória) ou 5 (sem memória).
     """
 
     metadata = {"render_modes": []}
@@ -61,7 +61,7 @@ class DroneLocMOEnv(gym.Env):
             "vec": gym.spaces.Box(low=-1.0, high=1.0, shape=(nv,), dtype=np.float32),
         })
 
-    # Forward properties to base_env for transparency
+    # Repassa propriedades do ambiente base, para o wrapper ser transparente
     @property
     def ep(self):
         return self.base_env.ep
@@ -92,16 +92,16 @@ class DroneLocMOEnv(gym.Env):
         options = options or {}
         obs, info = self.base_env.reset(seed=seed, options=options)
 
-        # Reset action history to zeros (spec §2 & §3c)
+        # Zera o histórico de ações (especificação §2 e §3c)
         self.action_history.fill(0.0)
 
-        # Weight vector sampling or specification
+        # Vetor de pesos: dado nas opções, fixo (default_w) ou sorteado
         if "w" in options and options["w"] is not None:
             self.w = np.array(options["w"], dtype=np.float32)
         elif self.default_w is not None:
             self.w = self.default_w.copy()
         else:
-            # Sample w ~ Dirichlet(alpha=1) once per episode (AMOR §5)
+            # Sorteia w ~ Dirichlet(alpha=1) uma vez por episódio (AMOR §5)
             self.w = self.np_random.dirichlet(np.ones(self.num_objectives, dtype=np.float64)).astype(
                 np.float32
             )
@@ -116,7 +116,7 @@ class DroneLocMOEnv(gym.Env):
         h_prev = float(self.base_env.H)
         obs, _, terminated, truncated, info = self.base_env.step(int(action))
 
-        # Reward decomposition according to §2:
+        # Decomposição da recompensa conforme a §2:
         e = self.base_env.ecfg
         res = self.base_env.ep.last
         r0 = float(h_prev - res.entropy)
@@ -125,11 +125,11 @@ class DroneLocMOEnv(gym.Env):
         r3 = float(-e["false_loc_penalty"] * res.false_loc)
         r_vec_raw = np.array([r0, r1, r2, r3], dtype=np.float32)
 
-        # Apply scaling factors if configured (default ones)
+        # Aplica os fatores de escala por objetivo, se configurados (padrão: 1)
         r_vec = r_vec_raw * self.scale_factors
         scalar_reward = float(np.dot(r_vec, self.w))
 
-        # Update action history FIFO
+        # Atualiza o histórico de ações (fila FIFO de one-hots)
         if self.memory:
             self.action_history[:-1] = self.action_history[1:]
             one_hot = np.zeros(self.action_dim, dtype=np.float32)
@@ -156,7 +156,7 @@ def make_mo_env(
     default_w: np.ndarray | list[float] | None = None,
     scale_factors: np.ndarray | list[float] | None = None,
 ) -> DroneLocMOEnv:
-    """Creates a DroneLocMOEnv wrapping the standard DroneLocEnv."""
+    """Cria um DroneLocMOEnv envolvendo o DroneLocEnv padrão."""
     base_env = make_env(descriptor, scenario, cfg, split=split)
     return DroneLocMOEnv(
         base_env,

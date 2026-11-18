@@ -1,5 +1,5 @@
-"""Paired evaluation: every method sees the same episodes (window, start and dynamics noise are
-fixed by the episode seed). Writes one row per episode."""
+"""Avaliação pareada: todos os métodos veem os mesmos episódios (janela, partida e ruído da dinâmica
+são fixados pelo seed do episódio). Grava uma linha por episódio."""
 from __future__ import annotations
 
 import argparse
@@ -55,7 +55,7 @@ def _policy(spec: tuple, cfg: dict) -> Policy:
 
 
 def run_episodes(task: tuple) -> list[dict]:
-    """Worker: (cfg, scenario, split, method spec, model_seed, episode indices, n_traj_to_save, traj dir)."""
+    """Worker: (cfg, cenário, divisão, método, model_seed, índices dos episódios, n de trajetórias a salvar, pasta das trajetórias)."""
     import torch
 
     torch.set_num_threads(1)
@@ -118,7 +118,7 @@ def evaluate(cfg: dict, scenarios: list[str], methods: list[str], run_root: Path
             for s in range(0, episodes, chunk):
                 tasks.append((cfg, scen, split, spec, ms, list(range(s, min(s + chunk, episodes))), save_traj,
                               out_csv.parent / "traj"))
-    # slow methods first for better load balancing
+    # métodos lentos primeiro, para equilibrar a carga entre os workers
     tasks.sort(key=lambda t: 0 if t[3][0].startswith("greedy") else 1)
     t0 = time.time()
     rows: list[dict] = []

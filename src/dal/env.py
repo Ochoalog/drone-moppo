@@ -1,4 +1,4 @@
-"""Scenario data, episode simulator (shared by baselines and RL) and the gymnasium env."""
+"""Dados do cenário, simulador de episódios (compartilhado entre baselines e RL) e o ambiente gymnasium."""
 from __future__ import annotations
 
 import json
@@ -14,18 +14,18 @@ from .filter import ACTIONS, HistogramFilter
 CACHE = DATA / "cache"
 
 
-# ============================================================================ scenario data
+# ============================================================================ dados do cenário
 @dataclass
 class ScenarioData:
-    """Everything an episode needs, over the full grid (row-major cells, row 0 = north)."""
+    """Tudo de que um episódio precisa, sobre a grade inteira (células em ordem de linha; linha 0 = norte)."""
 
     name: str
-    map_desc: np.ndarray  # (R, C, D) L2-normalized (float16/float32, may be memory-mapped)
+    map_desc: np.ndarray  # (R, C, D) normalizados em L2 (float16/float32, podem estar mapeados em memória)
     obs_desc: np.ndarray  # (K, R, C, D)
     map_ok: np.ndarray  # (R, C) bool
     obs_ok: np.ndarray  # (R, C) bool
-    distinct: np.ndarray  # (R, C) float32 in [0, 1]
-    pca: np.ndarray  # (P, R, C) float32 in [-1, 1]
+    distinct: np.ndarray  # (R, C) float32 em [0, 1]
+    pca: np.ndarray  # (P, R, C) float32 em [-1, 1]
     train_rows: np.ndarray
     test_rows: np.ndarray
     beta: float
@@ -39,7 +39,7 @@ class ScenarioData:
         return {"train": self.train_rows, "test": self.test_rows}[split]
 
     def windows(self, split: str, size: int, min_valid: float) -> np.ndarray:
-        """Top-left corners (r0, c0) of windows fully inside the split with enough valid cells."""
+        """Cantos superiores esquerdos (r0, c0) das janelas inteiras dentro da divisão e com células válidas suficientes."""
         rows = np.sort(self.rows(split))
         R, C = self.shape
         ok = (self.map_ok & self.obs_ok).astype(np.float64)
@@ -55,12 +55,12 @@ class ScenarioData:
                     out.append((r0, c0))
         return np.array(out, dtype=np.int64).reshape(-1, 2)
 
-    # ------------------------------------------------------------------ loading
+    # ------------------------------------------------------------------ carregamento
     @classmethod
     def synthetic(cls, R: int = 90, C: int = 70, D: int = 16, K: int = 2, noise: float = 0.3,
                   invalid_frac: float = 0.05, beta: float = 20.0, seed: int = 0) -> "ScenarioData":
-        """Small random world for unit tests: spatially smooth descriptors, noisy observations.
-        Rows [0, R/2) are train, [R/2 + 4, R) are test."""
+        """Mundo aleatório pequeno para testes: descritores espacialmente suaves e observações ruidosas.
+        As linhas [0, R/2) são de treino e [R/2 + 4, R) de teste."""
         from scipy.ndimage import gaussian_filter
 
         rng = np.random.default_rng(seed)
@@ -91,7 +91,7 @@ class ScenarioData:
             beta = json.loads((DATA / "beta.json").read_text())[f"{descriptor}_{scenario}"]["beta"]
         return cls(
             name=f"{descriptor}_{scenario}",
-            # float32 in RAM once: per-episode float16 -> float32 slicing dominated reset time
+            # Converte para float32 uma única vez: converter float16 -> float32 a cada episódio dominava o tempo de reset
             map_desc=np.load(p / f"map_{date}.npy").astype(np.float32),
             obs_desc=np.load(p / "obs_post.npy").astype(np.float32),
             map_ok=masks[f"{date}_ok"],
@@ -106,7 +106,7 @@ class ScenarioData:
 
 
 def distinctiveness(m: np.ndarray, ok: np.ndarray, r_in: float, r_out: float) -> np.ndarray:
-    """1 - max cosine similarity to valid cells in the annulus r_in <= dist <= r_out (cells)."""
+    """Distintividade: 1 - máxima similaridade de cosseno com as células válidas no anel r_in <= dist <= r_out (em células)."""
     R, C, _ = m.shape
     m = m.astype(np.float32)
     best = np.full((R, C), -1.0, np.float32)
@@ -128,7 +128,7 @@ def distinctiveness(m: np.ndarray, ok: np.ndarray, r_in: float, r_out: float) ->
 
 
 def build_cache(cfg: dict, descriptor: str) -> None:
-    """Standardized float16 descriptors (converted to float32 on load) + distinctiveness/PCA channels."""
+    """Gera o cache: descritores padronizados em float16 (convertidos para float32 ao carregar) e canais de distintividade e PCA."""
     from .features import load_descriptors
     from .grid import Grid
 
@@ -147,7 +147,7 @@ def build_cache(cfg: dict, descriptor: str) -> None:
             np.save(p / "obs_post.npy", o.astype(np.float16))
         ok = masks[f"{date}_ok"]
         dist = distinctiveness(m, ok, r_in, r_out)
-        # PCA fitted on valid TRAIN cells only.
+        # PCA ajustada só nas células válidas de TREINO (evita vazamento para o teste).
         tr = np.zeros(ok.shape, bool)
         tr[train] = True
         X = m[tr & ok]
@@ -163,7 +163,7 @@ def build_cache(cfg: dict, descriptor: str) -> None:
     (p / "meta.json").write_text(json.dumps(dict(train_rows=train.tolist(), test_rows=test.tolist())))
 
 
-# ============================================================================ episode simulator
+# ============================================================================ simulador de episódios
 @dataclass
 class StepResult:
     blocked: bool
@@ -175,8 +175,8 @@ class StepResult:
 
 
 class Episode:
-    """One localization episode inside a W x W window: true state, noisy motion, observations
-    (lookups into the precomputed table) and the belief filter."""
+    """Um episódio de localização dentro de uma janela W x W: estado real, movimento ruidoso, observações
+    (consultas à tabela pré-calculada) e o filtro de crença."""
 
     def __init__(self, data: ScenarioData, fcfg: dict, split: str = "train", cell_m: float = 50.0):
         self.data = data
@@ -189,14 +189,14 @@ class Episode:
             raise ValueError(f"no valid {self.W}x{self.W} windows in split {split}")
         self.max_steps = int(fcfg["max_steps"])
 
-    # ------------------------------------------------------------------ lifecycle
+    # ------------------------------------------------------------------ ciclo de vida
     def reset(self, seed: int | None = None, rng: np.random.Generator | None = None,
               window: tuple[int, int] | None = None, start: tuple[int, int] | None = None) -> None:
-        """`seed` fixes window, start and all dynamics noise (paired comparisons across policies)."""
+        """`seed` fixa a janela, o ponto de partida e todo o ruído da dinâmica (comparações pareadas entre políticas)."""
         if rng is None:
             rng = np.random.default_rng(seed)
         init_rng = np.random.default_rng(rng.integers(2**63))
-        self.rng = np.random.default_rng(rng.integers(2**63))  # slip / observation-variant noise
+        self.rng = np.random.default_rng(rng.integers(2**63))  # ruído de deslizamento e de variante da observação
         self.r0, self.c0 = window if window is not None else self.windows[init_rng.integers(len(self.windows))]
         W, d = self.W, self.data
         sl = (slice(self.r0, self.r0 + W), slice(self.c0, self.c0 + W))
@@ -236,7 +236,7 @@ class Episode:
         dr, dc = ACTIONS[int(action)]
         W = self.W
         tr, tc = self.pos[0] + dr, self.pos[1] + dc
-        self.blocked_axes = (not 0 <= tr < W, not 0 <= tc < W)  # geofence reports which border
+        self.blocked_axes = (not 0 <= tr < W, not 0 <= tc < W)  # a geocerca informa qual borda foi atingida
         blocked = any(self.blocked_axes)
         if blocked:
             tr, tc = self.pos
@@ -258,7 +258,7 @@ class Episode:
         self.last = res
         return res
 
-    # ------------------------------------------------------------------ policy observation
+    # ------------------------------------------------------------------ observação da política
     def policy_obs(self) -> dict[str, np.ndarray]:
         b = self.filter.b
         bel = (b / b.max()).astype(np.float32)
@@ -268,9 +268,9 @@ class Episode:
         return {"map": np.concatenate(chans, 0), "vec": vec}
 
 
-# ============================================================================ gymnasium env
+# ============================================================================ ambiente gymnasium
 class DroneLocEnv(gym.Env):
-    """Active localization POMDP; the agent sees its belief + map channels (see `policy_obs`)."""
+    """POMDP de localização ativa; o agente vê a crença e os canais do mapa (ver `policy_obs`)."""
 
     metadata = {"render_modes": []}
 
