@@ -5,3 +5,4 @@ model: dinov2_vits14
 input_px: 224
 batch_size: 256
 chunk_rows: 50000
+outputs: [gem]   # só o GeM: o CLS não é usado na v3 e dobraria o espaço no Drive

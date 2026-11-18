@@ -30,8 +30,10 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
     spec_dir.mkdir(parents=True, exist_ok=True)
     # `model` nomeia a pasta de saída; `hub_model` é o modelo base do torch.hub (padrão: o próprio `model`).
     hub_model = config.get("hub_model", config["model"])
+    # Saídas configuráveis: o padrão das specs v3 é só o GeM (o CLS dobraria o espaço no Drive sem uso).
     extractor = extract.DinoV2Extractor(hub_model, int(config.get("input_px", 224)), device,
-                                        weights=config.get("weights"))
+                                        weights=config.get("weights"), grids=tuple(config.get("grids", ())),
+                                        outputs=tuple(config.get("outputs", ("gem",))))
     done = {}
     for name, frame in specs.iter_specs(site):
         if int(name.rsplit("_", 1)[1].rstrip("m")) not in config["altitudes"]:

@@ -55,7 +55,7 @@ class DinoV2Extractor:
     """DINOv2 (torch.hub) com GeM sobre os tokens de patch e o token CLS; entrada redimensionada para input_px."""
 
     def __init__(self, model_name: str, input_px: int, device: str, model=None, weights: str | None = None,
-                 grids: tuple[int, ...] = ()):
+                 grids: tuple[int, ...] = (), outputs: tuple[str, ...] = ("gem", "cls")):
         self.model = model if model is not None else torch.hub.load("facebookresearch/dinov2", model_name)
         if weights:
             # Pesos do ajuste fino contrastivo (só o backbone; a cabeça de projeção não entra no descritor).
@@ -67,6 +67,7 @@ class DinoV2Extractor:
         self.std = torch.tensor(IMAGENET_STD, device=device).view(1, 3, 1, 1)
         self.use_half = device.startswith("cuda")
         self.grids = tuple(grids)  # saídas extras "grid<k>": GeM espacial k × k (opcional)
+        self.outputs = tuple(outputs)  # quais descritores globais gravar ("gem", "cls")
 
     @torch.inference_mode()
     def __call__(self, crops: torch.Tensor) -> dict[str, np.ndarray]:
@@ -74,8 +75,11 @@ class DinoV2Extractor:
         with torch.autocast("cuda", dtype=torch.float16, enabled=self.use_half):
             features = self.model.forward_features(x)
         patches = features["x_norm_patchtokens"].float()
-        out = {"gem": patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P),
-               "cls": features["x_norm_clstoken"].float()}
+        out = {}
+        if "gem" in self.outputs:
+            out["gem"] = patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P)
+        if "cls" in self.outputs:
+            out["cls"] = features["x_norm_clstoken"].float()
         for grid in self.grids:
             out[f"grid{grid}"] = grid_gem(patches, grid)
         return {name: value.cpu().numpy().astype(np.float16) for name, value in out.items()}
