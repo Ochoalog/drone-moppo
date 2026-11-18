@@ -55,4 +55,19 @@ std:  info 0.424 | cost 2.548 | success 0.504 | risk 0.481
 
 ## 4. Resultados nos dois modos
 
-*Pendente: preenchido com `results_mo_v1fix/` quando a avaliação terminar (ver `docs/REVISAO_TRABALHO_v1.md` §5).*
+Fonte: `paper/tables/v1_rq3_mo.csv` (a partir de `results_mo_v1fix/episodes_presets.csv`), Taquari S2, teste sul, 300 episódios pareados; ICs em `paper/tables/v1_rq3_mo.csv`.
+
+| Política | Sucesso (argmax) | Sucesso (amostrado) | Loc. falsa (argmax) | Loc. falsa (amostrado) |
+|---|---|---|---|---|
+| MO com memória, `fast` / `safe` / `unif` | 60,0% / 60,0% / 60,0% | 79,3% / 78,0% / 76,3% | 25,0% (os três) | 15,0% / 15,3% / 16,0% |
+| MO sem memória, `fast` / `safe` / `unif` | 42,7% (os três) | 41,3% / 43,3% / 48,0% | 32,3% (os três) | 17,3% / 22,7% / 23,7% |
+| PPO fixo `fast` / `safe` | 55,7% / 49,7% | 49,0% / 66,0% | 30,3% / 27,0% | 17,0% / 13,3% |
+| PPO da PoC (3 seeds juntas) | 73,9% | 78,8% | 18,1% | 14,7% |
+| Reta (não aprendida) | 73,0% | 73,0% | 10,0% | 10,0% |
+
+Leitura:
+1. **A amostragem melhora todas as políticas aprendidas**, não só a MO: a PPO da PoC sobe de 73,9% para 78,8%. Por isso comparar a MO amostrada com a PPO da PoC em argmax seria injusto (A2).
+2. **No mesmo modo amostrado, a MO com memória e a PPO da PoC ficam próximas** em sucesso e em EUM (0,753 [0,726; 0,783] × 0,764 [0,737; 0,792]; `results_mo_v1fix/eum.csv`).
+3. **Os presets continuam quase iguais entre si** no modo amostrado (76–79% de sucesso, 15–16% de localização falsa): o condicionamento em w existe, mas é fraco.
+4. **H6 pela varredura 1-D (modo amostrado):** ρ(w_custo, distância) = +0,99 [0,90; 1,00], sinal **oposto** ao previsto; ρ(w_risco, localização falsa) = −0,23 [−0,85; 0,81]. Não suportada (`results_mo_v1fix/h6_sweep.csv`).
+5. Vereditos v2 sobre os modelos v1 (`results_mo_v1fix/verdicts_v2.json`): H4 não avaliável; H5, H6 e H7 não suportadas.

@@ -1,0 +1,150 @@
+{
+  "protocol": "DECISIONS_MO_V2.md A1–A3; modo principal: amostrado; 300 episódios; Taquari S2 teste",
+  "H4": {
+    "verdict": "não avaliável",
+    "reason": "pré-condição v2 não atendida: gate de condicionamento reprovado (MO v1), orçamentos diferentes (348k × 225k) e sem PPO fixo unif (3º preset)",
+    "descriptive": [
+      {
+        "mode": "argmax",
+        "preset": "fast",
+        "diff_scalarized_return": 0.021474259739649306,
+        "ci_low": -0.20691615996534285,
+        "ci_high": 0.2508844395741895
+      },
+      {
+        "mode": "argmax",
+        "preset": "safe",
+        "diff_scalarized_return": 0.1419752707154033,
+        "ci_low": 0.050333982189393854,
+        "ci_high": 0.23147204578707964
+      },
+      {
+        "mode": "sampled",
+        "preset": "fast",
+        "diff_scalarized_return": -0.017040917405298412,
+        "ci_low": -0.10628057753877437,
+        "ci_high": 0.07207444484974401
+      },
+      {
+        "mode": "sampled",
+        "preset": "safe",
+        "diff_scalarized_return": 0.049464060462420294,
+        "ci_low": 0.0017470369991137986,
+        "ci_high": 0.09630332844409191
+      }
+    ]
+  },
+  "H5": {
+    "verdict_nominal": "não suportada",
+    "verdict_holm": "não suportada",
+    "n_weights": 37,
+    "mode": "sampled (grade de results_mo/stochastic)"
+  },
+  "H6": {
+    "verdict": "não suportada",
+    "by_mode": {
+      "argmax": "não suportada",
+      "sampled": "não suportada"
+    }
+  },
+  "H7": {
+    "verdict": "não suportada",
+    "by_mode": {
+      "argmax": {
+        "diff_false_loc": -0.016666666666666666,
+        "ci_low": -0.07047573045895192,
+        "ci_high": 0.03678929765886288,
+        "verdict": "não suportada"
+      },
+      "sampled": {
+        "diff_false_loc": -0.0033333333333333335,
+        "ci_low": -0.04666666666666667,
+        "ci_high": 0.03986710963455149,
+        "verdict": "não suportada"
+      }
+    }
+  },
+  "EUM": [
+    {
+      "mode": "argmax",
+      "set": "mo_ppo (3 presets)",
+      "n_policies": 3,
+      "eum": 0.6993,
+      "ci_low": 0.665,
+      "ci_high": 0.7299
+    },
+    {
+      "mode": "argmax",
+      "set": "mo_ppo_nomem (3 presets)",
+      "n_policies": 3,
+      "eum": 0.6014,
+      "ci_low": 0.5689,
+      "ci_high": 0.6365
+    },
+    {
+      "mode": "argmax",
+      "set": "ppo_fixed (fast, safe)",
+      "n_policies": 2,
+      "eum": 0.6516,
+      "ci_low": 0.6293,
+      "ci_high": 0.6843
+    },
+    {
+      "mode": "argmax",
+      "set": "ppo_poc (3 seeds)",
+      "n_policies": 3,
+      "eum": 0.7824,
+      "ci_low": 0.7556,
+      "ci_high": 0.8109
+    },
+    {
+      "mode": "argmax",
+      "set": "straight",
+      "n_policies": 1,
+      "eum": 0.6901,
+      "ci_low": 0.6586,
+      "ci_high": 0.7212
+    },
+    {
+      "mode": "sampled",
+      "set": "mo_ppo (3 presets)",
+      "n_policies": 3,
+      "eum": 0.7535,
+      "ci_low": 0.7256,
+      "ci_high": 0.783
+    },
+    {
+      "mode": "sampled",
+      "set": "mo_ppo_nomem (3 presets)",
+      "n_policies": 3,
+      "eum": 0.5401,
+      "ci_low": 0.5097,
+      "ci_high": 0.5755
+    },
+    {
+      "mode": "sampled",
+      "set": "ppo_fixed (fast, safe)",
+      "n_policies": 2,
+      "eum": 0.6526,
+      "ci_low": 0.62,
+      "ci_high": 0.6825
+    },
+    {
+      "mode": "sampled",
+      "set": "ppo_poc (3 seeds)",
+      "n_policies": 3,
+      "eum": 0.764,
+      "ci_low": 0.7369,
+      "ci_high": 0.7919
+    },
+    {
+      "mode": "sampled",
+      "set": "straight",
+      "n_policies": 1,
+      "eum": 0.6901,
+      "ci_low": 0.6586,
+      "ci_high": 0.7212
+    }
+  ],
+  "hypervolume": "não calculado: exige conjuntos de mesmo tamanho (3 presets × 3 PPOs fixos); falta o PPO fixo unif na v1"
+}
