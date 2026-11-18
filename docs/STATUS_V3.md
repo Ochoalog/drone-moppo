@@ -1,35 +1,50 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 12:30 (horário local). **Etapa:** A (fechar o estudo v1) em paralelo com o começo da B (para não deixar a IA-2 parada).
+**Última atualização:** 18/11/2026, 13:05. **Etapa:** A (fechamento do estudo v1: testes finais rodando antes do merge) + B (base da v3).
 
 ## [AÇÃO DO VITOR]
 
-1. **Token do GitHub para a IA-2:** criar um *fine-grained token* com permissão de escrita em `Ochoalog/drone-moppo` (*Contents: read and write*) e colocá-lo nos *secrets* do Colab com o nome `GITHUB_TOKEN`. Sem ele, a IA-2 não publica resultados na branch `colab/results`.
-2. **Dia da apresentação e template** (IEEE ou arXiv/Prime AI, e o idioma): confirmar com o professor. O cronograma da §5 do plano muda se a apresentação for antes de 25/11.
-3. **Terceira área e evento externo:** decidir quando a IA-2 entregar o `G0_report.md` (branch `colab/results`, `colab_out/g0_data_check/`).
-4. **Passar à IA-2:** o código está na branch `feat/v3-change-aware`; o primeiro job é `g1_legacy_dinov2` (`colab/README.md`).
+1. **Prior do Taquari: possível vazamento (urgente, repassar à IA-2).** O relatório G0 lista, na AOI 01 do EMSR720, um produto de *grading* feito a partir de **GeoEye-1 de 07/05/2024**. O GeoEye-1 é da Maxar, e a imagem que a câmera do drone vê também é Maxar de 07/05/2024: pode ser a mesma aquisição. **Pedir à IA-2 que refaça `taquari_prior_emsr720_10m.tif` só com produtos de fontes ≤ 06/05/2024.** Detalhes: `DECISIONS_V3.md` §5.
+2. **Baixar os rasters do prior** de `MyDrive/drone_v3/prior/` para `drone_active_loc/data_v3/prior/` (não há `rclone` nesta máquina). Conferir visualmente as duas figuras `*_overlay_preevent.png`.
+3. **Decidir a terceira área e o evento externo.** A IA-2 recomenda **Canoas** (par Maxar 09/05/2024 × 02/02/2024; prior do EMSN194) e **Valência** (Maxar Open Data, 26/10 × 31/10/2024; prior do EMSR773). O furacão Helene foi descartado (sem ativação do Copernicus EMS).
+4. **Token do GitHub** nos *secrets* do Colab (`GITHUB_TOKEN`), se ainda não estiver: o commit do G0 saiu com a sua conta, então parece que já está.
+5. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma): confirmar com o professor.
 
 ## Gates
 
 | Gate | Situação | Número |
 |---|---|---|
-| G0 (dados) | aguardando a IA-2 | — |
-| G1 preliminar | spec publicada; job `g1_legacy_dinov2` na fila | referência hand: S1 0,409, S2 0,269 (caminho de avaliação conferido) |
-| G2 (paridade) | não iniciado | — |
-| G3 (controle ≥ 90%) | não iniciado | — |
-| G4 (≥ 5.000 passos/s) | não iniciado | — |
+| G0 (dados) | relatório recebido; **aprovado com condições** (prior do Taquari a refazer) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
+| G1 preliminar | spec e job prontos; aguardando a IA-2 rodar `g1_legacy_dinov2` | referência hand: S1 0,409, S2 0,269 |
+| G2 (paridade) | **reta e zigue-zague: 1000/1000 trajetórias idênticas** (crença até 9,4e-7); PPO da PoC: 100/100 episódios iguais no teste; versão com 1000 episódios e 3 seeds roda de novo depois do merge na `main` | — |
+| G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
+| G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |
 
 ## Rodando agora
 
-- **Local (CPU):** reexecução do M1 (F3) → reavaliação `results_mo_v1fix/` (apêndice da MO) → H7 nos dois modos. A reavaliação amostrada da grade (`results_mo/stochastic/`) terminou (76/76).
-- **Colab:** nada ainda (esperando a IA-2 pegar o `g1_legacy_dinov2`).
+- **Local:** `pytest -q` completo + manifestos na branch do estudo v1, antes do merge na `main` e da tag `v1-study-final`.
+- **Colab:** à espera do `g1_legacy_dinov2`.
 
-## Feito hoje (v3)
+## Feito hoje
 
-- `render.py` (renderização única CPU/GPU), que reproduz os recortes v1 (≥ 99,5% dos pixels idênticos; descritor hand com cosseno ≥ 0,9999999).
-- `colab/specs/legacy_50m.parquet` (323.595 recortes exatos da v1).
-- `scripts/eval_retrieval_v3.py` (mesma função do `REPORT.md` §2; reproduz 0,409 e 0,269).
-- Contrato com a IA-2: `DONE.json`, fila, notebooks `00_setup` e `02_dinov2_features`, branch `colab/results`, `CURRENT_COMMIT`.
+- **Estudo v1 fechado:**
+  - F1: índice de mudança no Taquari;
+  - F2: covariável independente; a diferença de cor Lab também cai com o sucesso, ρ de −0,15 a −0,25;
+  - **M1: não suportada**, o que muda a tese do artigo (ver abaixo);
+  - tabelas `paper/tables/v1_*.csv` e Fig. 2;
+  - apêndice da MO nos dois modos: H4 não avaliável; H5, H6 e H7 não suportadas.
+- **v3:**
+  - `render.py`, que reproduz os recortes v1;
+  - spec `legacy_50m` e avaliação de recuperação;
+  - contrato com o Colab e notebooks 00 e 02;
+  - ambiente em lote legado (G2) e ambiente realista: 25 m, deriva, altitude, tempo de voo, filtro CA;
+  - baselines em lote, calibração (β, κ, α), treinador PPO retomável com gate de aprendizado;
+  - dobras espaciais, PCA só no treino;
+  - specs v3 (24, por manifesto de hashes) e prior de mudança com teste de proveniência.
+
+## Atenção para o artigo (tese)
+
+O M1 refutou a parte "a política v1 é atraída por células distintivas no mapa antigo": as localizações falsas da PPO acontecem em células **mais mudadas** (nos 3 locais), mas não mais distintivas, nem mais mudadas que as da reta. Continua valendo que **a falha acontece onde o mapa mudou**, o que motiva o filtro CA. Por quintil de mudança, a PPO v1 é o método que **menos** perde sucesso (Fig. 2).
 
 ## Cortes
 
@@ -37,5 +52,6 @@ Nenhum.
 
 ## Próximos passos (IA-1)
 
-1. Etapa A: F2 (covariável independente), veredito do M1, tabelas `paper/tables/v1_*.csv`, Fig. 2; `pytest -q` + manifestos; merge na `main`; tag `v1-study-final`.
-2. Etapa B: ambiente em lote + modo legado + G2; specs v3 (25 m, 3 altitudes, K = 4); notebooks 01 e 03.
+1. Merge do estudo v1 na `main` + tag `v1-study-final` (assim que os testes passarem); merge da `main` na `feat/v3-change-aware`; G2 completo.
+2. Notebooks 01 (specs v3 + descritores multialtitude), 03 (ajuste fino contrastivo), 04 (treino) e 05 (avaliação).
+3. Avaliar o G1 assim que a IA-2 publicar os descritores.
