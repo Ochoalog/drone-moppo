@@ -32,10 +32,30 @@ GEM_P = 3.0
 
 
 # ============================================================================ modelos
+def preprocess_for_dino(crops: torch.Tensor, input_px: int) -> torch.Tensor:
+    """(N, H, W, 3) uint8 → (N, 3, input_px, input_px) normalizado pela média e desvio do ImageNet."""
+    x = crops.permute(0, 3, 1, 2).float() / 255.0
+    x = torch.nn.functional.interpolate(x, size=(input_px, input_px), mode="bilinear", align_corners=False,
+                                        antialias=True)
+    mean = torch.tensor(IMAGENET_MEAN, device=x.device).view(1, 3, 1, 1)
+    std = torch.tensor(IMAGENET_STD, device=x.device).view(1, 3, 1, 1)
+    return (x - mean) / std
+
+
+def grid_gem(patches: torch.Tensor, grid: int) -> torch.Tensor:
+    """GeM em uma grade grid × grid dos tokens de patch (preserva o arranjo espacial dentro do recorte)."""
+    n, tokens, dim = patches.shape
+    side = int(round(tokens ** 0.5))
+    cells = patches.view(n, grid, side // grid, grid, side // grid, dim).permute(0, 1, 3, 2, 4, 5)
+    cells = cells.reshape(n, grid * grid, -1, dim)
+    return cells.clamp(min=1e-6).pow(GEM_P).mean(dim=2).pow(1.0 / GEM_P).reshape(n, grid * grid * dim)
+
+
 class DinoV2Extractor:
     """DINOv2 (torch.hub) com GeM sobre os tokens de patch e o token CLS; entrada redimensionada para input_px."""
 
-    def __init__(self, model_name: str, input_px: int, device: str, model=None, weights: str | None = None):
+    def __init__(self, model_name: str, input_px: int, device: str, model=None, weights: str | None = None,
+                 grids: tuple[int, ...] = ()):
         self.model = model if model is not None else torch.hub.load("facebookresearch/dinov2", model_name)
         if weights:
             # Pesos do ajuste fino contrastivo (só o backbone; a cabeça de projeção não entra no descritor).
@@ -46,19 +66,19 @@ class DinoV2Extractor:
         self.mean = torch.tensor(IMAGENET_MEAN, device=device).view(1, 3, 1, 1)
         self.std = torch.tensor(IMAGENET_STD, device=device).view(1, 3, 1, 1)
         self.use_half = device.startswith("cuda")
+        self.grids = tuple(grids)  # saídas extras "grid<k>": GeM espacial k × k (opcional)
 
     @torch.inference_mode()
     def __call__(self, crops: torch.Tensor) -> dict[str, np.ndarray]:
-        x = crops.to(self.device).permute(0, 3, 1, 2).float() / 255.0
-        x = torch.nn.functional.interpolate(x, size=(self.input_px, self.input_px), mode="bilinear",
-                                            align_corners=False, antialias=True)
-        x = (x - self.mean) / self.std
+        x = preprocess_for_dino(crops.to(self.device), self.input_px)
         with torch.autocast("cuda", dtype=torch.float16, enabled=self.use_half):
             features = self.model.forward_features(x)
         patches = features["x_norm_patchtokens"].float()
-        gem = patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P)
-        cls = features["x_norm_clstoken"].float()
-        return {"gem": gem.cpu().numpy().astype(np.float16), "cls": cls.cpu().numpy().astype(np.float16)}
+        out = {"gem": patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P),
+               "cls": features["x_norm_clstoken"].float()}
+        for grid in self.grids:
+            out[f"grid{grid}"] = grid_gem(patches, grid)
+        return {name: value.cpu().numpy().astype(np.float16) for name, value in out.items()}
 
 
 # Detector de nuvem da v1 (claro e pouco saturado), sem a morfologia: só a fração por recorte.

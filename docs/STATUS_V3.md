@@ -1,23 +1,23 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 13:55. Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 18/11/2026, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Conferir visualmente** as figuras do prior na grade de 25 m: `results_v3/prior/taquari_prior_check.png` e `poa_prior_check.png` (prior sobre a imagem pré-evento).
-2. **Decidir a terceira área e o evento externo** (a IA-2 recomenda Canoas e Valência/EMSR773).
-3. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta); depois vira a §2 do `DECISIONS_V3.md`.
-4. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
-5. Disparar no Colab o `g1_legacy_dinov2` e, em seguida, a fila (`colab/README.md`).
+1. **Repassar à IA-2 (dados de Canoas e Valência, ver `DECISIONS_V3.md` V21):**
+   - Canoas: a **caixa da AOI** (lon/lat) usada para contar as 42 janelas, e o **prior recortado** `canoas_prior_emsn194_10m.tif` em `MyDrive/drone_v3/prior/` (o raster de Porto Alegre não chega a Mathias Velho);
+   - Valência: **um par de COGs** pré/pós (ou o mosaico) com as URLs, a AOI e o prior do EMSR773 em raster.
+2. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta). Ponto novo: o G1 preliminar reprovou o DINOv2 zero-shot (ver Gates); o rascunho já prevê usar o hand se nenhum descritor aprendido o superar.
+3. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
 
-Resolvido: prior do Taquari (a IA-2 confirmou que o produto de 07/05 nunca entrou; o arquivo canônico está no Drive e aqui); rasters baixados para `data_v3/prior/` (manifesto OK).
+Resolvido: figuras do prior aprovadas; terceira área = **Canoas**; evento externo = **Valência**.
 
 ## Gates
 
 | Gate | Situação | Número |
 |---|---|---|
 | G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
-| G1 preliminar | spec e job prontos; aguardando a IA-2 rodar `g1_legacy_dinov2` | referência hand: S1 0,409, S2 0,269 |
+| G1 preliminar | **DINOv2 zero-shot não supera o hand** | top-1 no treino (GeM / hand nos mesmos pixels): S0 0,816 / 0,998; S1 0,139 / 0,411; S2 0,063 / 0,270. O hand reproduz a v1. Diagnóstico em andamento: o pooling global não separa células vizinhas (até o S0, com a mesma imagem, fica em 0,82) |
 | G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
 | G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
 | G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |
