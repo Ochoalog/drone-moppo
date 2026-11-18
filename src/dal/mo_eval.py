@@ -155,8 +155,15 @@ def run_episode(
     seed: int,
     is_ppo_mo: bool = True,
     save_traj: bool = False,
+    deterministic: bool = True,
 ) -> tuple[dict, dict | None]:
-    """Runs a single paired episode."""
+    """Roda um episódio pareado.
+
+    Com `deterministic=False` a ação é amostrada de π(·|s, w), como no treino. A semente do torch
+    é fixada pelo seed do episódio: todos os w veem os mesmos números aleatórios (pareamento).
+    """
+    if not deterministic:
+        torch.manual_seed(seed)
     obs, _ = env.reset(seed=seed, options={"w": w})
     done = False
     decision_times = []
@@ -170,7 +177,7 @@ def run_episode(
                 "map": torch.from_numpy(obs["map"]).unsqueeze(0).float(),
                 "vec": torch.from_numpy(obs["vec"]).unsqueeze(0).float(),
             }
-            action = policy.act(t_obs, deterministic=True)
+            action = policy.act(t_obs, deterministic=deterministic)
         else:
             action = policy.act(env.ep)
         dt = time.perf_counter() - t0
@@ -221,6 +228,7 @@ def evaluate_weight_grid(
     traj_dir: Path | None = None,
     save_traj_count: int = 10,
     label: str = "mo_ppo",
+    deterministic: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Evaluates a MOPPO policy over the weight grid with paired episode seeds."""
     env = make_mo_env("hand", "S2", cfg, split="test", memory=memory)
@@ -249,7 +257,9 @@ def evaluate_weight_grid(
             ep_seed = seed_base + i
             save_traj = bool(traj_dir and is_preset and (i < save_traj_count) and memory)
 
-            ep_info, traj_data = run_episode(env, net, w, ep_seed, is_ppo_mo=True, save_traj=save_traj)
+            ep_info, traj_data = run_episode(
+                env, net, w, ep_seed, is_ppo_mo=True, save_traj=save_traj, deterministic=deterministic
+            )
             ep_info["weight_idx"] = w_idx
             ep_info["w_str"] = w_str
             ep_info["w0"] = w[0]
