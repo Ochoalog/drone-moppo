@@ -216,8 +216,13 @@ def compute_losses(
     clip_range: float = 0.2,
     vf_coef: float = 0.5,
     ent_coef: float = 0.01,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Calcula as perdas do MOPPO: política, valor, bônus de entropia e perda total."""
+    return_logratio: bool = False,
+) -> tuple[torch.Tensor, ...]:
+    """Calcula as perdas do MOPPO: política, valor, bônus de entropia e perda total.
+
+    Com `return_logratio=True`, devolve também log(π_novo/π_antigo) do mesmo forward, para medir
+    KL e clipfrac sem um segundo forward (convenção do CleanRL/SB3: antes do passo do otimizador).
+    """
     _, new_logprob, entropy, new_value = net.get_action_and_value(obs, actions)
 
     # Normaliza a vantagem escalarizada por mini-lote (AMOR §4.2)
@@ -239,6 +244,8 @@ def compute_losses(
     ent_loss = entropy.mean()
     total_loss = pg_loss - ent_coef * ent_loss + vf_coef * v_loss
 
+    if return_logratio:
+        return total_loss, pg_loss, v_loss, ent_loss, logratio.detach()
     return total_loss, pg_loss, v_loss, ent_loss
 
 
@@ -257,7 +264,11 @@ def _make_env_fn(
     scale_factors: np.ndarray | None = None,
 ):
     def thunk():
-        os.environ.setdefault("OMP_NUM_THREADS", "1")
+        from threadpoolctl import threadpool_limits
+
+        # O processo do ambiente nasce por fork com o numpy já importado: OMP_NUM_THREADS não vale mais.
+        # Sem este limite, cada ambiente abre 8 threads do OpenBLAS e os 8 ambientes disputam a CPU.
+        threadpool_limits(limits=1)
         torch.set_num_threads(1)
         base = make_mo_env(
             descriptor,
@@ -603,7 +614,8 @@ def train_moppo(
         inds = np.arange(batch_total)
 
         net.train()
-        torch.set_num_threads(4)
+        # Durante o update os processos dos ambientes estão parados: usa todos os núcleos.
+        torch.set_num_threads(os.cpu_count() or 4)
         epoch_pg_losses, epoch_v_losses, epoch_ent_losses, epoch_tot_losses = [], [], [], []
         epoch_kls, epoch_clips = [], []
 
@@ -619,9 +631,9 @@ def train_moppo(
                 mb_adv = b_adv_scalar[mb_inds]
                 mb_returns = b_returns[mb_inds]
 
-                tot_loss, pg_loss, v_loss, ent_loss = compute_losses(
+                tot_loss, pg_loss, v_loss, ent_loss, logratio = compute_losses(
                     net, mb_obs, mb_actions, mb_logprobs, mb_adv, mb_returns,
-                    clip_range=clip_range, vf_coef=vf_coef, ent_coef=ent_coef
+                    clip_range=clip_range, vf_coef=vf_coef, ent_coef=ent_coef, return_logratio=True,
                 )
 
                 optimizer.zero_grad()
@@ -630,9 +642,8 @@ def train_moppo(
                 optimizer.step()
 
                 # Métricas
+                # Medido no forward da perda (antes do passo); antes havia um forward extra só para isto.
                 with torch.no_grad():
-                    _, new_logp, _, _ = net.get_action_and_value(mb_obs, mb_actions)
-                    logratio = new_logp - mb_logprobs
                     approx_kl = ((torch.exp(logratio) - 1) - logratio).mean().item()
                     clipfrac = ((torch.exp(logratio) - 1.0).abs() > clip_range).float().mean().item()
 
