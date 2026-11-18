@@ -132,7 +132,7 @@ def chunk_path(work_dir: Path, index: int) -> Path:
 
 
 def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str, extractor=None,
-        source_reader=read_source) -> dict:
+        source_reader=read_source, shard: tuple[int, int] | None = None) -> dict:
     """Executa (ou retoma) a extração; devolve as métricas gravadas no DONE.json."""
     started_at, started = now_iso(), time.time()
     spec = pd.read_parquet(Path(config["spec"]) if Path(config["spec"]).is_absolute() else ROOT / config["spec"])
@@ -153,12 +153,20 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
         chunk_ids = source_rows._order.to_numpy() // chunk_rows
         key = _source_key(cog_url, src_res)
         pending = [c for c in np.unique(chunk_ids) if not chunk_path(work_dir, int(c) * 1000 + key).exists()]
+        if shard is not None:
+            # Vários processos na mesma spec: cada um faz os blocos com índice ≡ shard[0] (mod shard[1]).
+            pending = [c for c in pending if int(c) % shard[1] == shard[0]]
         if not pending:
             continue
-        image, georef = source_reader(cog_url, float(src_res), source_rows, margin_m)
-        image_t = torch.as_tensor(image, device=device)
+        per_chunk = bool(config.get("read_per_chunk", False))  # fonte local: lê só a faixa de cada bloco
+        if not per_chunk:
+            image, georef = source_reader(cog_url, float(src_res), source_rows, margin_m)
+            image_t = torch.as_tensor(image, device=device)
         for chunk in pending:
             rows = source_rows[chunk_ids == chunk]
+            if per_chunk:
+                image, georef = source_reader(cog_url, float(src_res), rows, margin_m)
+                image_t = torch.as_tensor(image, device=device)
             outputs: dict[str, list] = {}
             for start in range(0, len(rows), batch_size):
                 batch_rows = rows.iloc[start:start + batch_size]
@@ -172,8 +180,11 @@ def run(config: dict, job_id: str, out_root: Path, colab_out: Path, device: str,
             np.savez(chunk_path(work_dir, int(chunk) * 1000 + key),
                      order=rows._order.to_numpy(), **arrays)
             rendered += len(rows)
-        del image_t, image
+        if pending:
+            del image_t, image
 
+    if shard is not None:
+        return {"n_rows": len(spec), "rendered_this_session": rendered, "shard": list(shard)}
     names = assemble(work_dir, len(spec))
     write_manifest(work_dir, "*.npy")
     minutes = (time.time() - started) / 60
