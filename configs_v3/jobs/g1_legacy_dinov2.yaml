@@ -1,0 +1,9 @@
+# G1 preliminar: DINOv2 zero-shot nos recortes exatos da v1 (grade de 50 m), com o hand nos mesmos pixels.
+spec: colab/specs/legacy_50m.parquet
+output_dir: features/legacy_50m/dinov2_vits14
+model: dinov2_vits14
+input_px: 224
+batch_size: 256
+chunk_rows: 20000
+also_hand: true
+margin_m: 50.0

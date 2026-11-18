@@ -102,8 +102,9 @@ def ground_offsets(batch: CropBatch) -> tuple[torch.Tensor, torch.Tensor]:
     pitch = torch.deg2rad(batch.pitch_deg).view(n, 1, 1)
     roll = torch.deg2rad(batch.roll_deg).view(n, 1, 1)
     # Pitch gira em torno do eixo leste (mexe em y, z); roll gira em torno do eixo sul (mexe em x, z).
-    ray_y, ray_z = ray_y * torch.cos(pitch) - ray_z * torch.sin(pitch), ray_y * torch.sin(pitch) + ray_z * torch.cos(pitch)
-    ray_x, ray_z = ray_x * torch.cos(roll) + ray_z * torch.sin(roll), -ray_x * torch.sin(roll) + ray_z * torch.cos(roll)
+    cos_p, sin_p, cos_r, sin_r = torch.cos(pitch), torch.sin(pitch), torch.cos(roll), torch.sin(roll)
+    ray_y, ray_z = ray_y * cos_p - ray_z * sin_p, ray_y * sin_p + ray_z * cos_p
+    ray_x, ray_z = ray_x * cos_r + ray_z * sin_r, -ray_x * sin_r + ray_z * cos_r
     height = half / TAN_HALF_FOV
     east, south = height * ray_x / ray_z, height * ray_y / ray_z
 

@@ -1,0 +1,2 @@
+job_id,notebook,config_path,depends_on,est_gpu_min,priority,status
+g1_legacy_dinov2,colab/02_dinov2_features.ipynb,configs_v3/jobs/g1_legacy_dinov2.yaml,,45,1,queued

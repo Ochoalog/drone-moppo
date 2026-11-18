@@ -132,7 +132,8 @@ def check_against_v1(spec: pd.DataFrame, config: dict, kept_noise: dict, check_r
                 "crop_id": int(row.crop_id), "date_id": date, "kind": row.kind, "variant": int(row.variant),
                 "pixels_equal_fraction": float((diff == 0).mean()), "pixel_max_abs_diff": int(diff.max()),
                 "hand_max_abs_diff_vs_stored": float(np.abs(ours_vec - stored_vec).max()),
-                "hand_cosine_vs_stored": float(ours_vec @ stored_vec / (np.linalg.norm(ours_vec) * np.linalg.norm(stored_vec))),
+                "hand_cosine_vs_stored": float(ours_vec @ stored_vec
+                                               / (np.linalg.norm(ours_vec) * np.linalg.norm(stored_vec))),
             })
         del raster
     _ = photometric, features  # a v1 usa `photometric`; aqui a fórmula é refeita com o ruído injetado
