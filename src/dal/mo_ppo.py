@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import time
+import warnings
 from pathlib import Path
 
 import gymnasium as gym
@@ -15,8 +16,8 @@ import torch.optim as optim
 import yaml
 from torch.distributions.categorical import Categorical
 
-from .config import DATA, RUNS, load_config
-from .mo_env import DroneLocMOEnv, make_mo_env
+from .config import RUNS, load_config
+from .mo_env import make_mo_env
 
 
 # ============================================================================
@@ -288,8 +289,12 @@ def evaluate_moppo(
     seed_base: int = 2024,
     memory: bool = True,
     scale_factors: np.ndarray | None = None,
+    deterministic: bool = True,
 ) -> dict[str, float | list[float]]:
-    """Avalia uma rede MOPPO com um w fixo em episódios pareados."""
+    """Avalia uma rede MOPPO com um w fixo em episódios pareados.
+
+    Com `deterministic=False` as ações são amostradas, com a semente do torch fixada pelo seed do episódio.
+    """
     net.eval()
     env = make_mo_env(
         descriptor,
@@ -309,6 +314,8 @@ def evaluate_moppo(
     with torch.no_grad():
         for i in range(n_episodes):
             ep_seed = seed_base + i
+            if not deterministic:
+                torch.manual_seed(ep_seed)
             obs, _ = env.reset(seed=ep_seed, options={"w": w})
             done = False
             while not done:
@@ -316,7 +323,7 @@ def evaluate_moppo(
                     "map": torch.from_numpy(obs["map"]).unsqueeze(0).float(),
                     "vec": torch.from_numpy(obs["vec"]).unsqueeze(0).float(),
                 }
-                action = net.act(t_obs, deterministic=True)
+                action = net.act(t_obs, deterministic=deterministic)
                 obs, _, term, trunc, info = env.step(action)
                 done = term or trunc
 
@@ -369,11 +376,11 @@ def run_gate_checks(
     # 2. Gate de condicionamento (50 episódios pareados)
     res_fast = evaluate_moppo(
         net, cfg, scenario, descriptor, split, w_fast, n_episodes=50, seed_base=6000,
-        memory=memory, scale_factors=scale_factors
+        memory=memory, scale_factors=scale_factors, deterministic=False
     )
     res_safe = evaluate_moppo(
         net, cfg, scenario, descriptor, split, w_safe, n_episodes=50, seed_base=6000,
-        memory=memory, scale_factors=scale_factors
+        memory=memory, scale_factors=scale_factors, deterministic=False
     )
 
     diff_dist = np.array(res_safe["raw_distances"]) - np.array(res_fast["raw_distances"])
@@ -650,6 +657,14 @@ def train_moppo(
                 scale_factors=scale_factors, log_file=out_dir / "gates.log"
             )
             (out_dir / "gate_check_25pct.json").write_text(json.dumps(gate_results, indent=2))
+            if not gate_results["conditioning_gate"]["passed"]:
+                # Antes, a falha deste gate passava em silêncio e o colapso só apareceu no relatório final.
+                (out_dir / "CONDITIONING_GATE_FAILED").write_text(json.dumps(gate_results["conditioning_gate"]))
+                warnings.warn(
+                    f"Gate de condicionamento falhou em {out_dir.name}: a política não responde a w. "
+                    "Os resultados multiobjetivo desta execução não devem ser usados sem investigação.",
+                    stacklevel=1,
+                )
 
     envs.close()
     progress_f.close()
