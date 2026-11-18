@@ -4,7 +4,7 @@ Serve à ablação de percepção (PPO-CA com hand) e ao primeiro teste de ponta
 Lê os COGs pela rede (overview da resolução das specs). Saída: data_v3/features/v3/hand/<spec>/
 (hand.npy, valid_frac.npy, cloud_frac.npy), no layout que `dal.v3.pipeline` lê (feature = "hand").
 
-Uso: .venv/bin/python scripts/extract_hand_v3_local.py --site taquari --altitudes 100 --workers 8
+Uso: .venv/bin/python scripts/extract_hand_v3_local.py --site taquari --altitudes 100 --workers 2
 """
 from __future__ import annotations
 
@@ -23,6 +23,9 @@ from dal.v3.descriptors import extract  # noqa: E402
 from dal.v3.sensor import specs  # noqa: E402
 
 CHUNK_ROWS = 20000
+# Memória: cada processo usa ~0,5 GB com lotes de 32 recortes de 224 px (a renderização é em float64).
+# Com 6 processos e lotes de 128 (~1,8 GB cada), a máquina ficou sem memória em 18/11 (DECISIONS_V3.md, V25).
+BATCH_SIZE = 32
 
 
 class HandOnly:
@@ -57,7 +60,7 @@ def shard_job(args: tuple) -> dict:
     torch.set_num_threads(1)
     spec_path, name, out_root, shard = args
     job = {"spec": str(spec_path), "output_dir": f"features/v3/hand/{name}", "chunk_rows": CHUNK_ROWS,
-           "batch_size": 128, "margin_m": 200.0, "model": "hand", "read_per_chunk": True}
+           "batch_size": BATCH_SIZE, "margin_m": 200.0, "model": "hand", "read_per_chunk": True}
     return extract.run(job, f"hand_{name}", Path(out_root), Path(out_root) / "_colab_out", "cpu",
                        extractor=HandOnly(), shard=shard)
 
@@ -66,7 +69,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--site", default="taquari")
     parser.add_argument("--altitudes", type=int, nargs="+", default=[100])
-    parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--out-root", default=str(ROOT / "data_v3"))
     args = parser.parse_args()
     site = specs.load_site(args.site)

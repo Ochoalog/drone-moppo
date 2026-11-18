@@ -1,6 +1,6 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 18/11/2026, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
@@ -24,7 +24,7 @@ Resolvido: figuras do prior aprovadas; terceira área = **Canoas**; evento exter
 
 ## Rodando agora
 
-- **Local:** descritor hand nas specs v3 do Taquari a 100 m (`scripts/extract_hand_v3_local.py`, 6 processos). Serve à ablação de percepção e ao primeiro teste de ponta a ponta com dados reais (G3 e calibração de β), sem esperar a GPU.
+- **Local: parado.** A extração do hand nas specs v3 (Taquari, 100 m) foi interrompida por falta de memória (V25). As imagens baixadas estão em `data_v3/raw/`. **[AÇÃO DO VITOR]** autorizar o reinício com 2 processos (~1 GB no total): `cd dal_v3 && PYTHONPATH=$PWD/src .venv/bin/python scripts/extract_hand_v3_local.py --site taquari --altitudes 100 --workers 2`.
 - **Colab: só `g1_legacy_grid4` está `queued`** (G1 oficial do DINOv2 com GeM espacial 4 × 4). O resto da fila está `on_hold` até esse resultado: as extrações com GeM global foram trocadas por `v3_grid4_*` (PCA por dobra, V23), e o `finetune_A` passou a usar pooling em grade e negativos vizinhos (V24).
 
 ## Feito hoje
