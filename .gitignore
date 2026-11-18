@@ -18,3 +18,6 @@ results_mo/videos/
 results_mo/*.pptx
 results_mo/*.pdf
 results_mo/pptx_assets/
+
+# specs v3: geradas de forma determinística (manifesto commitado; ver DECISIONS_V3.md V14)
+colab/specs/v3_*.parquet
