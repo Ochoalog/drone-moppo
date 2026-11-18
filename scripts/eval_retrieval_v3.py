@@ -14,6 +14,7 @@ Exemplos:
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -28,6 +29,7 @@ from dal.v3.reporting.provenance import with_provenance
 V1_RETRIEVAL_WINDOWS = 20
 V1_RETRIEVAL_SEED = 0
 OUT = ROOT / "results_v3" / "retrieval"
+MASKS_FILE = "colab/specs/legacy_50m_masks.npz"
 
 
 def raw_arrays_from_spec(spec: pd.DataFrame, descriptors: np.ndarray, n_cells: int, map_date: str):
@@ -59,8 +61,16 @@ def retrieval_for_scenario(config: dict, scenario: str, map_raw: np.ndarray, obs
     train_idx = (train_rows[:, None] * grid.ncols + np.arange(grid.ncols)[None]).ravel()
     map_desc = _standardize(map_raw, train_idx).reshape(grid.nrows, grid.ncols, -1)
     obs_desc = _standardize(obs_raw, train_idx).reshape(obs_raw.shape[0], grid.nrows, grid.ncols, -1)
-    data = ScenarioData.load("hand", scenario, config)
-    data.map_desc, data.obs_desc = map_desc.astype(np.float32), obs_desc.astype(np.float32)
+    # ScenarioData montado direto das máscaras da v1 versionadas (colab/specs/legacy_50m_masks.npz): não depende
+    # do cache local, então roda também no Colab. Distintividade, PCA e β não entram na recuperação.
+    masks = np.load(ROOT / MASKS_FILE)
+    map_date = config["scenarios"][scenario]
+    rows, cols = grid.nrows, grid.ncols
+    _, test_rows = grid.split_rows(data_cfg["split_lat"], data_cfg["split_margin_m"])
+    data = ScenarioData(name=f"v3_{scenario}", map_desc=map_desc.astype(np.float32),
+                        obs_desc=obs_desc.astype(np.float32), map_ok=masks[f"{map_date}_ok"], obs_ok=masks["post_ok"],
+                        distinct=np.zeros((rows, cols), np.float32), pca=np.zeros((1, rows, cols), np.float32),
+                        train_rows=train_rows, test_rows=test_rows, beta=1.0)
     return window_stats(data, int(config["filter"]["window"]), V1_RETRIEVAL_WINDOWS, V1_RETRIEVAL_SEED,
                         config["filter"]["min_window_valid"])
 
@@ -71,6 +81,7 @@ def main() -> None:
     parser.add_argument("--spec", default="colab/specs/legacy_50m.parquet")
     parser.add_argument("--name", required=True)
     parser.add_argument("--scenarios", nargs="*", default=["S0", "S1", "S2"])
+    parser.add_argument("--out", default=str(OUT), help="pasta do CSV (no Colab: colab_out/<job_id>)")
     args = parser.parse_args()
 
     config = load_config("configs/default.yaml")
@@ -92,11 +103,12 @@ def main() -> None:
         rows.append({"descriptor": args.name, "scenario": scenario, **stats})
         print(f"[retrieval] {args.name} {scenario}: top1 {stats['top1']:.3f} top5 {stats['top5']:.3f} "
               f"top1(<=1) {stats['top1_within1']:.3f}", flush=True)
-    OUT.mkdir(parents=True, exist_ok=True)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
     table = with_provenance(pd.DataFrame(rows), source_file=str(args.descriptors), config=config,
                             protocol=f"window_stats v1: {V1_RETRIEVAL_WINDOWS} janelas de treino 64x64, semente 0",
                             fold="A (treino norte)", region="taquari")
-    table.to_csv(OUT / f"{args.name}.csv", index=False)
+    table.to_csv(out / f"{args.name}.csv", index=False)
 
 
 if __name__ == "__main__":
