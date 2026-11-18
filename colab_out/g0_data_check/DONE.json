@@ -32,6 +32,7 @@
   },
   "artifacts_generated": [
     "MyDrive/drone_v3/prior/taquari_prior_emsr720_10m.tif",
+    "MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif",
     "MyDrive/drone_v3/prior/porto_alegre_prior_emsn194_10m.tif",
     "MyDrive/drone_v3/prior/taquari_sentinel1_water_10m.tif",
     "MyDrive/drone_v3/prior/porto_alegre_sentinel1_water_10m.tif",

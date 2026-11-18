@@ -4,7 +4,8 @@
 **Autor:** IA-2 (Gemini / Google Colab T4)  
 **Status do Gate G0:** **APROVADO COM RECOMENDAÇÕES ESPECÍFICAS**  
 **Artefatos gerados em `MyDrive/drone_v3/prior/`:**
-- `taquari_prior_emsr720_10m.tif` (19,09 km² de inundação delimitada)
+- `taquari_prior_emsr720_10m.tif` (19,09 km² de inundação delimitada — fontes estritamente ≤ 06/05/2024)
+- `taquari_prior_emsr720_le0605_10m.tif` (cópia canônica com nomenclatura de calibração; fontes estritamente ≤ 06/05/2024)
 - `porto_alegre_prior_emsn194_10m.tif` (55,67 km² de inundação delimitada)
 - `taquari_sentinel1_water_10m.tif` (2,58 km² de água em SAR VV ≤ −18 dB)
 - `porto_alegre_sentinel1_water_10m.tif` (53,58 km² de água em SAR VV ≤ −18 dB)
@@ -17,10 +18,10 @@
 ## 1. Recomendação Executiva (Decisões Técnicas e Riscos)
 
 1. **Prior de Mudança no Vale do Taquari (Encantado, Muçum, Roca Sales):**
-   - **Recomendação:** Usar o produto vetorial de delimitação do **Copernicus EMS EMSR720** (combinando produtos `DEL` de SAR e `GRA` de satélite óptico Pléiades Neo de 06/05/2024).
-   - **Justificativa:** As imagens de origem foram adquiridas entre **04/05/2024 e 06/05/2024**, todas estritamente **anteriores** à data do voo simulado do drone (07/05/2024). O produto foi entregue em 05–08/05/2024. Não há nenhum vazamento da imagem da câmera Maxar pós-evento.
-   - **Cobertura:** 19,09 km² de área inundada e traços de enchente delimitados na AOI do Taquari (407.000 a 416.000 m E, 6.754.000 a 6.779.000 m N, EPSG:32722).
-   - **Risco:** O relevo acidentado do vale do Taquari causou sombras de radar na detecção SAR inicial (`DEL`), mas a complementação com o produto `GRA` (Pléiades Neo de 06/05) capturou com precisão as planícies fluviais e as manchas de lama e destruição urbana em Muçum, Encantado e Roca Sales.
+   - **Recomendação:** Usar o produto vetorial de delimitação do **Copernicus EMS EMSR720** (combinando produtos `DEL` de SAR e `GRA_PRODUCT` de satélite óptico Pléiades Neo de 06/05/2024).
+   - **Justificativa e Ausência de Vazamento:** As imagens de origem foram adquiridas entre **04/05/2024 e 06/05/2024**, todas estritamente **anteriores** à data do voo simulado do drone (07/05/2024). O produto `GRA_MONIT01` (que continha GeoEye-1 de 07/05 no portal Copernicus) foi **estritamente excluído** do processamento. As camadas utilizadas no raster `taquari_prior_emsr720_le0605_10m.tif` utilizam apenas dados até 06/05/2024 (Pléiades Neo e SAR). Não há nenhum vazamento da imagem da câmera Maxar pós-evento.
+   - **Cobertura:** 19,09 km² de área inundada e traços de enchente delimitados na AOI do Taquari (407.000 a 416.000 m E, 6.754.000 a 6.779.000 m N, EPSG:32722). Gravado como `taquari_prior_emsr720_10m.tif` e `taquari_prior_emsr720_le0605_10m.tif`.
+   - **Risco:** O relevo acidentado do vale do Taquari causou sombras de radar na detecção SAR inicial (`DEL`), mas a complementação com o produto `GRA_PRODUCT` (Pléiades Neo de 06/05) capturou com precisão as planícies fluviais e as manchas de lama e destruição urbana em Muçum, Encantado e Roca Sales.
 
 2. **Prior de Mudança em Porto Alegre (Ilhas e Centro):**
    - **Recomendação:** Usar o produto vetorial **P04 (Flood Delineation, camada de 08/05/2024)** da ativação **Copernicus EMS EMSN194** (Risk and Recovery Mapping), com o rótulo explícito de **"prior otimista"**.
@@ -75,13 +76,13 @@
 
 #### Vale do Taquari
 A ativação **EMSR720** (*Flood in Rio Grande do Sul State, Brazil*) contém 5 Áreas de Interesse (AOIs):
-- **AOI 01 (Guaporé / Muçum):** Bounding box [−51,918, −29,199] a [−51,818, −29,105]. Produtos `DEL` (SAR RADARSAT-2 de 04/05/2024 22:10 UTC e COSMO-SkyMed SG de 04/05/2024 09:48 UTC) e `GRA` (Pléiades Neo de 06/05/2024 13:34 UTC e GeoEye-1 de 07/05/2024 13:29 UTC).
-- **AOI 02 (Encantado):** Bounding box [−51,904, −29,264] a [−51,831, −29,199]. Produtos `DEL` (RADARSAT-2 de 04/05 e PAZ de 05/05/2024 09:05 UTC) e `GRA` (Pléiades Neo de 06/05/2024 13:35 UTC).
-- **AOI 03 (Roca Sales):** Bounding box [−51,923, −29,325] a [−51,840, −29,262]. Produtos `DEL` (PAZ de 05/05/2024 22:15 UTC) e `GRA` (Pléiades Neo de 06/05/2024 13:05 UTC).
+- **AOI 01 (Guaporé / Muçum):** Bounding box [−51,918, −29,199] a [−51,818, −29,105]. Produtos `DEL` (SAR RADARSAT-2 de 04/05/2024 22:10 UTC e COSMO-SkyMed SG de 04/05/2024 09:48 UTC) e `GRA_PRODUCT` (Pléiades Neo de 06/05/2024 13:34 UTC). O produto `GRA_MONIT01` (com GeoEye-1 de 07/05) foi **estritamente excluído** para evitar qualquer sobreposição temporal com a câmera do drone.
+- **AOI 02 (Encantado):** Bounding box [−51,904, −29,264] a [−51,831, −29,199]. Produtos `DEL` (RADARSAT-2 de 04/05 e PAZ de 05/05/2024 09:05 UTC) e `GRA_PRODUCT` (Pléiades Neo de 06/05/2024 13:35 UTC).
+- **AOI 03 (Roca Sales):** Bounding box [−51,923, −29,325] a [−51,840, −29,262]. Produtos `DEL` (PAZ de 05/05/2024 22:15 UTC) e `GRA_PRODUCT` (Pléiades Neo de 06/05/2024 13:05 UTC).
 - **AOI 04 (Das Antas Dam):** Represa das Antas (nordeste).
 - **AOI 05 (Santa Tereza):** Vale a leste.
 
-As AOIs 01, 02 e 03 cobrem a totalidade da área de estudo do Taquari (lon −51,95 a −51,875, lat −29,33 a −29,12). Todas as imagens de origem foram adquiridas **até 06/05/2024**, antes do voo de 07/05/2024. O raster de prior combinado foi gravado com sucesso em `MyDrive/drone_v3/prior/taquari_prior_emsr720_10m.tif`.
+As AOIs 01, 02 e 03 cobrem a totalidade da área de estudo do Taquari (lon −51,95 a −51,875, lat −29,33 a −29,12). Todas as imagens de origem foram adquiridas **estritamente até 06/05/2024**, antes do voo de 07/05/2024. O raster de prior combinado foi gravado com sucesso tanto em `MyDrive/drone_v3/prior/taquari_prior_emsr720_10m.tif` quanto em `MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif`.
 
 #### Porto Alegre
 O Rapid Mapping (EMSR720) não incluiu Porto Alegre. A ativação aplicável é o **EMSN194** (*Flood in Porto Alegre, Brazil*), ativado em 28/05/2024 pela DG ECHO a pedido da UFRGS. 
