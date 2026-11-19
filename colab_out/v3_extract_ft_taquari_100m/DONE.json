@@ -1,0 +1,31 @@
+{
+ "job_id": "v3_extract_ft_taquari_100m",
+ "git_commit": "b630f1989e55f8bb6e41e7341ebcf52d6232c762",
+ "config_hash": "048fdf94c60e6863",
+ "gpu_minutes": 103.22,
+ "started_at": "2026-11-19T12:21:05+00:00",
+ "finished_at": "2026-11-19T14:04:18+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "specs": {
+   "v3_taquari_pre_mar23_map_100m": {
+    "rows": 262341,
+    "crops_per_second": 303.0371321817738
+   },
+   "v3_taquari_pre_oct23_map_100m": {
+    "rows": 262341,
+    "crops_per_second": 299.37541506765274
+   },
+   "v3_taquari_post_map_100m": {
+    "rows": 262341,
+    "crops_per_second": 299.5484601673848
+   },
+   "v3_taquari_post_obs_100m": {
+    "rows": 1049364,
+    "crops_per_second": 294.1206169815963
+   }
+  },
+  "minutes": 103.21765488783518
+ }
+}
