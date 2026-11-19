@@ -26,6 +26,8 @@ SOURCES = {  # local → (raster do prior, miniatura pré-evento para a figura, 
                 "Copernicus EMS EMSR720 (fontes ≤ 06/05/2024)"),
     "poa": ("porto_alegre_prior_emsn194_10m.tif", "data_poa/raw/poa_pre_feb24_thumb.tif",
             "Copernicus EMS EMSN194 (fontes 08/05/2024; prior 'otimista')"),
+    "canoas": ("canoas_prior_emsn194_10m.tif", "data_poa/raw/poa_pre_feb24_thumb.tif",
+               "Copernicus EMS EMSN194 recortado (fontes 08/05/2024; prior 'otimista')"),
 }
 OUT = ROOT / "results_v3" / "prior"
 

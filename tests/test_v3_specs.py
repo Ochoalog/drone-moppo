@@ -50,3 +50,12 @@ def test_crop_ids_are_unique_across_specs():
     ids = [specs.with_crop_ids(specs.map_spec(SITE, "pre", 60), names[0]).crop_id,
            specs.with_crop_ids(specs.obs_spec(SITE, 60), names[1]).crop_id]
     assert not set(ids[0]).intersection(ids[1])
+
+
+def test_canoas_grid_is_the_utm_box_and_reuses_poa_sources():
+    site = specs.load_site("canoas")
+    grid = specs.site_grid(site)
+    assert (grid.x0, grid.y1, grid.nrows, grid.ncols) == (474000.0, 6695000.0, 320, 480)
+    poa = specs.load_site("poa")
+    assert site.sources == {d: poa.sources[d] for d in ("poa_post", "poa_pre_feb24")}
+    assert site.offsets["poa_pre_feb24"] == poa.offsets["poa_pre_feb24"]

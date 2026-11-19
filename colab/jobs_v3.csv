@@ -15,6 +15,9 @@ v3_extract_ft_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extr
 v3_extract_ft_poa_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_poa_100m.yaml,finetune_A,50,5,queued
 v3_extract_ft_poa_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_poa_60m.yaml,finetune_A,50,6,queued
 v3_extract_ft_poa_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_poa_150m.yaml,finetune_A,50,7,queued
+v3_extract_ft_canoas_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_canoas_100m.yaml,finetune_A,45,7,queued
+v3_extract_ft_canoas_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_canoas_60m.yaml,finetune_A,45,7,queued
+v3_extract_ft_canoas_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_canoas_150m.yaml,finetune_A,45,7,queued
 calibrate_A_dinov2,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_A_dinov2.yaml,v3_extract_taquari_100m;v3_extract_taquari_60m;v3_extract_taquari_150m,30,15,on_hold
 calibrate_A_ftA,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_A_ftA.yaml,v3_extract_ft_taquari_100m;v3_extract_ft_taquari_60m;v3_extract_ft_taquari_150m,30,8,queued
 v3_grid4_taquari_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_grid4_taquari_100m.yaml,,90,2,on_hold

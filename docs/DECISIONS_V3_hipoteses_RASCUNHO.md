@@ -1,4 +1,4 @@
-# RASCUNHO para revisão do Vitor (quinta, 19/11): hipóteses, matriz e regras estatísticas da v3
+# RASCUNHO (substituído): o texto aprovado está na §2 do `DECISIONS_V3.md`, commitado em 19/11. Este arquivo fica só como histórico.
 
 > **Status: rascunho, não pré-especificado ainda.** Depois da revisão, o texto vai para a §2 do `DECISIONS_V3.md` e é commitado **antes** de enfileirar a matriz completa (sexta, 20/11). A partir daí, qualquer mudança exige registro com data e motivo, e os vereditos saem pelos dois critérios.
 > Base: §3.7 e §4 do `PLANO_DESENVOLVIMENTO.md` v3. Os pontos que o plano deixava abertos e que a IA-1 operacionalizou estão marcados com **[definido aqui]**.

@@ -20,5 +20,16 @@
   "mean_flooded_fraction": 0.32572638988494873,
   "cells_ge_0_5": 60629,
   "flooded_km2_equivalent": 37.91455078125
+ },
+ "canoas": {
+  "source": "Copernicus EMS EMSN194 recortado (fontes 08/05/2024; prior 'otimista')",
+  "file": "canoas_prior_emsn194_10m.tif",
+  "grid": [
+   320,
+   480
+  ],
+  "mean_flooded_fraction": 0.5144624710083008,
+  "cells_ge_0_5": 79187,
+  "flooded_km2_equivalent": 49.38840103149414
  }
 }

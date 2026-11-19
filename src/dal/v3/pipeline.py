@@ -26,7 +26,8 @@ MASK_ALTITUDE = 100  # as máscaras de validade e nuvem usam o footprint da alti
 DISTINCT_RADII = (3, 5)  # anel (em células) da distintividade, como na v1
 WINDOW_CELLS = 128
 SCENARIO_MAP_DATE = {"taquari": {"S0": "post", "S1": "pre_mar23", "S2": "pre_oct23"},
-                     "poa": {"P0": "poa_post", "P1": "poa_pre_feb24", "P2": "poa_pre_dec22"}}
+                     "poa": {"P0": "poa_post", "P1": "poa_pre_feb24", "P2": "poa_pre_dec22"},
+                     "canoas": {"C0": "poa_post", "C1": "poa_pre_feb24"}}
 
 
 @dataclass(frozen=True)

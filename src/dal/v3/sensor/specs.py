@@ -46,6 +46,8 @@ BRIGHTNESS_RANGE = (-0.15, 0.15)
 BLUR_SIGMA_RANGE = (0.0, 1.5)
 NOISE_STD = 3.0
 MANIFEST = "v3_manifest.json"
+SITES = ("taquari", "poa", "canoas")
+CANOAS_AOI_UTM = {"x0": 474000.0, "x1": 486000.0, "y0": 6687000.0, "y1": 6695000.0}  # EPSG:32722
 
 
 @dataclass(frozen=True)
@@ -65,7 +67,7 @@ def footprint_m(altitude_m: float) -> float:
 
 
 def load_site(name: str) -> Site:
-    """Taquari e Porto Alegre a partir das configs da v1 (só leitura)."""
+    """Taquari e Porto Alegre a partir das configs da v1 (só leitura); Canoas com a AOI da V27."""
     # Deslocamentos copiados de data*/align.json (fora do git) para um arquivo versionado: o Colab precisa deles.
     raw = json.loads((ROOT / "configs_v3" / "alignment_offsets.json").read_text())
     if name in raw:
@@ -78,10 +80,21 @@ def load_site(name: str) -> Site:
         config = load_config("configs_poa/poa.yaml")
         return Site("poa", config["data"]["aoi"], "poa_post", ("poa_pre_feb24", "poa_pre_dec22", "poa_post"),
                     config["data"]["sources"], offsets)
+    if name == "canoas":
+        # Terceira área (V27): mesmos COGs de Porto Alegre (pós 09/05/2024, pré P1 02/02/2024) e os mesmos
+        # deslocamentos de alinhamento; AOI dada direto em UTM 22S (Mathias Velho e arredores, 96 km²).
+        config = load_config("configs_poa/poa.yaml")
+        sources = {date: config["data"]["sources"][date] for date in ("poa_post", "poa_pre_feb24")}
+        offsets = {k: ((v["dx_m"], v["dy_m"]) if v["applied"] else (0.0, 0.0)) for k, v in raw["poa"].items()}
+        return Site("canoas", CANOAS_AOI_UTM, "poa_post", ("poa_pre_feb24", "poa_post"), sources, offsets)
     raise ValueError(f"local desconhecido: {name}")
 
 
 def site_grid(site: Site) -> Grid:
+    if "x0" in site.aoi:  # AOI já em UTM (Canoas): a grade é a própria caixa
+        aoi = site.aoi
+        return Grid(float(aoi["x0"]), float(aoi["y1"]), int(round((aoi["y1"] - aoi["y0"]) / CELL_M)),
+                    int(round((aoi["x1"] - aoi["x0"]) / CELL_M)), CELL_M)
     return Grid.from_aoi(**site.aoi, cell=CELL_M)
 
 
@@ -149,7 +162,7 @@ def iter_specs(site: Site):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--site", required=True, choices=["taquari", "poa"])
+    parser.add_argument("--site", required=True, choices=list(SITES))
     parser.add_argument("--out", default="colab/specs")
     parser.add_argument("--verify", action="store_true", help="confere os hashes contra o manifesto commitado")
     args = parser.parse_args()

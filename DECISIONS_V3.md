@@ -35,16 +35,71 @@ Cada linha: data, decisão, motivo, alternativa descartada. As hipóteses H1–H
 | V27 | 18/11 | **Terceira área e evento externo** (aprovados pelo Vitor; dados da IA-2): **Canoas**, AOI EPSG:32722 X 474.000–486.000, Y 6.687.000–6.695.000 (96 km², Mathias Velho), par = mosaico pós-evento de POA (09/05/2024) × pré P1 (02/02/2024), prior `canoas_prior_emsn194_10m.tif` (EMSN194, 49,39 km² inundados, no MANIFEST). **Valência**: Maxar Open Data Floods-Spain-Oct24, pré 26/10/2024 (`103001010890C000`) × pós 31/10/2024 (`10300101074E6F00`), AOI EPSG:32630 X 717.000–732.000, Y 4.363.000–4.378.000 (225 km², Horta Sud/Paiporta), prior EMSR773 AOI01. Ambos zero-shot (PCA/descritor da dobra A). Valência exige generalizar o CRS (hoje fixo em EPSG:32722) e é o primeiro corte na ordem da §8 | Canoas reaproveita os COGs de POA; Valência dá um evento fora do RS. Pendente para Valência: conferir a data das fontes do EMSR773 (≤ 31/10) antes de usar o prior | — |
 | V28 | 19/11 | **Valência: prior do EMSR773 provavelmente NÃO é independente da observação.** Segundo a IA-2, o DEL v1 do AOI03 usou WorldView-2/GeoEye-1 de **31/10/2024 10:22 UTC**, e o COG pós-evento escolhido (`10300101074E6F00`, prefixo de WorldView-2) é de **31/10/2024 10:22 UTC**: o prior teria sido desenhado sobre a mesma imagem que o drone "observa". A data atende ao ≤, mas a regra pede fonte independente. Até haver outra fonte, o prior de Valência fica marcado **"dependente da imagem pós" (cota superior otimista)**, como o de Porto Alegre, e não entra em veredito do H do filtro CA sem esse rótulo. Inconsistências a resolver com a IA-2 antes de usar: AOI01 (mensagem de 18/11) × AOI03 (19/11); pré `103001010890C000` × `105001003E84F500`; AOI de 225 km² × caixa de ~3,3 × 3,6 km (≈ 12 km²) dos COGs | Mesmo critério do G0 (proveniência do prior); um prior desenhado na própria imagem pós-evento mede o melhor caso do filtro CA, não o caso operacional | Usar o EMSR773 sem rótulo; prior do Sentinel-1 (opção para Valência: mapa de inundação SAR de 29–30/10, se o Vitor/IA-2 conseguirem a tempo) |
 | V29 | 19/11 | **G1 aprovado com o ajuste fino (dobra A, saída `ft`, 256 dim)** pelo critério pré-especificado em V26 (job `g1_legacy_ftA`, `DONE.json` validado, commit `f24d9b7` da `colab/results`). Top-1 nas janelas de **teste** da v1, mesmos pixels, ft / hand / grid4: **S1 0,460 / 0,368 / 0,401; S2 0,332 / 0,239 / 0,283**; top-5 S1 0,701 / 0,473 / 0,519, S2 0,560 / 0,321 / 0,380. Fila liberada: `v3_extract_ft_*` (Taquari, depois POA), `calibrate_A_ftA`, e **`finetune_B`/`finetune_C` + extrações das dobras B e C** (cada dobra usa só o ajuste fino da sua faixa de treino; zero-shot usa o da dobra A). **Ressalva registrada antes dos pilotos:** em S0 (mesma imagem) o ft cai para 0,906 no teste (hand 0,996; grid4 0,956); o G3 (reta ≥ 90% no controle S0) pode ficar apertado e será medido no piloto, sem trocar o critério | O hand de referência no COG (0,368 / 0,239) reproduz o cálculo local nos pixels JPEG da v1 (0,366 / 0,239). Os números de treino (ft 0,542 / 0,431) ficam só como registro, dentro da amostra | Ajuste fino só na dobra A para todas as dobras (vazaria a faixa de teste de B e C) |
+| V30 | 19/11 | **Valência cortada** (decisão do Vitor; item 1 da ordem de corte da §8). O Sentinel-1 não passou em Valência em 29 nem 30/10 (primeira passagem pós-evento em 01/11 06:02 UTC), então não há prior independente ≤ 31/10; o EMSR773 foi mapeado sobre a mesma aquisição de 31/10 10:22 usada como pós-evento (V28). Para registro, as confirmações da IA-2: AOI03 (Horta Sud), pré `105001003E84F500` (26/10 10:38 UTC), passagem de 224,8 km² | Um prior que não é independente só reproduziria o caso "otimista" que Porto Alegre já cobre | (a) usar com rótulo "otimista"; (b) Sentinel-1 (inviável) |
+| V31 | 19/11 | **Canoas implementada como terceira área:** grade de 25 m direto na caixa UTM da V27 (320 × 480 células), datas `poa_pre_feb24` (mapa, cenário C1) e `poa_post` (observação; C0 = controle), mesmos COGs e deslocamentos de alinhamento de Porto Alegre. Prior: EMSN194 recortado, 49,39 km² (bate com o MANIFEST da IA-2), 51% das células inundadas em média, rótulo "otimista" como POA (fontes 08/05/2024). Specs no manifesto; jobs `v3_extract_ft_canoas_*` na fila depois de POA | Os COGs de POA cobrem a caixa (pós até y = 6.695.156; as bordas de 150 m saem pelas máscaras de validade) | — |
 
-## 2. Hipóteses, matriz e regras estatísticas
+## 2. Hipóteses, matriz e regras estatísticas (pré-especificado em 19/11/2026)
 
-*A escrever antes de enfileirar a matriz completa (Etapa C, §4.5 do prompt).*
+> **Pré-especificado.** Texto do rascunho `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`, aprovado pelo Vitor em 19/11, commitado **antes** de enfileirar pilotos e matriz. Mudanças daqui em diante só com registro datado e motivo, e os vereditos saem pelos dois critérios (original e novo).
+>
+> Únicas alterações em relação ao rascunho aprovado, todas factuais e anteriores a qualquer resultado da matriz: (1) o descritor passou a ser o do ajuste fino (G1, V29); (2) a "terceira área" é Canoas (V27); (3) o evento externo foi cortado (V30); (4) a linha do G1 registra o protocolo de V26. **Nenhum critério de hipótese mudou.**
+>
+> **Nota sobre o H1:** o G1 mostrou estimativas pontuais favoráveis (teste: S1 0,460 × 0,368; S2 0,332 × 0,239), mas o veredito do H1 exige o IC por bootstrap de células consulta definido abaixo; ele será calculado pelo código de vereditos, não decidido aqui.
+
+### 2.1 Definições comuns
+
+- **Episódio:** ambiente realista em lote (`dal.v3.envs.realistic_env`), janela de 3,2 km (128 × 128 células de 25 m), até 80 passos, deriva de 2% (exceto na ablação), seeds de avaliação 2024 + i (i = 0…999), ruído do episódio sorteado no reset (pareado entre métodos).
+- **Sucesso:** massa da crença ≥ 0,9 num raio de 100 m em torno da célula MAP **e** erro ≤ 100 m. **Localização falsa:** concentrou a mais de 100 m. **Timeout:** não concentrou em 80 passos.
+- **Tempo de voo:** 6 s por passo horizontal (5 s de voo + 1 s de captura); 16 s por mudança de altitude. **[definido aqui]** Métrica de custo principal: tempo de voo médio **nos episódios com sucesso**, sempre ao lado da localização falsa.
+- **Melhor heurística CA** (H3) **[definido aqui]:** entre reta-CA, zigue-zague-CA, aleatória-CA, greedy_map-CA e reta-150-CA, a de **maior sucesso no conjunto de calibração** (janelas de treino da dobra). É escolhida antes de olhar o teste.
+- **Descritor:** o escolhido pelo G1 (V29): **ajuste fino contrastivo, saída `ft` (256 dim), um por dobra** (`dinov2_vits14_ft<dobra>`, treinado só na faixa de treino da dobra); Porto Alegre e Canoas (zero-shot) usam o da dobra A.
+
+### 2.2 Hipóteses
+
+| Id | Hipótese | Critério (operacional) |
+|---|---|---|
+| **H1** | O descritor aprendido supera o hand | Top-1 de recuperação no **teste** da dobra A (S1 e S2), mesma função do `REPORT.md` §2 (`window_stats`, 20 janelas, semente 0), com IC por bootstrap de **células consulta** (B = 2000). Suportada se, em S1 **e** em S2, o limite inferior da diferença (aprendido − hand) > 0. **[definido aqui]** O hand é calculado sobre os mesmos recortes (COG), não o da v1 (JPEG); a referência da v1 (0,409 / 0,269) aparece ao lado |
+| **H2** | O filtro CA reduz a localização falsa | Para a **reta** e para a **PPO-CA** (a política treinada com filtro CA, avaliada com filtro CA × padrão), no Taquari S2 (dobra A) **e** nas ilhas de Porto Alegre: IC da diferença de localização falsa (CA − padrão) inteiramente < 0 **e** limite inferior da diferença de sucesso ≥ −2 p.p. Suportada se valer nos 4 casos (2 métodos × 2 locais); não suportada se algum IC da localização falsa for inteiramente ≥ 0; inconclusiva nos demais |
+| **H3** (principal) | A PPO-CA paga a pena contra a melhor heurística CA | Por local (Taquari S2 dobra A, ilhas, Centro, Canoas): **(a) superioridade:** probabilidade de melhora em sucesso (rliable, 10 seeds; P(PPO-CA > heurística) com a heurística como uma "seed" fixa) > 0,5 com IC 95% que exclui 0,5; **ou (b) não inferioridade com eficiência:** limite inferior da diferença de sucesso ≥ −3 p.p. **e** IC da diferença de tempo de voo nos sucessos inteiramente < 0. Holm entre os locais (os p-valores vêm de bootstrap). Suportada no local se (a) ou (b); reportar qual |
+| **H4** | A altitude ajuda onde o mapa mais mudou | PPO-CA-ALT × PPO-CA, Taquari S2 dobra A: **(a)** sucesso não inferior (limite inferior ≥ −3 p.p.) **e** tempo de voo menor (IC < 0), **ou** sucesso superior (limite inferior > 0); **e (b)** Spearman entre a altitude média do episódio e o índice de mudança da janela > 0, com IC por bootstrap de janelas que exclui 0. Suportada se (a) **e** (b) |
+| **H5** | A relação do H3 se mantém zero-shot | O H3 é suportado em ≥ 2 de 3 regiões (ilhas, Centro, Canoas). O evento externo foi cortado (V30) |
+| **M1** | Mecanismo (estudo v1) | Já avaliada pelo critério do `DECISIONS_FINAL.md` (F3): **não suportada** |
+
+### 2.3 Estatística
+
+- **ICs das diferenças pareadas:** bootstrap hierárquico (seeds → janelas, `dal.evaluation.statistics`), B = 2000, 95%. Para heurísticas (sem seed), só janelas.
+- **rliable:** IQM do sucesso entre seeds e probabilidade de melhora, com bootstrap estratificado por dobra e região (biblioteca `rliable`).
+- **Holm** entre locais no H3. Nos demais, IC nominal (e dito assim).
+- **Vereditos gerados por código** a partir deste texto, nunca à mão; os ICs antigos nunca aparecem sozinhos.
+
+### 2.4 Matriz e orçamento
+
+| Bloco | Métodos | Seeds | Dobras | Execuções |
+|---|---|---|---|---|
+| Principal | PPO, PPO-CA, PPO-CA-ALT | 10 | A | 30 |
+| Ablação de percepção | PPO-CA com hand | 3 | A | 3 |
+| Validação espacial | PPO-CA, PPO-CA-ALT | 3 | B, C | 12 |
+| Ablação de deriva | PPO-CA com deriva 0% e 5% | 3 | A | 6 |
+| Baselines | reta, zigue-zague, aleatória, greedy_map (padrão e CA) e reta-150 | — | A, B, C | (só avaliação) |
+
+- **Orçamento:** 1,4M passos por execução; 3M se o G4 der folga (≥ 2× o necessário para caber até sábado). **[definido aqui]** A decisão sai dos pilotos e fica registrada antes da matriz.
+- **Avaliação:** 1000 episódios pareados por (método × local × dobra).
+- **Ordem de corte:** a da §8 do plano.
+
+### 2.5 Gates
+
+| Gate | Critério |
+|---|---|
+| G1 | top-1 em S1 e S2: aprendido > hand nos mesmos recortes; zero-shot nas janelas de treino, ajuste fino nas janelas de **teste** da v1 (V26). **Passou com o ajuste fino (V29)** |
+| G3 | no controle (mapa = observação, S0), a reta com filtro padrão faz ≥ 90% de sucesso |
+| G4 | ≥ 5.000 passos/s de treino na T4 (mediana de `progress.csv` do piloto) |
+| Gate de aprendizado (aos 25% de cada treino) **[definido aqui]** | sucesso da política (amostrada) − sucesso da aleatória ≥ 5 p.p., em 200 episódios de treino da dobra. Falhou → `INVALID_GATE` (pasta + `DONE.json`), sem veredito |
 
 ## 3. Gates
 
 | Gate | Critério | Situação |
 |---|---|---|
-| G0 | dados (prior, terceira área, evento externo) | **Aprovado** para o prior (18/11 13:42, commit `e9355bc` da `colab/results`; ver §5). Terceira área = Canoas, evento externo = Valência/EMSR773, aprovados pelo Vitor (V27); conferir as fontes do EMSR773 |
+| G0 | dados (prior, terceira área, evento externo) | **Aprovado** para o prior (18/11 13:42, commit `e9355bc` da `colab/results`; ver §5). Terceira área = Canoas (V27, V31); evento externo cortado (V30) |
 | G1 preliminar | DINOv2 zero-shot × hand (S1 0,409; S2 0,269) na spec `legacy_50m` | **DINOv2 zero-shot não supera o hand** (18/11, job `g1_legacy_dinov2`, `DONE.json` validado; `results_v3/g1/`). Top-1 no treino, GeM / CLS / hand nos mesmos pixels: S0 0,816 / 0,752 / 0,998; S1 0,139 / 0,114 / 0,411; S2 0,063 / 0,055 / 0,270. O hand nos pixels do COG reproduz a v1 (0,411 × 0,409; 0,270 × 0,269). Diagnóstico: S0 = 0,82 com a mesma imagem mostra que o pooling global não separa células vizinhas (ver V20) |
 | G1 grid4 | grid4 zero-shot × hand, top-1 no treino, mesmos pixels | **Não passa** (18/11, job `g1_legacy_grid4`, `DONE.json` OK, commit `826d50b` da `colab/results`): S0 0,954 / hand 0,998; **S1 0,377 / 0,411**; S2 0,300 / 0,270. Passa só em S2 (V26) |
 | G1 ajuste fino | saída `ft` × hand, top-1 nas janelas de **teste** da v1, S1 e S2 (pré-especificado em V26) | **PASSOU** (19/11, `g1_legacy_ftA`; V29): S1 0,460 × 0,368; S2 0,332 × 0,239. Descritor da v3: `dinov2_vits14_ft<dobra>` |
