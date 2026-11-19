@@ -1,31 +1,32 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 18/11/2026, ≈ 23:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Repassar à IA-2 (dados de Canoas e Valência, ver `DECISIONS_V3.md` V21):**
-   - Canoas: a **caixa da AOI** (lon/lat) usada para contar as 42 janelas, e o **prior recortado** `canoas_prior_emsn194_10m.tif` em `MyDrive/drone_v3/prior/` (o raster de Porto Alegre não chega a Mathias Velho);
-   - Valência: **um par de COGs** pré/pós (ou o mosaico) com as URLs, a AOI e o prior do EMSR773 em raster.
-2. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta). Ponto novo: o G1 preliminar reprovou o DINOv2 zero-shot (ver Gates); o rascunho já prevê usar o hand se nenhum descritor aprendido o superar.
-3. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
+1. **Avisar a IA-2:** rodar `finetune_A` (prioridade 1; ~170 min, retomável) e depois `g1_legacy_ftA` (~20 min). O `CURRENT_COMMIT` mudou (o ajuste fino agora grava a cabeça de projeção junto do backbone). Nada mais está `queued`.
+2. **Autorizar o reinício da extração local do hand** (2 processos, ~1 GB). Agora ela é **caminho crítico**: se o ajuste fino não passar no G1, o artigo usa o hand nas specs v3. Comando: `cd dal_v3 && PYTHONPATH=$PWD/src .venv/bin/python scripts/extract_hand_v3_local.py --site taquari --altitudes 100 --workers 2`.
+3. **Valência:** confirmar com a IA-2 a data das fontes do EMSR773 (precisa ser ≤ 31/10/2024) e as URLs dos dois COGs.
+4. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta).
+5. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
 
-Resolvido: figuras do prior aprovadas; terceira área = **Canoas**; evento externo = **Valência**.
+Resolvido: figuras do prior aprovadas; Canoas (AOI e prior) e Valência (par, AOI, prior) recebidos e registrados em V27.
 
 ## Gates
 
 | Gate | Situação | Número |
 |---|---|---|
-| G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); 3ª área e evento externo: decisão do Vitor |
-| G1 preliminar | **DINOv2 GeM global não supera o hand**; descritor em grade 4 × 4 em teste | GeM / hand: S1 0,139 / 0,411; S2 0,063 / 0,270. Diagnóstico local: grade 4 × 4 multiplica o top-1 do GeM por 2,4 (S1). **Job `g1_legacy_grid4` (prioridade 1) decide**; o resto da fila está `on_hold` |
+| G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); Canoas: EMSN194 recortado; Valência: EMSR773 (falta conferir a data das fontes) |
+| G1 zero-shot | **Nenhum DINOv2 zero-shot supera o hand.** O grid4 passa só em S2 | top-1 no treino (mesmos pixels), GeM / grid4 / hand: S1 0,139 / **0,377** / 0,411; S2 0,063 / **0,300** / 0,270 (V26) |
+| G1 ajuste fino | pendente; critério pré-especificado em V26: top-1 da saída `ft` acima do hand nas **janelas de teste** da v1 em S1 e S2 | referência local (hand v1, pixels JPEG, janelas de teste): S1 0,366; S2 0,239. A do G1 sai do hand nos pixels do COG, calculada no mesmo job |
 | G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
 | G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
 | G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |
 
 ## Rodando agora
 
-- **Local: parado.** A extração do hand nas specs v3 (Taquari, 100 m) foi interrompida por falta de memória (V25). As imagens baixadas estão em `data_v3/raw/`. **[AÇÃO DO VITOR]** autorizar o reinício com 2 processos (~1 GB no total): `cd dal_v3 && PYTHONPATH=$PWD/src .venv/bin/python scripts/extract_hand_v3_local.py --site taquari --altitudes 100 --workers 2`.
-- **Colab: só `g1_legacy_grid4` está `queued`** (G1 oficial do DINOv2 com GeM espacial 4 × 4). O resto da fila está `on_hold` até esse resultado: as extrações com GeM global foram trocadas por `v3_grid4_*` (PCA por dobra, V23), e o `finetune_A` passou a usar pooling em grade e negativos vizinhos (V24).
+- **Colab:** `finetune_A` (`queued`, prioridade 1) → `g1_legacy_ftA` (`queued`, depende dele). Os `v3_extract_ft_*` (saída `ft`, 256 dim) e a calibração ficam `on_hold` até o G1 do ajuste fino; os `v3_grid4_*` ficam `on_hold` porque o grid4 não passou.
+- **Local: parada** (V25), esperando autorização (item 2 acima).
 
 ## Feito hoje
 
@@ -57,7 +58,7 @@ Nenhum.
 
 ## Próximos passos (IA-1)
 
-1. Conferir o G1 preliminar quando a IA-2 publicar (`colab_out/g1_legacy_dinov2/`).
-2. Esqueleto LaTeX em `paper/` com macros de números lidas dos CSVs; Fig. 1 em rascunho.
-3. Avaliação, estatística (rliable) e geração de vereditos e figuras da v3 a partir dos episódios.
+1. Conferir o `g1_legacy_ftA` quando a IA-2 publicar e decidir o descritor pelo critério de V26.
+2. Se o ajuste fino passar: liberar `v3_extract_ft_*` (Taquari primeiro) e `calibrate_A_ftA`. Se não: hand nas specs v3 (local) e calibração com ele.
+3. Sites Canoas e Valência em `specs.py` (Valência precisa de CRS por local).
 4. Depois da sua revisão: §2 do `DECISIONS_V3.md` commitada; pilotos (G3, G4) e matriz.

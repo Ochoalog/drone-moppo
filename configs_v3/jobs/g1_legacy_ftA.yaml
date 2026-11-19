@@ -1,0 +1,18 @@
+# G1 do ajuste fino (dobra A, pooling 4 × 4, negativos vizinhos): saída da cabeça ("ft", 256 dim) nos recortes
+# exatos da v1. O ajuste fino viu a faixa de treino, então o G1 dele usa as janelas da faixa de TESTE da v1 (sul,
+# dentro da faixa de teste da dobra A) e compara com o hand e o grid4 zero-shot nas mesmas janelas (V26).
+spec: colab/specs/legacy_50m.parquet
+output_dir: features/legacy_50m/dinov2_vits14_ftA
+model: dinov2_vits14_ftA
+hub_model: dinov2_vits14
+weights: /content/drive/MyDrive/drone_v3/finetune/finetune_A/backbone.pt
+input_px: 224
+batch_size: 256
+chunk_rows: 20000
+also_hand: false
+outputs: [ft]
+margin_m: 50.0
+g1_splits: [train, test]
+g1_compare:  # descritores já no Drive, avaliados nas mesmas janelas de teste
+  - features/legacy_50m/dinov2_vits14/hand.npy
+  - features/legacy_50m/dinov2_vits14_grid4/grid4.npy

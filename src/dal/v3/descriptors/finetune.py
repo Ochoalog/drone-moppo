@@ -210,7 +210,9 @@ def train(cfg: FinetuneConfig, out_dir: Path, device: str, backbone: nn.Module |
                 "history": history}, checkpoint)
     finished = step >= cfg.steps
     if finished:
-        torch.save({"backbone": model.backbone.state_dict()}, out_dir / "backbone.pt")
+        # A cabeça e o pooling vão junto: o descritor do ajuste fino é a saída da cabeça (saída "ft" do extrator).
+        torch.save({"backbone": model.backbone.state_dict(), "head": model.head.state_dict(),
+                    "pooling": cfg.pooling}, out_dir / "backbone.pt")
     window = max(1, min(100, len(history) // 5))  # janela das médias: até 100 passos, no máximo 1/5 do total
     summary = {"step": step, "finished": finished, "loss_window": window,
                "loss_first": float(np.mean(history[:window])) if history else None,

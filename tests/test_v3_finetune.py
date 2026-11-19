@@ -75,3 +75,26 @@ def test_neighbor_negatives_stay_in_training_cells_and_include_neighbours():
     rows, cols = cells // n_cols, cells % n_cols
     close = (np.abs(rows[:, None] - rows[None]) <= 3) & (np.abs(cols[:, None] - cols[None]) <= 3)
     assert (close.sum(1) > 1).mean() > 0.5  # a maioria das células tem uma vizinha no lote
+
+
+def test_extractor_ft_output_matches_trained_head(tmp_path):
+    """A saída "ft" do extrator é a mesma embedding da cabeça treinada (pesos gravados em backbone.pt)."""
+    from dal.v3.descriptors.extract import DinoV2Extractor, preprocess_for_dino
+
+    cfg = finetune.FinetuneConfig(steps=2, batch_size=8, checkpoint_minutes=0.0, trainable_blocks=1,
+                                  projection_dim=8, pooling="grid4")
+    backbone = TinyBackbone()
+    sampler = FakeSampler(batch=8)
+    sampler.patterns = torch.rand(64, 3, 32, 32)  # 32 px → 4 × 4 tokens: dá para a grade 4 × 4
+    finetune.train(cfg, tmp_path, "cpu", backbone=backbone, embed_dim=8, sampler=sampler,
+                   log=lambda *_: None)
+    state = torch.load(tmp_path / "backbone.pt")
+    assert state["pooling"] == "grid4" and "head" in state
+    extractor = DinoV2Extractor("tiny", 32, "cpu", model=TinyBackbone(), weights=str(tmp_path / "backbone.pt"),
+                                outputs=("ft",))
+    crops = torch.randint(0, 255, (4, 40, 40, 3), dtype=torch.uint8)
+    model = finetune.ContrastiveModel(backbone, 8, 8, 1, "grid4").eval()
+    model.head.load_state_dict(state["head"])
+    with torch.no_grad():
+        expected = model(preprocess_for_dino(crops, 32)).numpy()
+    np.testing.assert_allclose(extractor(crops)["ft"].astype(np.float32), expected, atol=2e-3)

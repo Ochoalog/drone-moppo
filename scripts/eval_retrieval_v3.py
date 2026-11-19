@@ -57,8 +57,13 @@ def raw_arrays_hand_v1(map_date: str):
     return np.load(features / f"hand_{map_date}_map.npy"), np.load(features / "hand_post_obs.npy")
 
 
-def retrieval_for_scenario(config: dict, scenario: str, map_raw: np.ndarray, obs_raw: np.ndarray) -> dict:
-    """Padroniza como a v1 e roda `window_stats` no ScenarioData da v1 com os descritores trocados."""
+def retrieval_for_scenario(config: dict, scenario: str, map_raw: np.ndarray, obs_raw: np.ndarray,
+                           split: str = "train") -> dict:
+    """Padroniza como a v1 e roda `window_stats` no ScenarioData da v1 com os descritores trocados.
+
+    `split="test"`: as janelas saem da faixa de teste da v1 (sul, que fica dentro da faixa de teste da dobra A
+    da v3); usado no G1 do ajuste fino, que viu a faixa de treino. A padronização continua com o treino.
+    """
     data_cfg = config["data"]
     grid = Grid.from_aoi(**data_cfg["aoi"], cell=data_cfg["cell_m"])
     train_rows, _ = grid.split_rows(data_cfg["split_lat"], data_cfg["split_margin_m"])
@@ -75,6 +80,8 @@ def retrieval_for_scenario(config: dict, scenario: str, map_raw: np.ndarray, obs
                         obs_desc=obs_desc.astype(np.float32), map_ok=masks[f"{map_date}_ok"], obs_ok=masks["post_ok"],
                         distinct=np.zeros((rows, cols), np.float32), pca=np.zeros((1, rows, cols), np.float32),
                         train_rows=train_rows, test_rows=test_rows, beta=1.0)
+    if split == "test":  # window_stats sorteia janelas de data.train_rows: aponta para a faixa de teste
+        data.train_rows = test_rows
     return window_stats(data, int(config["filter"]["window"]), V1_RETRIEVAL_WINDOWS, V1_RETRIEVAL_SEED,
                         config["filter"]["min_window_valid"])
 
@@ -85,6 +92,8 @@ def main() -> None:
     parser.add_argument("--spec", default="colab/specs/legacy_50m.parquet")
     parser.add_argument("--name", required=True)
     parser.add_argument("--scenarios", nargs="*", default=["S0", "S1", "S2"])
+    parser.add_argument("--split", choices=["train", "test"], default="train",
+                        help="faixa das janelas: treino (G1 zero-shot) ou teste (G1 do ajuste fino)")
     parser.add_argument("--out", default=str(OUT), help="pasta do CSV (no Colab: colab_out/<job_id>)")
     args = parser.parse_args()
 
@@ -103,16 +112,18 @@ def main() -> None:
             map_raw, obs_raw = raw_arrays_hand_v1(map_date)
         else:
             map_raw, obs_raw = raw_arrays_from_spec(spec, descriptors, n_cells, map_date)
-        stats = retrieval_for_scenario(config, scenario, map_raw, obs_raw)
-        rows.append({"descriptor": args.name, "scenario": scenario, **stats})
+        stats = retrieval_for_scenario(config, scenario, map_raw, obs_raw, args.split)
+        rows.append({"descriptor": args.name, "scenario": scenario, "split": args.split, **stats})
         print(f"[retrieval] {args.name} {scenario}: top1 {stats['top1']:.3f} top5 {stats['top5']:.3f} "
               f"top1(<=1) {stats['top1_within1']:.3f}", flush=True)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     table = with_provenance(pd.DataFrame(rows), source_file=str(args.descriptors), config=config,
-                            protocol=f"window_stats v1: {V1_RETRIEVAL_WINDOWS} janelas de treino 64x64, semente 0",
-                            fold="A (treino norte)", region="taquari")
-    table.to_csv(out / f"{args.name}.csv", index=False)
+                            protocol=f"window_stats v1: {V1_RETRIEVAL_WINDOWS} janelas de {args.split} 64x64, "
+                                     "semente 0",
+                            fold="A (treino norte)" if args.split == "train" else "A (teste sul)",
+                            region="taquari")
+    table.to_csv(out / f"{args.name}{'_test' if args.split == 'test' else ''}.csv", index=False)
 
 
 if __name__ == "__main__":

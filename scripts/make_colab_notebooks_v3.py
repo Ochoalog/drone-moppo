@@ -40,16 +40,20 @@ SETUP_CELLS = [
 
 
 G1_EVAL_CELL = new_code_cell(
-    "# G1 preliminar: recuperação com a mesma função do REPORT.md §2 (window_stats), no próprio Colab.\n"
-    "import json, yaml\n"
+    "# G1: recuperação com a mesma função do REPORT.md §2 (window_stats), no próprio Colab.\n"
+    "# g1_splits: faixas das janelas (o ajuste fino usa a de teste); g1_compare: descritores já no Drive, nas mesmas janelas.\n"
+    "import json, yaml, pathlib\n"
     "cfg = yaml.safe_load(open(f'/content/repo/{JOB_CONFIG}'))\n"
-    "base = f\"/content/drive/MyDrive/drone_v3/{cfg['output_dir']}\"\n"
-    "import pathlib\n"
-    "names = [f.stem for f in sorted(pathlib.Path(base).glob('*.npy')) if f.stem not in ('valid_frac', 'cloud_frac')]\n"
-    "for name in names:\n"
-    "    subprocess.run([sys.executable, 'scripts/eval_retrieval_v3.py', '--spec', cfg['spec'], '--descriptors',\n"
-    "                    f'{base}/{name}.npy', '--name', f'{JOB_ID}_{name}', '--out', f'colab_out/{JOB_ID}'],\n"
-    "                   cwd='/content/repo', check=True)")
+    "drive = '/content/drive/MyDrive/drone_v3'\n"
+    "base = f\"{drive}/{cfg['output_dir']}\"\n"
+    "files = [f for f in sorted(pathlib.Path(base).glob('*.npy')) if f.stem not in ('valid_frac', 'cloud_frac')]\n"
+    "files += [pathlib.Path(drive) / extra for extra in cfg.get('g1_compare', [])]\n"
+    "for split in cfg.get('g1_splits', ['train']):\n"
+    "    for path in files:\n"
+    "        name = path.stem if path.parent == pathlib.Path(base) else f'{path.parent.name}_{path.stem}'\n"
+    "        subprocess.run([sys.executable, 'scripts/eval_retrieval_v3.py', '--spec', cfg['spec'], '--descriptors',\n"
+    "                        str(path), '--name', f'{JOB_ID}_{name}', '--split', split, '--out', f'colab_out/{JOB_ID}'],\n"
+    "                       cwd='/content/repo', check=True)")
 
 
 def job_notebook(title: str, description: str, module_command: str, default_job: str,
@@ -104,8 +108,8 @@ def main() -> None:
             "dal.v3.jobs", "eval_pilot_A"),
         "02_dinov2_features.ipynb": job_notebook(
             "02 · Descritores DINOv2 a partir de uma spec",
-            "Renderiza os recortes da spec na GPU (`dal.v3.sensor.render`), extrai DINOv2 (GeM e CLS) e, se a config "
-            "pedir, o hand da v1 nos mesmos pixels. Grava `float16 [N, D]` em `MyDrive/drone_v3/<output_dir>/` com "
+            "Renderiza os recortes da spec na GPU (`dal.v3.sensor.render`), extrai DINOv2 (GeM, CLS, grade ou a saída "
+            "`ft` do ajuste fino, conforme `outputs`) e, se a config pedir, o hand da v1 nos mesmos pixels. Grava `float16 [N, D]` em `MyDrive/drone_v3/<output_dir>/` com "
             "`MANIFEST.sha256`, e o resumo em `colab_out/<job_id>/`.",
             "dal.v3.descriptors.extract", "g1_legacy_dinov2", extra_cells=[G1_EVAL_CELL]),
     }

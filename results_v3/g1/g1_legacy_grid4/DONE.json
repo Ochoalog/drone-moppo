@@ -1,0 +1,24 @@
+{
+ "job_id": "g1_legacy_grid4",
+ "git_commit": "b630f1989e55f8bb6e41e7341ebcf52d6232c762",
+ "config_hash": "02ccc77d0d966c8a",
+ "gpu_minutes": 12.7,
+ "started_at": "2026-11-18T21:56:02+00:00",
+ "finished_at": "2026-11-18T22:08:44+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "n_rows": 323595,
+  "rendered_this_session": 323595,
+  "descriptors": [
+   "gem",
+   "grid4",
+   "valid_frac",
+   "cloud_frac"
+  ],
+  "crops_per_second": 424.77104950993544,
+  "device": "cuda",
+  "gpu_name": "Tesla T4"
+ },
+ "artifacts": "/content/drive/MyDrive/drone_v3/features/legacy_50m/dinov2_vits14_grid4"
+}

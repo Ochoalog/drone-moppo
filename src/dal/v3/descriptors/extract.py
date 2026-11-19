@@ -51,23 +51,38 @@ def grid_gem(patches: torch.Tensor, grid: int) -> torch.Tensor:
     return cells.clamp(min=1e-6).pow(GEM_P).mean(dim=2).pow(1.0 / GEM_P).reshape(n, grid * grid * dim)
 
 
+def head_from_state(state: dict) -> torch.nn.Module:
+    """Reconstrói a cabeça de projeção do ajuste fino (Linear → ReLU → Linear) a partir dos pesos gravados."""
+    hidden, embed = state["0.weight"].shape
+    projection = state["2.weight"].shape[0]
+    head = torch.nn.Sequential(torch.nn.Linear(embed, hidden), torch.nn.ReLU(), torch.nn.Linear(hidden, projection))
+    head.load_state_dict(state)
+    return head
+
+
 class DinoV2Extractor:
     """DINOv2 (torch.hub) com GeM sobre os tokens de patch e o token CLS; entrada redimensionada para input_px."""
 
     def __init__(self, model_name: str, input_px: int, device: str, model=None, weights: str | None = None,
                  grids: tuple[int, ...] = (), outputs: tuple[str, ...] = ("gem", "cls")):
         self.model = model if model is not None else torch.hub.load("facebookresearch/dinov2", model_name)
+        self.head, self.head_pooling = None, "gem"
         if weights:
-            # Pesos do ajuste fino contrastivo (só o backbone; a cabeça de projeção não entra no descritor).
+            # Pesos do ajuste fino contrastivo: backbone e, se houver, a cabeça de projeção (saída "ft").
             state = torch.load(weights, map_location="cpu")
             self.model.load_state_dict(state.get("backbone", state), strict=False)
+            if "head" in state:
+                self.head = head_from_state(state["head"]).eval().to(device)
+                self.head_pooling = state.get("pooling", "gem")
+        if "ft" in outputs and self.head is None:
+            raise ValueError("saída 'ft' pede pesos do ajuste fino com a cabeça de projeção")
         self.model = self.model.eval().to(device)
         self.input_px, self.device = input_px, device
         self.mean = torch.tensor(IMAGENET_MEAN, device=device).view(1, 3, 1, 1)
         self.std = torch.tensor(IMAGENET_STD, device=device).view(1, 3, 1, 1)
         self.use_half = device.startswith("cuda")
         self.grids = tuple(grids)  # saídas extras "grid<k>": GeM espacial k × k (opcional)
-        self.outputs = tuple(outputs)  # quais descritores globais gravar ("gem", "cls")
+        self.outputs = tuple(outputs)  # quais descritores gravar ("gem", "cls", "ft" = saída da cabeça)
 
     @torch.inference_mode()
     def __call__(self, crops: torch.Tensor) -> dict[str, np.ndarray]:
@@ -82,6 +97,10 @@ class DinoV2Extractor:
             out["cls"] = features["x_norm_clstoken"].float()
         for grid in self.grids:
             out[f"grid{grid}"] = grid_gem(patches, grid)
+        if "ft" in self.outputs:
+            pooled = grid_gem(patches, 4) if self.head_pooling == "grid4" else (
+                patches.clamp(min=1e-6).pow(GEM_P).mean(dim=1).pow(1.0 / GEM_P))
+            out["ft"] = torch.nn.functional.normalize(self.head(pooled), dim=-1)
         return {name: value.cpu().numpy().astype(np.float16) for name, value in out.items()}
 
 

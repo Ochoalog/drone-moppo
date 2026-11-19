@@ -1,6 +1,7 @@
 # Notebook 04 (kind: calibrate): β₁ por altitude, κ e α na faixa de treino da dobra A (Taquari, cenário S2).
 kind: calibrate
 descriptor: dinov2_vits14_ftA
+feature: ft   # V26: saída da cabeça do ajuste fino
 fold: A
 scenario: S2
 episodes: 200
