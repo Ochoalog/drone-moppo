@@ -1,0 +1,17 @@
+{
+ "job_id": "finetune_A",
+ "git_commit": "efe1aad2ea7cd0bb3a1b61033f56276cd688edce",
+ "config_hash": "86c29b2096de8da3",
+ "gpu_minutes": 57.95,
+ "started_at": "2026-11-19T02:49:37+00:00",
+ "finished_at": "2026-11-19T03:47:35+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "step": 6000,
+  "finished": true,
+  "loss_window": 100,
+  "loss_first": 3.548971061706543,
+  "loss_last": 1.1079139801859856
+ }
+}

@@ -1,6 +1,6 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 19/11/2026, ≈ 00:30 (`finetune_A` rodando no Colab; extração local do hand reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 23:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 19/11/2026, 04:50 (`finetune_A` OK: 6000 passos, perda 3,55 → 1,11, 58 min de GPU; `g1_legacy_ftA` é o próximo. Extração local parada pela proteção de memória às 04:44, com o mapa `pre_mar23` de 100 m completo). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
@@ -23,8 +23,8 @@ Resolvido: figuras do prior aprovadas; Canoas (AOI e prior) e Valência (par, AO
 
 ## Rodando agora
 
-- **Colab:** `finetune_A` (iniciado pela IA-2 no commit `efe1aad`) → `g1_legacy_ftA`. O resto está `on_hold`.
-- **Local:** extração do hand nas specs v3 (Taquari, 100 m, 2 processos), reiniciada em 19/11 com autorização do Vitor; log em `runs_v3/hand_extract_taquari_100m.log`.
+- **Colab:** `finetune_A` **concluído** (`DONE.json` validado; `results_v3/finetune/finetune_A/`). Próximo: `g1_legacy_ftA` (~20 min), que decide o descritor (V26).
+- **Local: parada às 04:44** pela proteção de memória (livre < 1,8 GB com outros processos da máquina). Pronto: `v3_taquari_pre_mar23_map_100m` (262.341 recortes, 222 min); `pre_oct23` com 5 blocos. Ritmo ~1.200 recortes/min: as 100 m inteiras levariam ~25 h localmente; no Colab, ~2 h. Não reiniciei.
 
 ## Feito hoje
 
