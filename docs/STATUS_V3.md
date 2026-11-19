@@ -1,12 +1,10 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 18/11/2026, ≈ 23:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 19/11/2026, ≈ 00:30 (`finetune_A` rodando no Colab; extração local do hand reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 23:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Avisar a IA-2:** rodar `finetune_A` (prioridade 1; ~170 min, retomável) e depois `g1_legacy_ftA` (~20 min). O `CURRENT_COMMIT` mudou (o ajuste fino agora grava a cabeça de projeção junto do backbone). Nada mais está `queued`.
-2. **Autorizar o reinício da extração local do hand** (2 processos, ~1 GB). Agora ela é **caminho crítico**: se o ajuste fino não passar no G1, o artigo usa o hand nas specs v3. Comando: `cd dal_v3 && PYTHONPATH=$PWD/src .venv/bin/python scripts/extract_hand_v3_local.py --site taquari --altitudes 100 --workers 2`.
-3. **Valência:** confirmar com a IA-2 a data das fontes do EMSR773 (precisa ser ≤ 31/10/2024) e as URLs dos dois COGs.
+1. **Valência (V28):** o prior do EMSR773 parece ter sido desenhado sobre a **mesma** imagem WorldView-2 de 31/10 10:22 que usaríamos como pós-evento, ou seja, não é independente. Decidir: (a) usar Valência com o prior rotulado "otimista" (como Porto Alegre); (b) pedir à IA-2 um prior do Sentinel-1 (29–30/10); (c) cortar Valência (é o primeiro corte da §8). Confirmar também com a IA-2: AOI01 ou AOI03; pré `103001010890C000` ou `105001003E84F500`; AOI de 225 km² ou a caixa de ~12 km².
 4. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta).
 5. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
 
@@ -25,8 +23,8 @@ Resolvido: figuras do prior aprovadas; Canoas (AOI e prior) e Valência (par, AO
 
 ## Rodando agora
 
-- **Colab:** `finetune_A` (`queued`, prioridade 1) → `g1_legacy_ftA` (`queued`, depende dele). Os `v3_extract_ft_*` (saída `ft`, 256 dim) e a calibração ficam `on_hold` até o G1 do ajuste fino; os `v3_grid4_*` ficam `on_hold` porque o grid4 não passou.
-- **Local: parada** (V25), esperando autorização (item 2 acima).
+- **Colab:** `finetune_A` (iniciado pela IA-2 no commit `efe1aad`) → `g1_legacy_ftA`. O resto está `on_hold`.
+- **Local:** extração do hand nas specs v3 (Taquari, 100 m, 2 processos), reiniciada em 19/11 com autorização do Vitor; log em `runs_v3/hand_extract_taquari_100m.log`.
 
 ## Feito hoje
 
