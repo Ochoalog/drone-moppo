@@ -1,0 +1,21 @@
+# Notebook 03: ajuste fino contrastivo do DINOv2 (InfoNCE), só na faixa de treino da dobra C do Taquari.
+site: taquari
+fold: C
+map_dates: [pre_mar23, pre_oct23]
+altitudes: [60, 100, 150]
+model: dinov2_vits14
+trainable_blocks: 4
+projection_dim: 256
+temperature: 0.07
+batch_size: 64
+steps: 6000
+learning_rate: 2.0e-5
+head_learning_rate: 1.0e-3
+input_px: 224
+checkpoint_minutes: 15.0
+max_minutes: 170.0
+seed: 0
+# V22/V24: pooling espacial 4 × 4 e negativos difíceis (vizinhas a 1–3 células), porque o G1 mostrou que o
+# GeM global não separa células vizinhas.
+pooling: grid4
+neighbor_negatives: 3

@@ -1,0 +1,10 @@
+# Notebook 01 com os pesos do ajuste fino da dobra C (o ajuste fino só viu a faixa de treino do Taquari).
+site: taquari
+altitudes: [60]
+model: dinov2_vits14_ftC
+hub_model: dinov2_vits14
+weights: /content/drive/MyDrive/drone_v3/finetune/finetune_C/backbone.pt
+input_px: 224
+batch_size: 256
+chunk_rows: 50000
+outputs: [ft]   # V26: saída da cabeça do ajuste fino (256 dim, pooling 4 × 4); comprimida, sem PCA

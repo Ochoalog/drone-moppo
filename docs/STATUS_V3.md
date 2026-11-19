@@ -1,10 +1,12 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 19/11/2026, 04:50 (`finetune_A` OK: 6000 passos, perda 3,55 → 1,11, 58 min de GPU; `g1_legacy_ftA` é o próximo. Extração local parada pela proteção de memória às 04:44, com o mapa `pre_mar23` de 100 m completo). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 19/11/2026, ≈ 08:15 (**G1 aprovado com o ajuste fino**, V29; fila liberada para as extrações `ft`, a calibração da dobra A e o ajuste fino das dobras B e C). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Valência (V28):** o prior do EMSR773 parece ter sido desenhado sobre a **mesma** imagem WorldView-2 de 31/10 10:22 que usaríamos como pós-evento, ou seja, não é independente. Decidir: (a) usar Valência com o prior rotulado "otimista" (como Porto Alegre); (b) pedir à IA-2 um prior do Sentinel-1 (29–30/10); (c) cortar Valência (é o primeiro corte da §8). Confirmar também com a IA-2: AOI01 ou AOI03; pré `103001010890C000` ou `105001003E84F500`; AOI de 225 km² ou a caixa de ~12 km².
+1. **Avisar a IA-2:** a fila está liberada (ver "Rodando agora"); o `CURRENT_COMMIT` mudou (configs novas das dobras B e C).
+2. **Espaço no Drive:** as saídas `ft` somam ~11 GB (3 dobras × 3 altitudes no Taquari + POA). Se faltar espaço, os `.npy` de 6144 dim do G1 (`features/legacy_50m/dinov2_vits14_grid4/grid4.npy`, ~4 GB) podem sair, mas só com a sua autorização (é apagar resultado).
+3. **Valência (V28):** o prior do EMSR773 parece ter sido desenhado sobre a **mesma** imagem WorldView-2 de 31/10 10:22 que usaríamos como pós-evento, ou seja, não é independente. Decidir: (a) usar Valência com o prior rotulado "otimista" (como Porto Alegre); (b) pedir à IA-2 um prior do Sentinel-1 (29–30/10); (c) cortar Valência (é o primeiro corte da §8). Confirmar também com a IA-2: AOI01 ou AOI03; pré `103001010890C000` ou `105001003E84F500`; AOI de 225 km² ou a caixa de ~12 km².
 4. **Revisar `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`** (quinta).
 5. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
 
@@ -15,16 +17,15 @@ Resolvido: figuras do prior aprovadas; Canoas (AOI e prior) e Valência (par, AO
 | Gate | Situação | Número |
 |---|---|---|
 | G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); Canoas: EMSN194 recortado; Valência: EMSR773 (falta conferir a data das fontes) |
-| G1 zero-shot | **Nenhum DINOv2 zero-shot supera o hand.** O grid4 passa só em S2 | top-1 no treino (mesmos pixels), GeM / grid4 / hand: S1 0,139 / **0,377** / 0,411; S2 0,063 / **0,300** / 0,270 (V26) |
-| G1 ajuste fino | pendente; critério pré-especificado em V26: top-1 da saída `ft` acima do hand nas **janelas de teste** da v1 em S1 e S2 | referência local (hand v1, pixels JPEG, janelas de teste): S1 0,366; S2 0,239. A do G1 sai do hand nos pixels do COG, calculada no mesmo job |
+| G1 | **PASSOU com o ajuste fino** (V29); zero-shot não passou | top-1 nas janelas de teste, ft / hand / grid4: S1 0,460 / 0,368 / 0,401; S2 0,332 / 0,239 / 0,283. Atenção: S0 0,906 / 0,996 / 0,956 (risco para o G3) |
 | G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
 | G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
 | G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |
 
 ## Rodando agora
 
-- **Colab:** `finetune_A` **concluído** (`DONE.json` validado; `results_v3/finetune/finetune_A/`). Próximo: `g1_legacy_ftA` (~20 min), que decide o descritor (V26).
-- **Local: parada às 04:44** pela proteção de memória (livre < 1,8 GB com outros processos da máquina). Pronto: `v3_taquari_pre_mar23_map_100m` (262.341 recortes, 222 min); `pre_oct23` com 5 blocos. Ritmo ~1.200 recortes/min: as 100 m inteiras levariam ~25 h localmente; no Colab, ~2 h. Não reiniciei.
+- **Colab (`queued`, nesta ordem):** `v3_extract_ft_taquari_{100,60,150}m` (~70 min cada) → `v3_extract_ft_poa_*` → `calibrate_A_ftA` → `finetune_B`, `finetune_C` (~60 min cada) → extrações das dobras B e C no Taquari. Total ≈ 13 h de GPU.
+- **Local:** parada (proteção de memória, 04:44). Não é mais caminho crítico: o hand fica para a ablação.
 
 ## Feito hoje
 
