@@ -126,7 +126,8 @@ def train_job(job: dict, out_root: Path, device: str, job_id: str) -> dict:
                         drift)
     cfg = PPOTrainConfig(total_timesteps=int(job["total_timesteps"]), n_envs=int(job.get("n_envs", 512)),
                          seed=int(job["seed"]), change_prior_input=prior_channel,
-                         gate_min_advantage_over_random=float(job.get("gate_min_advantage", 0.05)))
+                         gate_min_advantage_over_random=float(job.get("gate_min_advantage", 0.05)),
+                         gate_flight_time_ratio=job.get("gate_flight_time_ratio"))
     run_dir = work_dir(out_root, job["descriptor"], job["fold"]) / "runs" / job_id
     final = train(env, gate_env, cfg, run_dir, device)
     summary = json.loads((final / "train_summary.json").read_text())

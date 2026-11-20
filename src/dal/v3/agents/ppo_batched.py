@@ -54,6 +54,7 @@ class PPOTrainConfig:
     gate_fraction: float = 0.25
     gate_episodes: int = 200
     gate_min_advantage_over_random: float = 0.05
+    gate_flight_time_ratio: float | None = None  # emenda opcional do gate (ver learning_gate)
 
 
 class PolicyAdapter:
@@ -98,14 +99,30 @@ def build_network(env: RealisticBatchedEnv, cfg: PPOTrainConfig, device: str) ->
 
 
 def learning_gate(env: RealisticBatchedEnv, net: MOPPONetwork, cfg: PPOTrainConfig) -> dict:
-    """Sucesso da política (amostrada) − sucesso da aleatória nos mesmos episódios de treino."""
+    """Sucesso da política (amostrada) − sucesso da aleatória nos mesmos episódios de treino.
+
+    Registra também localização falsa e tempo de voo médio nos sucessos dos dois (informativo). Com
+    `gate_flight_time_ratio` definido (emenda opcional, só se registrada no DECISIONS_V3.md), o gate também passa
+    se a política não perder mais de 2 p.p. de sucesso e voar no máximo essa fração do tempo da aleatória.
+    """
     seeds = [GATE_SEED_BASE + i for i in range(cfg.gate_episodes)]
     policy = NetworkPolicy(net, PolicyAdapter(cfg.change_prior_input), deterministic=False)
-    policy_success = float(run_policy(env, policy, seeds).success.float().mean())
-    random_success = float(run_policy(env, RandomPolicy(), seeds).success.float().mean())
-    advantage = policy_success - random_success
-    return {"policy_success": policy_success, "random_success": random_success, "advantage": advantage,
-            "threshold": cfg.gate_min_advantage_over_random, "passed": advantage >= cfg.gate_min_advantage_over_random}
+    stats = {}
+    for name, runner in (("policy", policy), ("random", RandomPolicy())):
+        env_run = run_policy(env, runner, seeds)
+        success = env_run.success.bool()
+        stats[f"{name}_success"] = float(success.float().mean())
+        stats[f"{name}_false_loc"] = float(env_run.false_loc.float().mean())
+        flight = env_run.flight_time_s.float()
+        stats[f"{name}_flight_time_success_s"] = float(flight[success].mean()) if success.any() else float("nan")
+    advantage = stats["policy_success"] - stats["random_success"]
+    passed = advantage >= cfg.gate_min_advantage_over_random
+    if cfg.gate_flight_time_ratio is not None and not passed:
+        ratio = stats["policy_flight_time_success_s"] / stats["random_flight_time_success_s"]
+        stats["flight_time_ratio"] = ratio
+        passed = advantage >= -0.02 and ratio <= cfg.gate_flight_time_ratio
+    return {**stats, "advantage": advantage, "threshold": cfg.gate_min_advantage_over_random,
+            "flight_time_ratio_threshold": cfg.gate_flight_time_ratio, "passed": bool(passed)}
 
 
 def _reward(cfg: PPOTrainConfig, entropy_before, entropy_after, outcome) -> torch.Tensor:

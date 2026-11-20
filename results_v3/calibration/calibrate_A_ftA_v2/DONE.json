@@ -1,0 +1,25 @@
+{
+ "job_id": "calibrate_A_ftA_v2",
+ "git_commit": "3da89d14d9aa800db9daebdfe0f11685503d7c32-dirty",
+ "config_hash": "105f61c616381029",
+ "gpu_minutes": 7.04,
+ "started_at": "2026-11-20T19:31:31+00:00",
+ "finished_at": "2026-11-20T19:38:34+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "beta1": {
+   "60": 18.635,
+   "100": 28.898,
+   "150": 28.898
+  },
+  "kappa": 0.04,
+  "beta": {
+   "60": 0.7454000000000001,
+   "100": 1.15592,
+   "150": 1.15592
+  },
+  "alpha": 0.0,
+  "has_prior": true
+ }
+}

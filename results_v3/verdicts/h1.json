@@ -1,0 +1,36 @@
+{
+ "verdict": "suportada",
+ "S1": {
+  "estimate": 0.09195395207659847,
+  "low": 0.08344457024564692,
+  "high": 0.10096566020585925
+ },
+ "S2": {
+  "estimate": 0.09211015764292403,
+  "low": 0.0838948703358179,
+  "high": 0.09998794444986325
+ },
+ "counts": {
+  "S1": {
+   "queries": 162092,
+   "cells": 15732,
+   "top1_learned": 0.46033116995286627,
+   "top1_hand": 0.3683772178762678
+  },
+  "S2": {
+   "queries": 155922,
+   "cells": 14720,
+   "top1_learned": 0.3315760444324726,
+   "top1_hand": 0.2394658867895486
+  }
+ },
+ "source_file": [
+  "/storage/projects/RL_project_final/dal_v3/results_v3/h1/h1_retrieval_ftA/h1_retrieval_ftA_ft_test_queries.npz",
+  "/storage/projects/RL_project_final/dal_v3/results_v3/h1/h1_retrieval_ftA/h1_retrieval_ftA_dinov2_vits14_hand_test_queries.npz"
+ ],
+ "protocol": "window_stats v1, 20 janelas de teste 64x64, semente 0; bootstrap de células consulta",
+ "n_boot": 2000,
+ "fold": "A (teste sul)",
+ "region": "taquari",
+ "git_commit": "a0a91be6b9bf38abf1b558cfc03b116d435215d7"
+}
