@@ -8,5 +8,6 @@ method: ppo_ca_alt
 seed: 0
 total_timesteps: 1400000
 n_envs: 512
+calibration_file: calibration_v2.json   # V33
 prior:
   taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif

@@ -1,0 +1,9 @@
+region,scenario,method,success,false_loc,flight_time_s
+taquari,S0,lawnmower,1.0,0.0,97.092
+taquari,S0,lawnmower_ca,1.0,0.0,97.092
+taquari,S0,straight,1.0,0.0,91.986
+taquari,S0,straight_ca,1.0,0.0,91.986
+taquari,S2,lawnmower,0.973,0.004,135.738
+taquari,S2,lawnmower_ca,0.973,0.004,135.738
+taquari,S2,straight,0.998,0.002,119.52
+taquari,S2,straight_ca,0.998,0.002,119.52

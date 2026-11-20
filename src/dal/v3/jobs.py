@@ -46,6 +46,11 @@ def site_prior(job: dict, site: str) -> np.ndarray | None:
     return rasterize_prior(path, grid.x0, grid.y1, grid.nrows, grid.ncols, specs.CELL_M)
 
 
+def calibration_file(job: dict) -> str:
+    """Arquivo da calibração da dobra (V33: `calibration_v2.json` não sobrescreve a primeira)."""
+    return job.get("calibration_file", "calibration.json")
+
+
 def save_pca(fits: dict[int, PCAFit], directory: Path) -> None:
     for altitude, fit in fits.items():
         np.savez(directory / f"pca_{altitude}m.npz", mean=fit.mean, components=fit.components)
@@ -68,13 +73,15 @@ def calibrate_job(job: dict, out_root: Path, device: str) -> dict:
     save_pca(fits, directory)
     beta1 = {h: calibration.calibrate_beta1(tables, h, 128)["beta1"] for h in specs.ALTITUDES_M}
     config = RealisticConfig()
-    kappa, kappa_rows = calibration.calibrate_kappa(tables, config, beta1, job.get("episodes", 200), device=device)
+    kappas = tuple(job.get("kappas", calibration.KAPPAS))  # V33: grade estendível (κ no limite da grade original)
+    kappa, kappa_rows = calibration.calibrate_kappa(tables, config, beta1, job.get("episodes", 200), device=device,
+                                                    kappas=kappas)
     tables.beta = {h: kappa * b for h, b in beta1.items()}
     alpha, alpha_rows = (calibration.calibrate_alpha(tables, config, job.get("episodes", 200), device=device)
                          if prior is not None else (0.0, []))
     result = {"beta1": beta1, "kappa": kappa, "beta": tables.beta, "alpha": alpha, "kappa_rows": kappa_rows,
               "alpha_rows": alpha_rows, "has_prior": prior is not None}
-    (directory / "calibration.json").write_text(json.dumps(result, indent=1, default=float))
+    (directory / calibration_file(job)).write_text(json.dumps(result, indent=1, default=float))
     return result
 
 
@@ -90,7 +97,7 @@ def load_site_tables(job: dict, out_root: Path, site: str, scenario: str, split:
     key = (job["descriptor"], job["fold"], site, scenario, split)
     if key not in _TABLES_CACHE:
         directory = work_dir(out_root, job["descriptor"], job["fold"])
-        calib = json.loads((directory / "calibration.json").read_text())
+        calib = json.loads((directory / calibration_file(job)).read_text())
         beta = {int(h): float(b) for h, b in calib["beta"].items()}
         zero_shot = site != "taquari"
         request = DataRequest(site, scenario, None if zero_shot else job["fold"], job["descriptor"], split=split,

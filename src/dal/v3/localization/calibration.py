@@ -61,11 +61,11 @@ def _random_policy_utility(tables: PerceptionTables, config: RealisticConfig, se
 
 
 def calibrate_kappa(tables: PerceptionTables, config: RealisticConfig, beta1: dict[int, float], episodes: int = 200,
-                    seed: int = 0, device: str = "cpu") -> tuple[float, list[dict]]:
+                    seed: int = 0, device: str = "cpu", kappas: tuple[float, ...] = KAPPAS) -> tuple[float, list[dict]]:
     """κ comum às altitudes (β_h = κ·β₁_h); utilidade da política aleatória em janelas de treino."""
     seeds = [seed * 100_000 + i for i in range(episodes)]
     rows = []
-    for kappa in KAPPAS:
+    for kappa in kappas:
         tempered = copy.copy(tables)
         tempered.beta = {h: kappa * b for h, b in beta1.items()}
         rows.append({"kappa": kappa, **_random_policy_utility(tempered, replace(config, alpha=0.0), seeds, device)})

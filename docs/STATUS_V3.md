@@ -1,14 +1,12 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 20/11/2026, ≈ 12:30 (Taquari `ft` extraído nas 3 altitudes; calibração da dobra A com κ no limite da grade e α = 0, pilotos em espera, V32; G3 na fila). Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 20/11/2026, ≈ 18:30 (**G3 passou**: reta 100% em S0; S2 no teto, 99,8%, V34; recalibração pré-especificada `calibrate_A_ftA_v2` e pilotos na frente da fila, V33). Antes, 12:30. Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Repassar à IA-2 (prioridade):**
-   - publicar na `colab/results` o `calibrate_A_ftA` com o `calibration.json` completo (está em `MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/calibration.json`; preciso de `kappa_rows` e `alpha_rows`);
-   - publicar o `DONE.json` da **reextração** de `v3_extract_ft_taquari_100m`: o que está na `colab/results` (`1fac0ee`) é do commit `b630f19` (antes da V26, saída `gem`), não da reextração com `ft`;
-   - novo `CURRENT_COMMIT`: rodar `g3_A_ftA` (~10 min) assim que a fila de POA/Canoas permitir (pode entrar entre dois jobs de extração).
-2. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
+1. **Repassar à IA-2:** novo `CURRENT_COMMIT`; **prioridade 1** `calibrate_A_ftA_v2` (~35 min), **prioridade 2** os 3 pilotos (`pilot_A_*_s0`, dependem dela), só depois o resto de POA e Canoas. Resposta à pergunta do α: **não** adotar α = 0,25 por desempate (V33); a v2 decide com 1000 episódios e a mesma regra.
+2. **Ciência (V34):** a reta faz 99,8% em S2 no ambiente realista. As hipóteses não mudam, mas o H3 deve sair (se sair) pela eficiência (tempo de voo), não pelo sucesso. Se quiser endurecer o cenário, é mudança da §2 e precisa de decisão sua **antes** da matriz.
+3. **Dia da apresentação e template.**
 
 ## Gates
 
@@ -17,12 +15,12 @@
 | G0 (dados) | **aprovado** para o prior (linhagem autodeclarada pela IA-2; ver `DECISIONS_V3.md` §5) | Taquari: EMSR720; Porto Alegre: EMSN194 ("otimista"); Canoas: EMSN194 recortado; Valência: EMSR773 (falta conferir a data das fontes) |
 | G1 | **PASSOU com o ajuste fino** (V29); zero-shot não passou | top-1 nas janelas de teste, ft / hand / grid4: S1 0,460 / 0,368 / 0,401; S2 0,332 / 0,239 / 0,283. Atenção: S0 0,906 / 0,996 / 0,956 (risco para o G3) |
 | G2 (paridade) | **PASSOU** | reta e zigue-zague: 1000/1000 trajetórias idênticas; PPO da PoC: 1000/1000 resultados idênticos em cada uma das 3 seeds (média 0,707, dentro do IC do REPORT.md) |
-| G3 (controle ≥ 90%) | não iniciado (precisa dos descritores v3) | — |
+| G3 (controle ≥ 90%) | **PASSOU** | reta em S0: 100%; S2: reta 99,8% (teto, V34) |
 | G4 (≥ 5.000 passos/s na T4) | treinador pronto; medida no primeiro piloto da IA-2 | — |
 
 ## Rodando agora
 
-- **Colab:** extrações `ft` de POA e Canoas (~4,5 h). Depois: `g3_A_ftA` (gate G3 + conferência da calibração). Pilotos `pilot_A_{ppo,ppo_ca,ppo_ca_alt}_s0` prontos, `on_hold` (V32).
+- **Colab:** `calibrate_A_ftA_v2` → pilotos `pilot_A_{ppo,ppo_ca,ppo_ca_alt}_s0` (gate de aprendizado + G4) → POA 60/150 m → Canoas → dobras B e C.
 - **Local:** código de vereditos (H1 primeiro).
 
 ## Feito hoje
