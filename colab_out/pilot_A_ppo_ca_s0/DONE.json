@@ -1,0 +1,23 @@
+{
+ "job_id": "pilot_A_ppo_ca_s0",
+ "git_commit": "3da89d14d9aa800db9daebdfe0f11685503d7c32-dirty",
+ "config_hash": "ac202f4ab9b9ec5c",
+ "gpu_minutes": 6.12,
+ "started_at": "2026-11-20T20:40:59+00:00",
+ "finished_at": "2026-11-20T20:47:06+00:00",
+ "status": "INVALID_GATE",
+ "reason": "gate de aprendizado aos 25% reprovado",
+ "metrics": {
+  "run_dir": "/content/drive/MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/runs/pilot_A_ppo_ca_s0_INVALID_GATE",
+  "global_step": 1409024,
+  "gate": {
+   "policy_success": 0.9350000023841858,
+   "random_success": 0.9199999570846558,
+   "advantage": 0.01500004529953003,
+   "threshold": 0.05,
+   "passed": false
+  },
+  "steps_per_s_median": 4355.049999999999,
+  "invalid_gate": true
+ }
+}
