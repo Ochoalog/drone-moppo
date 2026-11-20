@@ -1,0 +1,14 @@
+# Notebook 05 (kind: evaluate): gate G3 — controle S0 (mapa = observação), faixa de teste da dobra A,
+# reta com filtro padrão precisa de ≥ 90% de sucesso em 1000 episódios (seeds 2024 + i). Também roda a reta
+# e o zigue-zague em S2 (padrão e CA), para conferir a calibração (κ, α) antes dos pilotos.
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+baselines: [straight, lawnmower]
+targets:
+  - {site: taquari, scenario: S0}
+  - {site: taquari, scenario: S2}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif

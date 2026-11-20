@@ -192,6 +192,8 @@ def main() -> None:
     status, reason = "OK", ""
     if args.kind == "calibrate":
         metrics = calibrate_job(job, Path(args.out_root), args.device)
+        # A calibração completa (com as linhas de κ e α) vai também para colab_out: publicada na colab/results.
+        (out / "calibration.json").write_text(json.dumps(metrics, indent=1, default=float))
         metrics = {k: v for k, v in metrics.items() if not k.endswith("_rows")}
     elif args.kind == "train":
         metrics = train_job(job, Path(args.out_root), args.device, args.job_id)

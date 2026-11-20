@@ -19,7 +19,8 @@ v3_extract_ft_canoas_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extra
 v3_extract_ft_canoas_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_canoas_60m.yaml,finetune_A,45,7,queued
 v3_extract_ft_canoas_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ft_canoas_150m.yaml,finetune_A,45,7,queued
 calibrate_A_dinov2,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_A_dinov2.yaml,v3_extract_taquari_100m;v3_extract_taquari_60m;v3_extract_taquari_150m,30,15,on_hold
-calibrate_A_ftA,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_A_ftA.yaml,v3_extract_ft_taquari_100m;v3_extract_ft_taquari_60m;v3_extract_ft_taquari_150m,30,8,queued
+calibrate_A_ftA,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_A_ftA.yaml,v3_extract_ft_taquari_100m;v3_extract_ft_taquari_60m;v3_extract_ft_taquari_150m,30,8,done
+g3_A_ftA,colab/05_evaluate.ipynb,configs_v3/jobs/g3_A_ftA.yaml,calibrate_A_ftA,10,8,queued
 v3_grid4_taquari_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_grid4_taquari_100m.yaml,,90,2,on_hold
 v3_grid4_taquari_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_grid4_taquari_60m.yaml,,90,2,on_hold
 v3_grid4_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_grid4_taquari_150m.yaml,,90,2,on_hold
@@ -34,3 +35,6 @@ v3_extract_ftB_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_ext
 v3_extract_ftC_taquari_100m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ftC_taquari_100m.yaml,finetune_C,70,14,queued
 v3_extract_ftC_taquari_60m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ftC_taquari_60m.yaml,finetune_C,70,15,queued
 v3_extract_ftC_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_extract_ftC_taquari_150m.yaml,finetune_C,70,16,queued
+pilot_A_ppo_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA,60,20,on_hold
+pilot_A_ppo_ca_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA,60,21,on_hold
+pilot_A_ppo_ca_alt_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA,60,22,on_hold

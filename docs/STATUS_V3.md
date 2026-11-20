@@ -1,13 +1,14 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 19/11/2026, ≈ 10:00 (**§2 do `DECISIONS_V3.md` commitada** com as hipóteses aprovadas; Valência cortada, V30; Canoas implementada, V31). Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 20/11/2026, ≈ 12:30 (Taquari `ft` extraído nas 3 altitudes; calibração da dobra A com κ no limite da grade e α = 0, pilotos em espera, V32; G3 na fila). Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Avisar a IA-2:** novo `CURRENT_COMMIT` (Canoas: specs no manifesto e jobs `v3_extract_ft_canoas_*`, na fila depois de POA). A ordem da fila não mudou para o que já está rodando.
+1. **Repassar à IA-2 (prioridade):**
+   - publicar na `colab/results` o `calibrate_A_ftA` com o `calibration.json` completo (está em `MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/calibration.json`; preciso de `kappa_rows` e `alpha_rows`);
+   - publicar o `DONE.json` da **reextração** de `v3_extract_ft_taquari_100m`: o que está na `colab/results` (`1fac0ee`) é do commit `b630f19` (antes da V26, saída `gem`), não da reextração com `ft`;
+   - novo `CURRENT_COMMIT`: rodar `g3_A_ftA` (~10 min) assim que a fila de POA/Canoas permitir (pode entrar entre dois jobs de extração).
 2. **Dia da apresentação e template** (IEEE × arXiv/Prime AI; idioma).
-
-Resolvido hoje: hipóteses aprovadas e commitadas (§2); Valência cortada; apagar o `grid4.npy` do G1 autorizado se faltar espaço.
 
 ## Gates
 
@@ -21,8 +22,8 @@ Resolvido hoje: hipóteses aprovadas e commitadas (§2); Valência cortada; apag
 
 ## Rodando agora
 
-- **Colab:** `v3_extract_ft_taquari_100m` (disparado pela IA-2 no `703de1d`) → 60/150 m → POA → **Canoas** → `calibrate_A_ftA` → `finetune_B`/`C` → extrações B e C.
-- **Local:** nada (extração do hand parada; a ablação de percepção com o hand vai precisar do hand nas specs v3 da dobra A, que vou levar para o Colab).
+- **Colab:** extrações `ft` de POA e Canoas (~4,5 h). Depois: `g3_A_ftA` (gate G3 + conferência da calibração). Pilotos `pilot_A_{ppo,ppo_ca,ppo_ca_alt}_s0` prontos, `on_hold` (V32).
+- **Local:** código de vereditos (H1 primeiro).
 
 ## Feito hoje
 

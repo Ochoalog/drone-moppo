@@ -1,0 +1,12 @@
+# Notebook 04 (kind: train): piloto da dobra A (1 seed) para o gate de aprendizado e o G4 (passos/s na T4).
+kind: train
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+scenario: S2
+method: ppo_ca
+seed: 0
+total_timesteps: 1400000
+n_envs: 512
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
