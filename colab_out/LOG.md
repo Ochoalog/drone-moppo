@@ -14,3 +14,4 @@
 | 2026-11-20T14:32:35+00:00 | v3_extract_ft_taquari_100m | OK | 96.5 | gpu_min 96.5 | |
 | 2026-11-20T17:50:10+00:00 | g3_A_ftA | OK | 1.29 | gpu_min 1.29 | |
 | 2026-11-20T17:50:34+00:00 | v3_extract_ft_poa_100m | OK | 0.36 | gpu_min 0.4 |  |
+| 2026-11-20T17:58:43+00:00 | v3_extract_ft_poa_60m | OK | 8.11 | gpu_min 8.1 |  |

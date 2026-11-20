@@ -1,0 +1,31 @@
+{
+ "job_id": "v3_extract_ft_poa_60m",
+ "git_commit": "cc92bbf6346ec2a6fe3feb8491afcf6280bc65c1",
+ "config_hash": "ecceb86f42825f68",
+ "gpu_minutes": 8.11,
+ "started_at": "2026-11-20T17:50:36+00:00",
+ "finished_at": "2026-11-20T17:58:43+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "specs": {
+   "v3_poa_poa_pre_feb24_map_60m": {
+    "rows": 186240,
+    "crops_per_second": 0.0
+   },
+   "v3_poa_poa_pre_dec22_map_60m": {
+    "rows": 186240,
+    "crops_per_second": 0.0
+   },
+   "v3_poa_poa_post_map_60m": {
+    "rows": 186240,
+    "crops_per_second": 0.0
+   },
+   "v3_poa_poa_post_obs_60m": {
+    "rows": 744960,
+    "crops_per_second": 307.52330523234417
+   }
+  },
+  "minutes": 8.105311040083567
+ }
+}
