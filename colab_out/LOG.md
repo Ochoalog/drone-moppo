@@ -17,3 +17,4 @@
 | 2026-11-20T17:58:43+00:00 | v3_extract_ft_poa_60m | OK | 8.11 | gpu_min 8.1 |  |
 | 2026-11-20T19:06:34+00:00 | v3_extract_ft_poa_150m | OK | 67.83 | gpu_min 67.8 |  |
 | 2026-11-20T19:38:34+00:00 | calibrate_A_ftA_v2 | OK | 7.04 | kappa 0.040 alpha 0.00 | |
+| 2026-11-20T19:44:27+00:00 | pilot_A_ppo_s0 | INVALID_GATE | 5.85 | fps 4785 | |
