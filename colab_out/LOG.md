@@ -21,3 +21,4 @@
 | 2026-11-20T20:47:06+00:00 | pilot_A_ppo_ca_s0 | INVALID_GATE | 6.12 | fps 4355 | |
 | 2026-11-20T20:53:33+00:00 | pilot_A_ppo_ca_alt_s0 | INVALID_GATE | 6.31 | fps 4248 | |
 | 2026-11-20T20:54:22+00:00 | h1_retrieval_ftA | OK | 0.67 | gpu_min 3.77 | |
+| 2026-11-20T21:29:50+00:00 | v3_extract_ft_canoas_100m | OK | 29.69 | crops/s 318.4 | |
