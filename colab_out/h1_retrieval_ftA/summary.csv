@@ -1,0 +1,2 @@
+n_rows,rendered_this_session,descriptors,crops_per_second,device,gpu_name
+323595,0,"ft,valid_frac,cloud_frac",0.0,cuda,Tesla T4
