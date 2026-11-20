@@ -28,11 +28,14 @@ class PCAFit:
 
 
 def fit_pca(samples: np.ndarray, dim: int = PCA_DIM) -> PCAFit:
-    """PCA por SVD sobre as amostras (já restritas à faixa de treino)."""
-    x = samples.astype(np.float64)
-    mean = x.mean(0)
-    _, _, vt = np.linalg.svd(x - mean, full_matrices=False)
-    return PCAFit(mean.astype(np.float32), vt[:dim].astype(np.float32))
+    """PCA por auto-decomposição da matriz de covariância 256x256 (ultra-rápido e sem pico de RAM)."""
+    mean = samples.mean(0, dtype=np.float64)
+    xc = samples - mean
+    cov = (xc.T @ xc) / max(len(samples) - 1, 1)
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    vt = eigvecs[:, ::-1][:, :dim].T
+    signs = np.sign([v[np.argmax(np.abs(v))] for v in vt])
+    return PCAFit(mean.astype(np.float32), (vt * signs[:, None]).astype(np.float32))
 
 
 def cells_in_rows(rows: np.ndarray, n_cols: int) -> np.ndarray:

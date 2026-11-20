@@ -165,9 +165,13 @@ def train(env: RealisticBatchedEnv, gate_env: RealisticBatchedEnv, cfg: PPOTrain
     recent = {"success": [], "false_loc": []}
     while state["global_step"] < cfg.total_timesteps:
         segment_start = time.time()
-        buffers = {"map": [], "vec": [], "actions": [], "logprobs": [], "rewards": [], "dones": [], "values": []}
+        buffers = {"actions": [], "logprobs": [], "rewards": [], "dones": [], "values": []}
+        # Buffer contíguo pré-alocado (elimina lista de 32 tensores e a duplicação de 4 GB de VRAM no stack)
+        sample_obs = adapter.observe(env)
+        flat_map = torch.empty((T * n, *sample_obs["map"].shape[1:]), dtype=torch.float32, device=device)
+        flat_vec = torch.empty((T * n, *sample_obs["vec"].shape[1:]), dtype=torch.float32, device=device)
         net.eval()
-        for _ in range(T):
+        for step in range(T):
             obs = adapter.observe(env)
             with torch.no_grad():
                 action, logprob, _, value = net.get_action_and_value(obs)
@@ -175,8 +179,10 @@ def train(env: RealisticBatchedEnv, gate_env: RealisticBatchedEnv, cfg: PPOTrain
             outcome = env.step(action)
             reward = _reward(cfg, entropy_before, env.entropy(), outcome)
             finished = env.done.clone()
-            for key, item in (("map", obs["map"]), ("vec", obs["vec"]), ("actions", action), ("logprobs", logprob),
-                              ("rewards", reward.view(-1, 1)), ("dones", finished.float()), ("values", value)):
+            flat_map[step * n : (step + 1) * n] = obs["map"]
+            flat_vec[step * n : (step + 1) * n] = obs["vec"]
+            for key, item in (("actions", action), ("logprobs", logprob), ("rewards", reward.view(-1, 1)),
+                              ("dones", finished.float()), ("values", value)):
                 buffers[key].append(item)
             if bool(finished.any()):
                 rows = torch.nonzero(finished).flatten()
@@ -191,7 +197,7 @@ def train(env: RealisticBatchedEnv, gate_env: RealisticBatchedEnv, cfg: PPOTrain
         # dones[t] = o episódio terminou no passo t; o GAE espera "o estado t+1 é início de episódio".
         dones = torch.cat([torch.zeros(1, n, device=rewards.device), torch.stack(buffers["dones"])])
         advantages, returns = compute_vector_gae(rewards, values, dones, gamma=cfg.gamma, gae_lambda=cfg.gae_lambda)
-        flat = {"map": torch.stack(buffers["map"]).flatten(0, 1), "vec": torch.stack(buffers["vec"]).flatten(0, 1)}
+        flat = {"map": flat_map, "vec": flat_vec}
         actions = torch.stack(buffers["actions"]).flatten()
         logprobs = torch.stack(buffers["logprobs"]).flatten()
         adv = advantages.squeeze(-1).flatten()

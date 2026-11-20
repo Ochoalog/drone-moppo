@@ -102,7 +102,8 @@ def load_site_tables(job: dict, out_root: Path, site: str, scenario: str, split:
         zero_shot = site != "taquari"
         request = DataRequest(site, scenario, None if zero_shot else job["fold"], job["descriptor"], split=split,
                               feature=job.get("feature", "gem"))
-        pca = load_pca(directory, specs.ALTITUDES_M) if zero_shot else None
+        pca_saved = (directory / f"pca_{specs.ALTITUDES_M[0]}m.npz").exists()
+        pca = load_pca(directory, specs.ALTITUDES_M) if (zero_shot or pca_saved) else None
         tables, _ = load_tables(Path(out_root) / "features" / "v3", request, beta, change_prior=site_prior(job, site),
                                 pca_fits=pca)
         _TABLES_CACHE[key] = (tables, float(calib["alpha"]))
@@ -124,6 +125,14 @@ def train_job(job: dict, out_root: Path, device: str, job_id: str) -> dict:
     env = make_env(job, out_root, "taquari", job.get("scenario", "S2"), "train", method_ca, altitude, device, drift)
     gate_env = make_env(job, out_root, "taquari", job.get("scenario", "S2"), "train", method_ca, altitude, device,
                         drift)
+    # Compartilha os descritores de percepção na GPU entre env e gate_env (economiza ~4.4 GB de VRAM)
+    gate_env.map_desc = env.map_desc
+    gate_env.obs_desc = env.obs_desc
+    gate_env.map_ok = env.map_ok
+    gate_env.obs_ok = env.obs_ok
+    gate_env.prior = env.prior
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     cfg = PPOTrainConfig(total_timesteps=int(job["total_timesteps"]), n_envs=int(job.get("n_envs", 512)),
                          seed=int(job["seed"]), change_prior_input=prior_channel,
                          gate_min_advantage_over_random=float(job.get("gate_min_advantage", 0.05)),
