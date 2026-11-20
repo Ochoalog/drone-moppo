@@ -1,0 +1,13 @@
+{
+ "job_id": "g3_A_ftA",
+ "git_commit": "cc92bbf6346ec2a6fe3feb8491afcf6280bc65c1",
+ "config_hash": "a0ff8f293649e870",
+ "gpu_minutes": 1.29,
+ "started_at": "2026-11-20T17:48:53+00:00",
+ "finished_at": "2026-11-20T17:50:10+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "rows": 8000
+ }
+}

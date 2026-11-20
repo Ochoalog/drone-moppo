@@ -12,3 +12,4 @@
 | 2026-11-20T05:15:16+00:00 | v3_extract_ft_taquari_150m | OK | 100.92 | gpu_min 100.9 |  |
 | 2026-11-20T15:31:20+00:00 | calibrate_A_ftA | OK | 6.27 | kappa 0.04 | |
 | 2026-11-20T14:32:35+00:00 | v3_extract_ft_taquari_100m | OK | 96.5 | gpu_min 96.5 | |
+| 2026-11-20T17:50:10+00:00 | g3_A_ftA | OK | 1.29 | gpu_min 1.29 | |
