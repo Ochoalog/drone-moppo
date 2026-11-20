@@ -19,3 +19,4 @@
 | 2026-11-20T19:38:34+00:00 | calibrate_A_ftA_v2 | OK | 7.04 | kappa 0.040 alpha 0.00 | |
 | 2026-11-20T19:44:27+00:00 | pilot_A_ppo_s0 | INVALID_GATE | 5.85 | fps 4785 | |
 | 2026-11-20T20:47:06+00:00 | pilot_A_ppo_ca_s0 | INVALID_GATE | 6.12 | fps 4355 | |
+| 2026-11-20T20:53:33+00:00 | pilot_A_ppo_ca_alt_s0 | INVALID_GATE | 6.31 | fps 4248 | |
