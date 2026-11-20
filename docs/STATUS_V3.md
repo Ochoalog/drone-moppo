@@ -4,8 +4,8 @@
 
 ## [AÇÃO DO VITOR]
 
-1. **Decidir o gate de aprendizado (§2.5, pré-especificado; V37).** Com a aleatória em 92%, os 3 pilotos falharam (+4,5 / +1,5 / +0,5 p.p. contra 5). Sem decisão, a matriz roda e sai quase toda `INVALID_GATE` (sem veredito de H2-PPO, H3, H4, H5).
-2. **IA-2: versionar os "patches de compartilhamento do `gate_env` e rollout in-place"** num commit (branch `colab/patches` ou PR para `feat/v3-change-aware`). Hoje os `DONE.json` dizem `3da89d1`, mas o código que rodou não é esse. Nenhum job novo de treino antes disso.
+1. **Gate decidido (V38):** emenda com tempo de voo (≤ 0,75 × a aleatória, sucesso ≥ aleatória − 2 p.p.); vereditos pelos dois critérios. Pilotos `pilot_A_*_s0_v38` prontos, `on_hold` até o item 2.
+2. **IA-2: versionar os "patches de compartilhamento do `gate_env` e rollout in-place"** num commit (branch `colab/patches` ou PR para `feat/v3-change-aware`). Hoje os `DONE.json` dizem `3da89d1`, mas o código que rodou não é esse. Nenhum job novo de treino antes disso; com os patches versionados (e revisados por mim), libero os 3 pilotos `_v38`.
 3. **Correção para a IA-2:** G4 **não** passou (4.248–4.785 < 5.000 passos/s); S1/S2 não são "seca/cheia" (diferem pela data do mapa).
 
 ## Gates
