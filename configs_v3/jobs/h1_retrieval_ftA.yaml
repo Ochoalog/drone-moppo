@@ -1,0 +1,17 @@
+# H1 (§2.2): mesmos recortes e janelas de teste do G1 do ajuste fino, com os acertos por consulta (ft e hand)
+# para o IC por bootstrap de células consulta. Reaproveita a extração do g1_legacy_ftA (blocos já no Drive).
+spec: colab/specs/legacy_50m.parquet
+output_dir: features/legacy_50m/dinov2_vits14_ftA
+model: dinov2_vits14_ftA
+hub_model: dinov2_vits14
+weights: /content/drive/MyDrive/drone_v3/finetune/finetune_A/backbone.pt
+input_px: 224
+batch_size: 256
+chunk_rows: 20000
+also_hand: false
+outputs: [ft]
+margin_m: 50.0
+g1_splits: [test]
+g1_per_query: true   # acertos por consulta para o veredito do H1 (bootstrap de células consulta)
+g1_compare:  # descritores já no Drive, avaliados nas mesmas janelas de teste
+  - features/legacy_50m/dinov2_vits14/hand.npy

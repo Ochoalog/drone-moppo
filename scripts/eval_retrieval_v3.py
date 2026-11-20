@@ -58,7 +58,7 @@ def raw_arrays_hand_v1(map_date: str):
 
 
 def retrieval_for_scenario(config: dict, scenario: str, map_raw: np.ndarray, obs_raw: np.ndarray,
-                           split: str = "train") -> dict:
+                           split: str = "train", per_query: bool = False) -> dict:
     """Padroniza como a v1 e roda `window_stats` no ScenarioData da v1 com os descritores trocados.
 
     `split="test"`: as janelas saem da faixa de teste da v1 (sul, que fica dentro da faixa de teste da dobra A
@@ -82,8 +82,42 @@ def retrieval_for_scenario(config: dict, scenario: str, map_raw: np.ndarray, obs
                         train_rows=train_rows, test_rows=test_rows, beta=1.0)
     if split == "test":  # window_stats sorteia janelas de data.train_rows: aponta para a faixa de teste
         data.train_rows = test_rows
-    return window_stats(data, int(config["filter"]["window"]), V1_RETRIEVAL_WINDOWS, V1_RETRIEVAL_SEED,
-                        config["filter"]["min_window_valid"])
+    stats = window_stats(data, int(config["filter"]["window"]), V1_RETRIEVAL_WINDOWS, V1_RETRIEVAL_SEED,
+                         config["filter"]["min_window_valid"])
+    if per_query:
+        stats["queries"] = per_query_hits(data, int(config["filter"]["window"]), V1_RETRIEVAL_WINDOWS,
+                                          V1_RETRIEVAL_SEED, config["filter"]["min_window_valid"])
+    return stats
+
+
+def per_query_hits(data: ScenarioData, window: int, n_windows: int, seed: int, min_valid: float) -> dict:
+    """Acerto top-1 de cada consulta (janela, variante, célula), com as MESMAS janelas do `window_stats` da v1.
+
+    As janelas dependem só das máscaras, então dois descritores no mesmo cenário têm as mesmas consultas:
+    o H1 compara os acertos pareados por célula consulta (§2.2 do DECISIONS_V3.md).
+    """
+    rng = np.random.default_rng(seed)
+    windows = data.windows("train", window, min_valid)
+    chosen = windows[rng.choice(len(windows), size=min(n_windows, len(windows)), replace=False)]
+    out = {"window": [], "variant": [], "cell": [], "hit": []}
+    for w, (r0, c0) in enumerate(chosen):
+        sl = (slice(r0, r0 + window), slice(c0, c0 + window))
+        map_ok = np.asarray(data.map_ok[sl]).ravel()
+        both = map_ok & np.asarray(data.obs_ok[sl]).ravel()
+        map_desc = np.asarray(data.map_desc[sl], np.float32).reshape(window * window, -1)[map_ok]
+        map_index = np.flatnonzero(map_ok)
+        queries = np.flatnonzero(both)
+        true = np.searchsorted(map_index, queries)
+        for k in range(data.obs_desc.shape[0]):
+            obs = np.asarray(data.obs_desc[k, sl[0], sl[1]], np.float32).reshape(window * window, -1)[queries]
+            sims = obs @ map_desc.T
+            rank = (sims > sims[np.arange(len(queries)), true][:, None]).sum(1)
+            out["window"].append(np.full(len(queries), w))
+            out["variant"].append(np.full(len(queries), k))
+            # célula global (linha, coluna da grade) para parear entre descritores
+            out["cell"].append((r0 + queries // window) * data.map_ok.shape[1] + c0 + queries % window)
+            out["hit"].append(rank < 1)
+    return {key: np.concatenate(value) for key, value in out.items()}
 
 
 def main() -> None:
@@ -94,6 +128,8 @@ def main() -> None:
     parser.add_argument("--scenarios", nargs="*", default=["S0", "S1", "S2"])
     parser.add_argument("--split", choices=["train", "test"], default="train",
                         help="faixa das janelas: treino (G1 zero-shot) ou teste (G1 do ajuste fino)")
+    parser.add_argument("--per-query", action="store_true",
+                        help="grava também os acertos por consulta (<nome>_queries.npz), para o veredito do H1")
     parser.add_argument("--out", default=str(OUT), help="pasta do CSV (no Colab: colab_out/<job_id>)")
     args = parser.parse_args()
 
@@ -105,14 +141,19 @@ def main() -> None:
         descriptors = np.load(args.descriptors, mmap_mode="r")
         if len(descriptors) != len(spec):
             raise ValueError(f"descritores ({len(descriptors)}) e spec ({len(spec)}) com tamanhos diferentes")
-    rows = []
+    rows, per_query_files = [], {}
     for scenario in args.scenarios:
         map_date = config["scenarios"][scenario]
         if args.descriptors == "hand-v1":
             map_raw, obs_raw = raw_arrays_hand_v1(map_date)
         else:
             map_raw, obs_raw = raw_arrays_from_spec(spec, descriptors, n_cells, map_date)
-        stats = retrieval_for_scenario(config, scenario, map_raw, obs_raw, args.split)
+        stats = retrieval_for_scenario(config, scenario, map_raw, obs_raw, args.split, args.per_query)
+        if "queries" in stats:
+            queries = stats.pop("queries")
+            if not np.isclose(queries["hit"].mean(), stats["top1"]):
+                raise RuntimeError("acertos por consulta não reproduzem o top-1 do window_stats")
+            per_query_files[scenario] = queries
         rows.append({"descriptor": args.name, "scenario": scenario, "split": args.split, **stats})
         print(f"[retrieval] {args.name} {scenario}: top1 {stats['top1']:.3f} top5 {stats['top5']:.3f} "
               f"top1(<=1) {stats['top1_within1']:.3f}", flush=True)
@@ -124,6 +165,10 @@ def main() -> None:
                             fold="A (treino norte)" if args.split == "train" else "A (teste sul)",
                             region="taquari")
     table.to_csv(out / f"{args.name}{'_test' if args.split == 'test' else ''}.csv", index=False)
+    if per_query_files:
+        np.savez_compressed(out / f"{args.name}{'_test' if args.split == 'test' else ''}_queries.npz",
+                            **{f"{scenario}_{key}": value for scenario, arrays in per_query_files.items()
+                               for key, value in arrays.items()})
 
 
 if __name__ == "__main__":

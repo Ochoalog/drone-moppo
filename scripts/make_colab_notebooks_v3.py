@@ -51,9 +51,10 @@ G1_EVAL_CELL = new_code_cell(
     "for split in cfg.get('g1_splits', ['train']):\n"
     "    for path in files:\n"
     "        name = path.stem if path.parent == pathlib.Path(base) else f'{path.parent.name}_{path.stem}'\n"
+    "        extra = ['--per-query'] if cfg.get('g1_per_query') else []\n"
     "        subprocess.run([sys.executable, 'scripts/eval_retrieval_v3.py', '--spec', cfg['spec'], '--descriptors',\n"
-    "                        str(path), '--name', f'{JOB_ID}_{name}', '--split', split, '--out', f'colab_out/{JOB_ID}'],\n"
-    "                       cwd='/content/repo', check=True)")
+    "                        str(path), '--name', f'{JOB_ID}_{name}', '--split', split, '--out', f'colab_out/{JOB_ID}',\n"
+    "                        *extra], cwd='/content/repo', check=True)")
 
 
 def job_notebook(title: str, description: str, module_command: str, default_job: str,

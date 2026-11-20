@@ -2,8 +2,7 @@
 
 - rliable: IQM do sucesso entre seeds e probabilidade de melhora P(X > Y), com bootstrap estratificado.
 - Diferenças pareadas: bootstrap hierárquico (seeds → janelas) de `dal.evaluation.statistics`.
-- Critérios: `DECISIONS_V3.md` §2 (enquanto não commitados lá, os do rascunho
-  `docs/DECISIONS_V3_hipoteses_RASCUNHO.md`).
+- Critérios: `DECISIONS_V3.md` §2 (pré-especificado em 19/11/2026).
 
 Formato dos episódios: o de `dal.v3.jobs.evaluate_job` (method, model_seed, region, scenario, fold, episode,
 window_r0, window_c0, success, false_loc, flight_time_s, ...).
@@ -116,6 +115,35 @@ def holm(p_values: dict[str, float]) -> dict[str, float]:
 
 
 # ============================================================================ hipóteses
+def query_cell_difference(learned: dict, hand: dict, reps: int = N_BOOT, seed: int = 0) -> PairedDiff:
+    """Top-1(aprendido) − top-1(hand) com IC 95% por bootstrap de **células consulta** (H1).
+
+    `learned` e `hand` vêm de `per_query_hits` (mesmas janelas, variantes e células, na mesma ordem). Cada
+    reamostragem sorteia células com reposição; todas as consultas da célula (variantes, janelas) vão juntas.
+    """
+    for key in ("window", "variant", "cell"):
+        if not np.array_equal(learned[key], hand[key]):
+            raise ValueError(f"consultas não pareadas ({key})")
+    diff = learned["hit"].astype(np.float64) - hand["hit"].astype(np.float64)
+    cells, inverse = np.unique(learned["cell"], return_inverse=True)
+    sums, counts = np.bincount(inverse, diff), np.bincount(inverse)
+    rng = np.random.default_rng(seed)
+    boot = np.empty(reps)
+    for b in range(reps):
+        draw = rng.integers(0, len(cells), len(cells))
+        boot[b] = sums[draw].sum() / counts[draw].sum()
+    low, high = np.percentile(boot, [2.5, 97.5])
+    return PairedDiff(float(diff.mean()), float(low), float(high))
+
+
+def verdict_h1(differences: dict[str, PairedDiff]) -> dict:
+    """H1: em S1 **e** em S2, limite inferior de (aprendido − hand) > 0 nas janelas de teste."""
+    supported = all(differences[s].low > 0 for s in ("S1", "S2"))
+    contradicted = any(differences[s].high < 0 for s in ("S1", "S2"))
+    verdict = "suportada" if supported else ("não suportada" if contradicted else "inconclusiva")
+    return {"verdict": verdict, **{s: vars(d) for s, d in differences.items()}}
+
+
 def verdict_h2(episodes_by_place: dict[str, pd.DataFrame], methods=("straight", "ppo_ca")) -> dict:
     """Filtro CA reduz a localização falsa (CA − padrão < 0) sem perder mais de 2 p.p. de sucesso.
 

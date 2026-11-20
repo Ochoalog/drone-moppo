@@ -52,3 +52,20 @@ def test_iqm_and_holm():
     assert table.set_index("method").loc["a", "ci_low"] <= 0.7 <= table.set_index("method").loc["a", "ci_high"]
     adjusted = verdicts.holm({"x": 0.01, "y": 0.04, "z": 0.03})
     assert adjusted["x"] == 0.03 and adjusted["y"] == 0.06 and adjusted["z"] == 0.06
+
+
+def test_h1_query_cell_bootstrap_detects_a_paired_gain():
+    from dal.v3.evaluation.verdicts import query_cell_difference, verdict_h1
+
+    rng = np.random.default_rng(1)
+    n = 4000
+    base = {"window": np.zeros(n, int), "variant": np.tile([0, 1], n // 2), "cell": np.repeat(np.arange(n // 2), 2)}
+    hand = dict(base, hit=rng.random(n) < 0.3)
+    better = dict(base, hit=hand["hit"] | (rng.random(n) < 0.15))
+    same = dict(base, hit=hand["hit"].copy())
+    gain = query_cell_difference(better, hand, reps=300)
+    assert gain.low > 0
+    tie = query_cell_difference(same, hand, reps=300)
+    assert tie.low <= 0 <= tie.high
+    assert verdict_h1({"S1": gain, "S2": gain})["verdict"] == "suportada"
+    assert verdict_h1({"S1": gain, "S2": tie})["verdict"] == "inconclusiva"
