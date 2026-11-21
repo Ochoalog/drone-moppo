@@ -183,7 +183,7 @@ def verdict_h3_for_place(episodes: pd.DataFrame, policy: str, heuristic: str) ->
             else "—"}
 
 
-def verdict_h5(h3_by_place: dict[str, dict], zero_shot_places=("poa_ilhas", "poa_centro", "third_area")) -> dict:
+def verdict_h5(h3_by_place: dict[str, dict], zero_shot_places=("poa_ilhas", "poa_centro", "canoas")) -> dict:
     available = [p for p in zero_shot_places if p in h3_by_place]
     supported = [p for p in available if h3_by_place[p]["supported"]]
     return {"verdict": "suportada" if len(supported) >= 2 else "não suportada" if len(available) >= 2 else

@@ -8,6 +8,7 @@ Todos partem de um YAML de job. A pasta de trabalho no Drive é `<out_root>/v3/<
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import time
 from pathlib import Path
@@ -16,7 +17,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from dal.config import ROOT
+from dal.config import ROOT, load_config
+from dal.grid import lonlat_to_utm
 from dal.v3.agents.baselines import BASELINES, run_policy
 from dal.v3.agents.ppo_batched import NetworkPolicy, PolicyAdapter, PPOTrainConfig, build_network, train
 from dal.v3.descriptors.tables import PCAFit
@@ -110,10 +112,31 @@ def load_site_tables(job: dict, out_root: Path, site: str, scenario: str, split:
     return _TABLES_CACHE[key]
 
 
+def restrict_to_region(tables, site: str, region: str | None):
+    """Cópia das tabelas com as janelas restritas a uma sub-região (ex.: ilhas ou Centro de POA, v1)."""
+    if region is None:
+        return tables
+    box = load_config("configs_poa/poa.yaml")["regions"][region] if site == "poa" else None
+    if box is None:
+        raise ValueError(f"sub-região desconhecida: {site}/{region}")
+    grid = specs.site_grid(specs.load_site(site))
+    xs, ys = lonlat_to_utm(np.array([box["lon0"], box["lon1"]]), np.array([box["lat1"], box["lat0"]]))
+    cols = np.arange(grid.ncols)
+    rows = np.arange(grid.nrows)
+    col_center = grid.x0 + (cols + 0.5) * grid.cell
+    row_center = grid.y1 - (rows + 0.5) * grid.cell
+    restricted = copy.copy(tables)
+    restricted.cols_allowed = cols[(col_center >= xs.min()) & (col_center <= xs.max())]
+    in_rows = rows[(row_center >= ys.min()) & (row_center <= ys.max())]
+    restricted.rows_allowed = np.intersect1d(tables.rows_allowed, in_rows)
+    return restricted
+
+
 def make_env(job: dict, out_root: Path, site: str, scenario: str, split: str, method_ca: bool, altitude: bool,
-             device: str, drift: float = 0.02) -> RealisticBatchedEnv:
+             device: str, drift: float = 0.02, region: str | None = None) -> RealisticBatchedEnv:
     """Ambiente com filtro padrão ou CA (α da calibração da dobra) e, opcionalmente, altitude como ação."""
     tables, alpha = load_site_tables(job, out_root, site, scenario, split)
+    tables = restrict_to_region(tables, site, region)
     config = RealisticConfig(altitude_actions=altitude, alpha=alpha if method_ca else 0.0, drift_fraction=drift)
     return RealisticBatchedEnv(tables, config, device)
 
@@ -153,26 +176,34 @@ def evaluate_job(job: dict, out_root: Path, device: str, job_id: str) -> pd.Data
     directory = work_dir(out_root, job["descriptor"], job["fold"])
     frames = []
     for target in job["targets"]:  # ex.: {"site": "taquari", "scenario": "S2"}
-        site, scenario = target["site"], target["scenario"]
-        split = "test"
+        site, scenario, region = target["site"], target["scenario"], target.get("region")
+        split = target.get("split", "test")  # "train": escolha da melhor heurística CA no conjunto de calibração
+        label = f"{site}_{region}" if region else site
         for name in job.get("baselines", []):
             for use_ca in (False, True):
                 altitude = name == "straight_150"
-                env = make_env(job, out_root, site, scenario, split, use_ca, altitude, device)
+                env = make_env(job, out_root, site, scenario, split, use_ca, altitude, device, region=region)
                 env = run_policy(env, BASELINES[name](), seeds)
-                frames.append(_episodes(env, f"{name}{'_ca' if use_ca else ''}", -1, site, scenario))
+                method = f"{name}{'_ca' if use_ca else ''}"
+                frames.append(_episodes(env, method, -1, label, scenario).assign(split=split, mode="—"))
         for model in job.get("models", []):  # {"method": "ppo_ca", "seed": 0, "run": "<job_id do treino>"}
             run_dir = directory / "runs" / model["run"]
             if not run_dir.exists():
                 continue  # execução INVALID_GATE tem outro nome de pasta: nunca entra na avaliação
             method_ca, prior_channel, altitude = METHODS[model["method"]]
-            env = make_env(job, out_root, site, scenario, split, method_ca, altitude, device)
-            net = build_network(env, PPOTrainConfig(change_prior_input=prior_channel), device)
-            net.load_state_dict(torch.load(run_dir / "final_model.pt", map_location=device))
-            deterministic = bool(job.get("argmax", True))
-            policy = NetworkPolicy(net.eval(), PolicyAdapter(prior_channel), deterministic=deterministic)
-            env = run_policy(env, policy, seeds)
-            frames.append(_episodes(env, model["method"], int(model["seed"]), site, scenario))
+            drift = float(model.get("drift", 0.02))  # ablação de deriva: avaliada na deriva do treino
+            gate = json.loads((run_dir / "train_summary.json").read_text()).get("gate") or {}
+            # Os dois critérios do gate (V38): o original é só a vantagem de sucesso sobre a aleatória.
+            gate_original = bool(gate.get("advantage", -1.0) >= gate.get("threshold", 0.05))
+            for mode in job.get("modes", ["argmax"]):  # argmax e/ou sampled (lição do estudo v1)
+                env = make_env(job, out_root, site, scenario, split, method_ca, altitude, device, drift, region)
+                net = build_network(env, PPOTrainConfig(change_prior_input=prior_channel), device)
+                net.load_state_dict(torch.load(run_dir / "final_model.pt", map_location=device))
+                policy = NetworkPolicy(net.eval(), PolicyAdapter(prior_channel), deterministic=mode == "argmax")
+                env = run_policy(env, policy, seeds)
+                name = model.get("label", model["method"])
+                frames.append(_episodes(env, name, int(model["seed"]), label, scenario).assign(
+                    split=split, mode=mode, gate_original_passed=gate_original))
     episodes = pd.concat(frames, ignore_index=True)
     for column, value in {"source_file": f"eval/{job_id}/episodes.csv", "protocol": "v3 realista; seeds 2024+i",
                           "n_episodes": len(seeds), "fold": job["fold"], "git_commit": git_commit(),
@@ -221,7 +252,8 @@ def main() -> None:
         directory = work_dir(Path(args.out_root), job["descriptor"], job["fold"]) / "eval" / args.job_id
         directory.mkdir(parents=True, exist_ok=True)
         episodes.to_csv(directory / "episodes.csv", index=False)
-        summary = episodes.groupby(["region", "scenario", "method"])[["success", "false_loc", "flight_time_s"]].mean()
+        keys = ["region", "scenario", "split", "method", "mode"]
+        summary = episodes.groupby(keys)[["success", "false_loc", "flight_time_s"]].mean()
         summary.reset_index().to_csv(out / "summary.csv", index=False)
         if (out_size := episodes.memory_usage().sum()) < 4e6:
             episodes.to_csv(out / "episodes.csv", index=False)

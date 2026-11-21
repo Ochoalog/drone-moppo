@@ -1,0 +1,14 @@
+# Matriz (§2.4 do DECISIONS_V3.md): bloco principal. Notebook 04 (kind: train).
+kind: train
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+scenario: S2
+method: ppo_ca_alt
+seed: 4
+total_timesteps: 1400000   # G4 não passou: orçamento fica em 1,4 M (V37)
+n_envs: 512
+calibration_file: calibration_v2.json
+gate_flight_time_ratio: 0.75   # V38
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif

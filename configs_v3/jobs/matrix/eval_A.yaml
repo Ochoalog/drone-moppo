@@ -1,0 +1,57 @@
+# Avaliação pareada (dobra A, todos os locais): 1000 episódios (seeds 2024 + i) por alvo; baselines com filtro padrão e CA.
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+calibration_file: calibration_v2.json
+modes: [argmax, sampled]   # os dois modos (lição do estudo v1)
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: taquari, scenario: S2}
+  - {site: taquari, scenario: S2, split: train}
+  - {site: taquari, scenario: S1}
+  - {site: poa, scenario: P1, region: ilhas}
+  - {site: poa, scenario: P1, region: centro}
+  - {site: canoas, scenario: C1}
+models:
+  - {method: ppo, seed: 0, run: mx_A_ppo_s0}
+  - {method: ppo_ca, seed: 0, run: mx_A_ppo_ca_s0}
+  - {method: ppo_ca_alt, seed: 0, run: mx_A_ppo_ca_alt_s0}
+  - {method: ppo, seed: 1, run: mx_A_ppo_s1}
+  - {method: ppo_ca, seed: 1, run: mx_A_ppo_ca_s1}
+  - {method: ppo_ca_alt, seed: 1, run: mx_A_ppo_ca_alt_s1}
+  - {method: ppo, seed: 2, run: mx_A_ppo_s2}
+  - {method: ppo_ca, seed: 2, run: mx_A_ppo_ca_s2}
+  - {method: ppo_ca_alt, seed: 2, run: mx_A_ppo_ca_alt_s2}
+  - {method: ppo, seed: 3, run: mx_A_ppo_s3}
+  - {method: ppo_ca, seed: 3, run: mx_A_ppo_ca_s3}
+  - {method: ppo_ca_alt, seed: 3, run: mx_A_ppo_ca_alt_s3}
+  - {method: ppo, seed: 4, run: mx_A_ppo_s4}
+  - {method: ppo_ca, seed: 4, run: mx_A_ppo_ca_s4}
+  - {method: ppo_ca_alt, seed: 4, run: mx_A_ppo_ca_alt_s4}
+  - {method: ppo, seed: 5, run: mx_A_ppo_s5}
+  - {method: ppo_ca, seed: 5, run: mx_A_ppo_ca_s5}
+  - {method: ppo_ca_alt, seed: 5, run: mx_A_ppo_ca_alt_s5}
+  - {method: ppo, seed: 6, run: mx_A_ppo_s6}
+  - {method: ppo_ca, seed: 6, run: mx_A_ppo_ca_s6}
+  - {method: ppo_ca_alt, seed: 6, run: mx_A_ppo_ca_alt_s6}
+  - {method: ppo, seed: 7, run: mx_A_ppo_s7}
+  - {method: ppo_ca, seed: 7, run: mx_A_ppo_ca_s7}
+  - {method: ppo_ca_alt, seed: 7, run: mx_A_ppo_ca_alt_s7}
+  - {method: ppo, seed: 8, run: mx_A_ppo_s8}
+  - {method: ppo_ca, seed: 8, run: mx_A_ppo_ca_s8}
+  - {method: ppo_ca_alt, seed: 8, run: mx_A_ppo_ca_alt_s8}
+  - {method: ppo, seed: 9, run: mx_A_ppo_s9}
+  - {method: ppo_ca, seed: 9, run: mx_A_ppo_ca_s9}
+  - {method: ppo_ca_alt, seed: 9, run: mx_A_ppo_ca_alt_s9}
+  - {method: ppo_ca, label: ppo_ca_drift0, drift: 0.0, seed: 0, run: mx_A_ppo_ca_d0_s0}
+  - {method: ppo_ca, label: ppo_ca_drift0, drift: 0.0, seed: 1, run: mx_A_ppo_ca_d0_s1}
+  - {method: ppo_ca, label: ppo_ca_drift0, drift: 0.0, seed: 2, run: mx_A_ppo_ca_d0_s2}
+  - {method: ppo_ca, label: ppo_ca_drift5, drift: 0.05, seed: 0, run: mx_A_ppo_ca_d5_s0}
+  - {method: ppo_ca, label: ppo_ca_drift5, drift: 0.05, seed: 1, run: mx_A_ppo_ca_d5_s1}
+  - {method: ppo_ca, label: ppo_ca_drift5, drift: 0.05, seed: 2, run: mx_A_ppo_ca_d5_s2}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
+  poa: /content/drive/MyDrive/drone_v3/prior/porto_alegre_prior_emsn194_10m.tif
+  canoas: /content/drive/MyDrive/drone_v3/prior/canoas_prior_emsn194_10m.tif

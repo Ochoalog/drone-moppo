@@ -1,0 +1,23 @@
+# Avaliação pareada (dobra B): 1000 episódios (seeds 2024 + i) por alvo; baselines com filtro padrão e CA.
+kind: evaluate
+descriptor: dinov2_vits14_ftB
+feature: ft
+fold: B
+episodes: 1000
+calibration_file: calibration_v2.json
+modes: [argmax, sampled]   # os dois modos (lição do estudo v1)
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: taquari, scenario: S2}
+  - {site: taquari, scenario: S2, split: train}
+models:
+  - {method: ppo_ca, seed: 0, run: mx_B_ppo_ca_s0}
+  - {method: ppo_ca, seed: 1, run: mx_B_ppo_ca_s1}
+  - {method: ppo_ca, seed: 2, run: mx_B_ppo_ca_s2}
+  - {method: ppo_ca_alt, seed: 0, run: mx_B_ppo_ca_alt_s0}
+  - {method: ppo_ca_alt, seed: 1, run: mx_B_ppo_ca_alt_s1}
+  - {method: ppo_ca_alt, seed: 2, run: mx_B_ppo_ca_alt_s2}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
+  poa: /content/drive/MyDrive/drone_v3/prior/porto_alegre_prior_emsn194_10m.tif
+  canoas: /content/drive/MyDrive/drone_v3/prior/canoas_prior_emsn194_10m.tif

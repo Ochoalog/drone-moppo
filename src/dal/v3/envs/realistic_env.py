@@ -55,6 +55,7 @@ class PerceptionTables:
     rows_allowed: np.ndarray  # linhas da faixa (dobra) em que as janelas podem ficar
     change_prior: np.ndarray | None = None  # (linhas, colunas) em [0, 1]
     extra_channels: dict[str, np.ndarray] = field(default_factory=dict)  # canais do mapa para a política
+    cols_allowed: np.ndarray | None = None  # colunas permitidas (sub-região, ex.: ilhas de POA); None = todas
 
 
 def valid_windows(tables: PerceptionTables, window: int, min_valid: float) -> np.ndarray:
@@ -63,12 +64,18 @@ def valid_windows(tables: PerceptionTables, window: int, min_valid: float) -> np
     ok = (tables.map_ok & tables.obs_ok).astype(np.float64)
     allowed = np.zeros(rows, bool)
     allowed[tables.rows_allowed] = True
+    allowed_cols = np.ones(cols, bool)
+    if tables.cols_allowed is not None:
+        allowed_cols[:] = False
+        allowed_cols[tables.cols_allowed] = True
     integral = np.pad(ok, ((1, 0), (1, 0))).cumsum(0).cumsum(1)
     out = []
     for r0 in range(0, rows - window + 1, max(1, window // 8)):
         if not allowed[r0:r0 + window].all():
             continue
         for c0 in range(0, cols - window + 1, max(1, window // 8)):
+            if not allowed_cols[c0:c0 + window].all():
+                continue
             r1, c1 = r0 + window, c0 + window
             total = integral[r1, c1] - integral[r0, c1] - integral[r1, c0] + integral[r0, c0]
             if total / window**2 >= min_valid:

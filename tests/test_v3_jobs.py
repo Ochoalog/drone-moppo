@@ -56,3 +56,24 @@ def test_calibrate_train_and_evaluate(out_root):
     for column in ("source_file", "protocol", "n_episodes", "fold", "git_commit", "config_hash"):
         assert column in episodes.columns
     assert isinstance(episodes, pd.DataFrame)
+
+
+def test_restrict_to_region_keeps_windows_inside_poa_subregion():
+    import numpy as np
+
+    from dal.v3.envs.realistic_env import PerceptionTables, valid_windows
+    from dal.v3.jobs import restrict_to_region
+    from dal.v3.sensor import specs
+
+    grid = specs.site_grid(specs.load_site("poa"))
+    shape = (grid.nrows, grid.ncols)
+    ok = np.ones(shape, bool)
+    tables = PerceptionTables({}, {}, ok, ok, {}, shape, np.arange(grid.nrows))
+    full = valid_windows(tables, 128, 0.9)
+    for region in ("ilhas", "centro"):
+        restricted = restrict_to_region(tables, "poa", region)
+        windows = valid_windows(restricted, 128, 0.9)
+        assert 0 < len(windows) < len(full)
+        cols = set(restricted.cols_allowed.tolist())
+        assert all(c0 in cols and c0 + 127 in cols for _, c0 in windows)
+    assert restrict_to_region(tables, "poa", None) is tables

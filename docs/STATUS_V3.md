@@ -1,6 +1,6 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 21/11/2026, ≈ 13:00 (patches da IA-2 revisados e aceitos, V39; Canoas e ajustes finos B/C aprovados; pilotos `_v38` na frente da fila). Antes, 12:30. Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 21/11/2026, ≈ 14:30 (matriz de 48 treinos e 3 avaliações prontas e `on_hold`, V40; avaliação por sub-região de POA implementada). Antes, 13:00 (patches da IA-2 aceitos, V39). Antes, 12:30. Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
@@ -20,7 +20,7 @@
 ## Rodando agora
 
 - **Colab:** pilotos `_v38` → extrações das dobras B e C → calibração B e C.
-- **Local:** configs da matriz (principal, deriva, validação espacial) e da avaliação, `on_hold` até o gate dos pilotos.
+- **Local:** matriz pronta (`on_hold`); a seguir, vereditos H2–H5 lendo `episodes.csv` e esqueleto LaTeX IEEE.
 
 ## Feito hoje
 
