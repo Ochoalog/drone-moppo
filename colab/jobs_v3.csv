@@ -40,9 +40,9 @@ v3_extract_ftC_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_ext
 pilot_A_ppo_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA_v2,60,2,done
 pilot_A_ppo_ca_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA_v2,60,2,done
 pilot_A_ppo_ca_alt_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA_v2,60,2,done
-pilot_A_ppo_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA_v2,10,1,queued
-pilot_A_ppo_ca_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA_v2,10,1,queued
-pilot_A_ppo_ca_alt_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA_v2,10,1,queued
+pilot_A_ppo_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA_v2,10,1,done
+pilot_A_ppo_ca_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA_v2,10,1,done
+pilot_A_ppo_ca_alt_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA_v2,10,1,done
 calibrate_B_ftB,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_B_ftB.yaml,v3_extract_ftB_taquari_100m;v3_extract_ftB_taquari_60m;v3_extract_ftB_taquari_150m,10,17,queued
 calibrate_C_ftC,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_C_ftC.yaml,v3_extract_ftC_taquari_100m;v3_extract_ftC_taquari_60m;v3_extract_ftC_taquari_150m,10,17,queued
 mx_A_ppo_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/matrix/mx_A_ppo_s0.yaml,pilot_A_ppo_s0_v38;pilot_A_ppo_ca_s0_v38;pilot_A_ppo_ca_alt_s0_v38,8,3,on_hold
@@ -96,3 +96,4 @@ mx_A_ppo_ca_d5_s2,colab/04_train_matrix.ipynb,configs_v3/jobs/matrix/mx_A_ppo_ca
 eval_A,colab/05_evaluate.ipynb,configs_v3/jobs/matrix/eval_A.yaml,mx_A_ppo_s0;mx_A_ppo_ca_s0;mx_A_ppo_ca_alt_s0;mx_A_ppo_s1;mx_A_ppo_ca_s1;mx_A_ppo_ca_alt_s1;mx_A_ppo_s2;mx_A_ppo_ca_s2;mx_A_ppo_ca_alt_s2;mx_A_ppo_s3;mx_A_ppo_ca_s3;mx_A_ppo_ca_alt_s3;mx_A_ppo_s4;mx_A_ppo_ca_s4;mx_A_ppo_ca_alt_s4;mx_A_ppo_s5;mx_A_ppo_ca_s5;mx_A_ppo_ca_alt_s5;mx_A_ppo_s6;mx_A_ppo_ca_s6;mx_A_ppo_ca_alt_s6;mx_A_ppo_s7;mx_A_ppo_ca_s7;mx_A_ppo_ca_alt_s7;mx_A_ppo_s8;mx_A_ppo_ca_s8;mx_A_ppo_ca_alt_s8;mx_A_ppo_s9;mx_A_ppo_ca_s9;mx_A_ppo_ca_alt_s9;mx_A_ppo_ca_d0_s0;mx_A_ppo_ca_d0_s1;mx_A_ppo_ca_d0_s2;mx_A_ppo_ca_d5_s0;mx_A_ppo_ca_d5_s1;mx_A_ppo_ca_d5_s2,120,6,on_hold
 eval_B,colab/05_evaluate.ipynb,configs_v3/jobs/matrix/eval_B.yaml,mx_B_ppo_ca_s0;mx_B_ppo_ca_s1;mx_B_ppo_ca_s2;mx_B_ppo_ca_alt_s0;mx_B_ppo_ca_alt_s1;mx_B_ppo_ca_alt_s2,40,6,on_hold
 eval_C,colab/05_evaluate.ipynb,configs_v3/jobs/matrix/eval_C.yaml,mx_C_ppo_ca_s0;mx_C_ppo_ca_s1;mx_C_ppo_ca_s2;mx_C_ppo_ca_alt_s0;mx_C_ppo_ca_alt_s1;mx_C_ppo_ca_alt_s2,40,6,on_hold
+diag_pilots_A,colab/05_evaluate.ipynb,configs_v3/jobs/diag_pilots_A.yaml,,10,1,queued

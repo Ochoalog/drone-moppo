@@ -1,0 +1,19 @@
+# EXPLORATÓRIO (sem veredito; V43): os modelos finais (1,4 M passos) dos pilotos _v38, que falharam no gate aos 25%,
+# avaliados só em janelas de TREINO da dobra A (Taquari S2) contra a reta e a aleatória. Pergunta: a política
+# aprende até o fim do treino (gate cedo demais) ou não aprende (problema de método)? Nenhuma janela de teste.
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 500
+calibration_file: calibration_v2.json
+modes: [argmax, sampled]
+baselines: [straight, random]
+targets:
+  - {site: taquari, scenario: S2, split: train}
+models:
+  - {method: ppo, seed: 0, run: pilot_A_ppo_s0_v38_INVALID_GATE}
+  - {method: ppo_ca, seed: 0, run: pilot_A_ppo_ca_s0_v38_INVALID_GATE}
+  - {method: ppo_ca_alt, seed: 0, run: pilot_A_ppo_ca_alt_s0_v38_INVALID_GATE}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
