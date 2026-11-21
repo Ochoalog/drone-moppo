@@ -172,20 +172,36 @@ def train_job(job: dict, out_root: Path, device: str, job_id: str) -> dict:
 # ============================================================================ avaliação
 def evaluate_job(job: dict, out_root: Path, device: str, job_id: str) -> pd.DataFrame:
     """Avalia baselines (filtro padrão e CA) e modelos treinados nos mesmos episódios de cada local."""
+    import gc
     seeds = [EVAL_SEED_BASE + i for i in range(int(job.get("episodes", 1000)))]
     directory = work_dir(out_root, job["descriptor"], job["fold"])
+    part_dir = directory / "eval" / job_id / "parts"
+    part_dir.mkdir(parents=True, exist_ok=True)
     frames = []
-    for target in job["targets"]:  # ex.: {"site": "taquari", "scenario": "S2"}
+    for target_idx, target in enumerate(job["targets"]):  # ex.: {"site": "taquari", "scenario": "S2"}
         site, scenario, region = target["site"], target["scenario"], target.get("region")
         split = target.get("split", "test")  # "train": escolha da melhor heurística CA no conjunto de calibração
         label = f"{site}_{region}" if region else site
+        part_path = part_dir / f"part_{target_idx}_{label}_{scenario}_{split}.parquet"
+        if part_path.exists():
+            print(f"[evaluate] {label} ({scenario}/{split}): carregando de {part_path.name} (já computado)", flush=True)
+            frames.append(pd.read_parquet(part_path))
+            continue
+        print(f"[evaluate] {label} ({scenario}/{split}): avaliando ({target_idx + 1}/{len(job['targets'])})...", flush=True)
+        target_frames = []
         for name in job.get("baselines", []):
             for use_ca in (False, True):
                 altitude = name == "straight_150"
+                t0 = time.time()
                 env = make_env(job, out_root, site, scenario, split, use_ca, altitude, device, region=region)
                 env = run_policy(env, BASELINES[name](), seeds)
                 method = f"{name}{'_ca' if use_ca else ''}"
-                frames.append(_episodes(env, method, -1, label, scenario).assign(split=split, mode="—"))
+                df = _episodes(env, method, -1, label, scenario).assign(split=split, mode="—")
+                target_frames.append(df)
+                elapsed = time.time() - t0
+                succ = float(env.success.float().mean())
+                print(f"  [baseline] {method:18s} | succ: {succ:.3f} | time: {float(env.flight_time_s.mean()):.1f}s | {elapsed:.1f}s", flush=True)
+                del env
         for model in job.get("models", []):  # {"method": "ppo_ca", "seed": 0, "run": "<job_id do treino>"}
             run_dir = directory / "runs" / model["run"]
             if not run_dir.exists():
@@ -197,14 +213,27 @@ def evaluate_job(job: dict, out_root: Path, device: str, job_id: str) -> pd.Data
             # Os dois critérios do gate (V38): o original é só a vantagem de sucesso sobre a aleatória.
             gate_original = bool(gate.get("advantage", -1.0) >= gate.get("threshold", 0.05))
             for mode in job.get("modes", ["argmax"]):  # argmax e/ou sampled (lição do estudo v1)
+                t0 = time.time()
                 env = make_env(job, out_root, site, scenario, split, method_ca, altitude, device, drift, region)
                 net = build_network(env, PPOTrainConfig(change_prior_input=prior_channel), device)
                 net.load_state_dict(torch.load(run_dir / "final_model.pt", map_location=device))
                 policy = NetworkPolicy(net.eval(), PolicyAdapter(prior_channel), deterministic=mode == "argmax")
                 env = run_policy(env, policy, seeds)
                 name = model.get("label", model["method"])
-                frames.append(_episodes(env, name, int(model["seed"]), label, scenario).assign(
-                    split=split, mode=mode, gate_original_passed=gate_original))
+                df = _episodes(env, name, int(model["seed"]), label, scenario).assign(
+                    split=split, mode=mode, gate_original_passed=gate_original)
+                target_frames.append(df)
+                elapsed = time.time() - t0
+                succ = float(env.success.float().mean())
+                print(f"  [model] {name:15s} ({mode:7s}) | succ: {succ:.3f} | time: {float(env.flight_time_s.mean()):.1f}s | {elapsed:.1f}s", flush=True)
+                del env, net, policy
+        target_df = pd.concat(target_frames, ignore_index=True)
+        target_df.to_parquet(part_path, index=False)
+        frames.append(target_df)
+        _TABLES_CACHE.clear()
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     episodes = pd.concat(frames, ignore_index=True)
     for column, value in {"source_file": f"eval/{job_id}/episodes.csv", "protocol": "v3 realista; seeds 2024+i",
                           "n_episodes": len(seeds), "fold": job["fold"], "git_commit": git_commit(),
