@@ -1,0 +1,14 @@
+{
+ "job_id": "diag_pilots_A",
+ "git_commit": "a9ca7f55dcd9de142f5dc4a461af08982cc127ee",
+ "config_hash": "23c6237ce23626af",
+ "gpu_minutes": 1.09,
+ "started_at": "2026-11-21T16:45:30+00:00",
+ "finished_at": "2026-11-21T16:46:35+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "rows": 5000,
+  "episodes_bytes": 870132
+ }
+}
