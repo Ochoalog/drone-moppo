@@ -69,3 +69,29 @@ def test_h1_query_cell_bootstrap_detects_a_paired_gain():
     assert tie.low <= 0 <= tie.high
     assert verdict_h1({"S1": gain, "S2": gain})["verdict"] == "suportada"
     assert verdict_h1({"S1": gain, "S2": tie})["verdict"] == "inconclusiva"
+
+
+def _episodes_for(method, seeds, success, flight, altitude=None, change=None, n=300, rng_seed=0):
+    rng = np.random.default_rng(rng_seed)
+    rows = []
+    for seed in seeds:
+        for e in range(n):
+            rows.append({"method": method, "model_seed": seed, "region": "taquari", "scenario": "S2", "episode": e,
+                         "window_r0": e % 30, "window_c0": 0, "success": rng.random() < success,
+                         "false_loc": False, "flight_time_s": flight + rng.normal(0, 5),
+                         "mean_altitude_m": altitude(e) if altitude else 100.0,
+                         "window_change_prior": change(e) if change else 0.0})
+    return pd.DataFrame(rows)
+
+
+def test_best_ca_heuristic_uses_highest_training_success():
+    train = pd.concat([_episodes_for("straight_ca", [-1], 0.95, 100), _episodes_for("lawnmower_ca", [-1], 0.6, 100)])
+    assert verdicts.best_ca_heuristic(train) == "straight_ca"
+
+
+def test_h4_supported_when_altitude_tracks_change_and_saves_time():
+    change = lambda e: (e % 30) / 30  # noqa: E731
+    with_alt = _episodes_for("ppo_ca_alt", [0, 1, 2], 0.95, 90, altitude=lambda e: 60 + 90 * change(e), change=change)
+    without = _episodes_for("ppo_ca", [0, 1, 2], 0.95, 110, change=change, rng_seed=1)
+    result = verdicts.verdict_h4(pd.concat([with_alt, without]))
+    assert result["part_a"] and result["part_b"] and result["verdict"] == "suportada"

@@ -9,7 +9,7 @@ window_r0, window_c0, success, false_loc, flight_time_s, ...).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,7 @@ def _rliable_metrics():
 
 
 def stratified_bootstrap(func, score_arrays: tuple[np.ndarray, ...], reps: int = N_BOOT,
-                         seed: int = 0) -> tuple[float, float, float]:
+                         seed: int = 0, return_replicates: bool = False):
     """Estimativa e IC 95% com bootstrap estratificado (execuções reamostradas dentro de cada tarefa).
 
     É o mesmo esquema do `rliable.library.get_interval_estimates`, reimplementado porque essa função depende
@@ -46,6 +46,8 @@ def stratified_bootstrap(func, score_arrays: tuple[np.ndarray, ...], reps: int =
             resampled.append(np.take_along_axis(scores, index, axis=0))
         replicates[b] = float(np.ravel(func(*resampled))[0])
     low, high = np.percentile(replicates, [2.5, 97.5])
+    if return_replicates:
+        return point, float(low), float(high), replicates
     return point, float(low), float(high)
 
 
@@ -54,6 +56,10 @@ class PairedDiff:
     estimate: float
     low: float
     high: float
+    replicates: np.ndarray | None = field(default=None, repr=False, compare=False)
+
+    def summary(self) -> dict:
+        return {"estimate": self.estimate, "low": self.low, "high": self.high}
 
 
 def method_matrix(episodes: pd.DataFrame, method: str, column: str, episode_ids: list[int],
@@ -77,8 +83,9 @@ def paired_difference(episodes: pd.DataFrame, method_a: str, method_b: str, colu
     matrices = {m: method_matrix(episodes, m, column, episode_ids, only_success) for m in (method_a, method_b)}
     replicates = hierarchical_bootstrap(matrices, clusters, "mean", N_BOOT, seed)
     estimate = float(np.nanmean(matrices[method_a].values) - np.nanmean(matrices[method_b].values))
-    low, high = percentile_ci(replicates[method_a] - replicates[method_b])
-    return PairedDiff(estimate, low, high)
+    difference = replicates[method_a] - replicates[method_b]
+    low, high = percentile_ci(difference)
+    return PairedDiff(estimate, low, high, difference)
 
 
 def run_scores(episodes: pd.DataFrame, method: str, metric: str = "success") -> np.ndarray:
@@ -101,7 +108,9 @@ def iqm_with_ci(scores: dict[str, np.ndarray], reps: int = N_BOOT) -> pd.DataFra
 def probability_of_improvement(scores_x: np.ndarray, scores_y: np.ndarray, reps: int = N_BOOT) -> PairedDiff:
     """P(X > Y) do rliable, com IC do bootstrap estratificado."""
     metrics = _rliable_metrics()
-    return PairedDiff(*stratified_bootstrap(metrics.probability_of_improvement, (scores_x, scores_y), reps))
+    point, low, high, replicates = stratified_bootstrap(metrics.probability_of_improvement, (scores_x, scores_y), reps,
+                                                        return_replicates=True)
+    return PairedDiff(point, low, high, replicates)
 
 
 def holm(p_values: dict[str, float]) -> dict[str, float]:
@@ -141,7 +150,7 @@ def verdict_h1(differences: dict[str, PairedDiff]) -> dict:
     supported = all(differences[s].low > 0 for s in ("S1", "S2"))
     contradicted = any(differences[s].high < 0 for s in ("S1", "S2"))
     verdict = "suportada" if supported else ("não suportada" if contradicted else "inconclusiva")
-    return {"verdict": verdict, **{s: vars(d) for s, d in differences.items()}}
+    return {"verdict": verdict, **{s: d.summary() for s, d in differences.items()}}
 
 
 def verdict_h2(episodes_by_place: dict[str, pd.DataFrame], methods=("straight", "ppo_ca")) -> dict:
@@ -168,23 +177,82 @@ def verdict_h2(episodes_by_place: dict[str, pd.DataFrame], methods=("straight", 
 
 
 def verdict_h3_for_place(episodes: pd.DataFrame, policy: str, heuristic: str) -> dict:
-    """Superioridade (P(melhora) > 0,5 com IC) ou não inferioridade com eficiência (tempo de voo)."""
+    """Superioridade (P(melhora) > 0,5 com IC) ou não inferioridade com eficiência (tempo de voo).
+
+    p-valor do local (para o Holm entre locais, §2.3), a partir das réplicas bootstrap: o menor entre
+    p(a) = fração das réplicas com P(melhora) ≤ 0,5 e p(b) = max(fração com Δsucesso < −3 p.p., fração com
+    Δtempo ≥ 0).
+    """
     improvement = probability_of_improvement(run_scores(episodes, policy), run_scores(episodes, heuristic))
     success = paired_difference(episodes, policy, heuristic, "success")
     time = paired_difference(episodes, policy, heuristic, "flight_time_s", only_success=True)
     superiority = improvement.low > 0.5
     non_inferior_efficient = success.low >= NON_INFERIORITY_MARGIN and time.high < 0
-    return {"prob_improvement": improvement.estimate, "prob_low": improvement.low, "prob_high": improvement.high,
+    p_superiority = float(np.mean(improvement.replicates <= 0.5))
+    p_efficiency = float(max(np.nanmean(success.replicates < NON_INFERIORITY_MARGIN),
+                             np.nanmean(time.replicates >= 0)))
+    return {"policy": policy, "heuristic": heuristic,
+            "prob_improvement": improvement.estimate, "prob_low": improvement.low, "prob_high": improvement.high,
             "success_diff": success.estimate, "success_low": success.low, "success_high": success.high,
             "time_diff_s": time.estimate, "time_low": time.low, "time_high": time.high,
             "superiority": superiority, "non_inferior_efficient": non_inferior_efficient,
-            "supported": superiority or non_inferior_efficient,
+            "p_value": min(p_superiority, p_efficiency), "supported": superiority or non_inferior_efficient,
             "mode": "superioridade" if superiority else "não inferioridade + eficiência" if non_inferior_efficient
             else "—"}
 
 
+def verdict_h3(by_place: dict[str, dict]) -> dict:
+    """Holm entre os locais: o local conta como suportado se (a) ou (b) **e** p ajustado < 0,05."""
+    adjusted = holm({place: result["p_value"] for place, result in by_place.items()})
+    for place, result in by_place.items():
+        result["p_holm"] = adjusted[place]
+        result["supported_holm"] = bool(result["supported"] and adjusted[place] < 0.05)
+    return by_place
+
+
+def best_ca_heuristic(train_episodes: pd.DataFrame, candidates=("straight_ca", "lawnmower_ca", "random_ca",
+                                                                  "greedy_map_ca", "straight_150_ca")) -> str:
+    """Melhor heurística CA = a de maior sucesso no conjunto de calibração (janelas de treino da dobra, §2.1)."""
+    rates = train_episodes[train_episodes.method.isin(candidates)].groupby("method").success.mean()
+    return str(rates.idxmax())
+
+
+def spearman_with_window_ci(episodes: pd.DataFrame, x: str, y: str, reps: int = N_BOOT, seed: int = 0) -> PairedDiff:
+    """ρ de Spearman entre duas colunas (média por episódio entre seeds), IC por bootstrap de janelas."""
+    per_episode = episodes.groupby("episode").agg(**{x: (x, "mean"), y: (y, "mean"), "r0": ("window_r0", "first"),
+                                                     "c0": ("window_c0", "first")}).dropna()
+    windows = (per_episode.r0.astype(str) + "_" + per_episode.c0.astype(str)).to_numpy()
+    unique, inverse = np.unique(windows, return_inverse=True)
+    groups = [np.flatnonzero(inverse == g) for g in range(len(unique))]
+
+    def rho(index):
+        return float(pd.Series(per_episode[x].to_numpy()[index]).corr(pd.Series(per_episode[y].to_numpy()[index]),
+                                                                       method="spearman"))
+
+    point = rho(np.arange(len(per_episode)))
+    rng = np.random.default_rng(seed)
+    boot = np.array([rho(np.concatenate([groups[g] for g in rng.integers(0, len(groups), len(groups))]))
+                     for _ in range(reps)])
+    low, high = percentile_ci(boot)
+    return PairedDiff(point, low, high, boot)
+
+
+def verdict_h4(episodes: pd.DataFrame, with_altitude: str = "ppo_ca_alt", without: str = "ppo_ca") -> dict:
+    """(a) não inferior + menos tempo, ou sucesso superior; **e** (b) ρ(altitude média, mudança da janela) > 0."""
+    success = paired_difference(episodes, with_altitude, without, "success")
+    time = paired_difference(episodes, with_altitude, without, "flight_time_s", only_success=True)
+    part_a = (success.low >= NON_INFERIORITY_MARGIN and time.high < 0) or success.low > 0
+    rho = spearman_with_window_ci(episodes[episodes.method == with_altitude], "mean_altitude_m",
+                                  "window_change_prior")
+    part_b = rho.low > 0
+    verdict = "suportada" if part_a and part_b else ("não suportada" if (success.high < NON_INFERIORITY_MARGIN
+                                                                       or rho.high < 0) else "inconclusiva")
+    return {"verdict": verdict, "success_diff": success.summary(), "time_diff_s": time.summary(),
+            "part_a": bool(part_a), "spearman_altitude_change": rho.summary(), "part_b": bool(part_b)}
+
+
 def verdict_h5(h3_by_place: dict[str, dict], zero_shot_places=("poa_ilhas", "poa_centro", "canoas")) -> dict:
     available = [p for p in zero_shot_places if p in h3_by_place]
-    supported = [p for p in available if h3_by_place[p]["supported"]]
+    supported = [p for p in available if h3_by_place[p].get("supported_holm", h3_by_place[p]["supported"])]
     return {"verdict": "suportada" if len(supported) >= 2 else "não suportada" if len(available) >= 2 else
             "não avaliável", "supported_places": supported, "evaluated_places": available}

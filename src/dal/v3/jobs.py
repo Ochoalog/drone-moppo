@@ -191,6 +191,7 @@ def evaluate_job(job: dict, out_root: Path, device: str, job_id: str) -> pd.Data
             if not run_dir.exists():
                 continue  # execução INVALID_GATE tem outro nome de pasta: nunca entra na avaliação
             method_ca, prior_channel, altitude = METHODS[model["method"]]
+            method_ca = method_ca and model.get("filter", "ca") != "standard"  # H2: PPO-CA com filtro padrão
             drift = float(model.get("drift", 0.02))  # ablação de deriva: avaliada na deriva do treino
             gate = json.loads((run_dir / "train_summary.json").read_text()).get("gate") or {}
             # Os dois critérios do gate (V38): o original é só a vantagem de sucesso sobre a aleatória.
@@ -218,7 +219,10 @@ def _episodes(env: RealisticBatchedEnv, method: str, seed: int, site: str, scena
         "window_r0": env.origin[:, 0].cpu().numpy(), "window_c0": env.origin[:, 1].cpu().numpy(),
         "success": env.success.cpu().numpy(), "false_loc": env.false_loc.cpu().numpy(), "steps": env.t.cpu().numpy(),
         "flight_time_s": env.flight_time_s.cpu().numpy(), "distance_m": env.distance_m.cpu().numpy(),
-        "final_altitude_index": env.altitude_index.cpu().numpy()})
+        "final_altitude_index": env.altitude_index.cpu().numpy(),
+        "mean_altitude_m": (env.altitude_sum_m / env.t.clamp(min=1)).cpu().numpy(),
+        # Índice de mudança da janela (H4): fração inundada média do prior independente na janela (NaN sem prior).
+        "window_change_prior": env.window_change_prior().cpu().numpy()})
 
 
 # ============================================================================ CLI

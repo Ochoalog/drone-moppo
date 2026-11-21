@@ -51,6 +51,16 @@ models:
   - {method: ppo_ca, label: ppo_ca_drift5, drift: 0.05, seed: 0, run: mx_A_ppo_ca_d5_s0}
   - {method: ppo_ca, label: ppo_ca_drift5, drift: 0.05, seed: 1, run: mx_A_ppo_ca_d5_s1}
   - {method: ppo_ca, label: ppo_ca_drift5, drift: 0.05, seed: 2, run: mx_A_ppo_ca_d5_s2}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 0, run: mx_A_ppo_ca_s0}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 1, run: mx_A_ppo_ca_s1}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 2, run: mx_A_ppo_ca_s2}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 3, run: mx_A_ppo_ca_s3}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 4, run: mx_A_ppo_ca_s4}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 5, run: mx_A_ppo_ca_s5}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 6, run: mx_A_ppo_ca_s6}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 7, run: mx_A_ppo_ca_s7}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 8, run: mx_A_ppo_ca_s8}
+  - {method: ppo_ca, label: ppo_ca_stdfilter, filter: standard, seed: 9, run: mx_A_ppo_ca_s9}
 prior:
   taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
   poa: /content/drive/MyDrive/drone_v3/prior/porto_alegre_prior_emsn194_10m.tif

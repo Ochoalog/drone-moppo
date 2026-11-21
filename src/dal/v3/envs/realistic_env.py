@@ -121,7 +121,7 @@ class RealisticBatchedEnv:
     # ------------------------------------------------------------------ reinício
     STATE_KEYS = ("origin", "pos_m", "scale_error", "heading_error", "variants", "altitude_index", "window_cells",
                   "win_map_ok", "win_obs_ok", "belief", "t", "flight_time_s", "distance_m", "done", "success",
-                  "false_loc", "blocked_axes")
+                  "false_loc", "blocked_axes", "altitude_sum_m")
 
     def _fresh_state(self, seeds: list[int]) -> dict[str, torch.Tensor]:
         """Estado inicial de episódios novos, com todo o ruído do episódio sorteado a partir da semente."""
@@ -162,6 +162,7 @@ class RealisticBatchedEnv:
             "t": torch.zeros(n, dtype=torch.long, device=dev), "flight_time_s": zeros_f.clone(),
             "distance_m": zeros_f.clone(), "done": zeros_b.clone(), "success": zeros_b.clone(),
             "false_loc": zeros_b.clone(), "blocked_axes": torch.zeros(n, 2, dtype=torch.bool, device=dev),
+            "altitude_sum_m": zeros_f.clone(),  # soma da altitude de cada captura (H4: altitude média do episódio)
         }
 
     def reset(self, seeds: list[int]) -> None:
@@ -253,6 +254,14 @@ class RealisticBatchedEnv:
         center = (self.map_estimate().to(torch.float64) + 0.5) * self.cfg.cell_m
         return (center - self.pos_m).norm(dim=1)
 
+    def window_change_prior(self) -> torch.Tensor:
+        """Fração inundada média (prior independente) nas células válidas da janela de cada episódio; NaN sem prior."""
+        if self.prior is None:
+            return torch.full((self.n,), float("nan"), device=self.device)
+        values = self.prior[self.window_cells].float()
+        valid = self.win_map_ok.reshape(self.n, -1).float()
+        return (values * valid).sum(1) / valid.sum(1).clamp(min=1)
+
     def mass_around_map(self) -> torch.Tensor:
         center = self.map_estimate()
         cells = center.view(-1, 1, 2) + self.disk.view(1, -1, 2)
@@ -302,6 +311,9 @@ class RealisticBatchedEnv:
                                 torch.full_like(self.flight_time_s, HORIZONTAL_STEP_TIME_S)) + CAPTURE_TIME_S
         step_time = torch.where(active, step_time, torch.zeros_like(step_time))
         self.flight_time_s += step_time
+        altitudes = torch.tensor(cfg.altitudes_m, dtype=self.altitude_sum_m.dtype, device=self.device)
+        zero = torch.zeros_like(self.altitude_sum_m)
+        self.altitude_sum_m += torch.where(active, altitudes[self.altitude_index], zero)
 
         self._predict(torch.where((horizontal & ~blocked).view(-1, 1), command_cells, torch.zeros_like(command_cells)),
                       active)

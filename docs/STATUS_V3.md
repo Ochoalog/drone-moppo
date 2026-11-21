@@ -1,11 +1,10 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 21/11/2026, ≈ 14:30 (matriz de 48 treinos e 3 avaliações prontas e `on_hold`, V40; avaliação por sub-região de POA implementada). Antes, 13:00 (patches da IA-2 aceitos, V39). Antes, 12:30. Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 21/11/2026, ≈ 16:00 (ablação hand cortada, V41; código dos vereditos H2–H5 pronto e testado, V42; esperando os pilotos `_v38`). Antes, 13:00 (patches da IA-2 aceitos, V39). Antes, 12:30. Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
 
 ## [AÇÃO DO VITOR]
 
-1. **Repassar à IA-2:** rodar já os 3 pilotos `pilot_A_*_s0_v38` (prioridade 1, commit `CURRENT_COMMIT` novo) e publicar; depois extrações B/C e `calibrate_B_ftB`/`calibrate_C_ftC`.
-2. **Ablação de percepção (PPO-CA com hand, §2.4):** precisa do hand nas specs v3 da dobra A (3 altitudes, ~2 h de GPU por altitude no Colab). Ela não está na ordem de corte da §8; se não couber até segunda 12:00, a decisão de cortar é sua.
+1. **Repassar à IA-2:** novo `CURRENT_COMMIT` (avaliação com `ppo_ca_stdfilter`, altitude média e prior da janela nos episódios); publicar os pilotos `_v38` assim que saírem.
 
 ## Gates
 
@@ -49,6 +48,7 @@ O M1 refutou a parte "a política v1 é atraída por células distintivas no map
 ## Cortes
 
 1. **Evento externo (Valência)**, item 1 da §8 (V30).
+2. **Ablação de percepção (hand)** (V41).
 
 ## Próximos passos (IA-1)
 
