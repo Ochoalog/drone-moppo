@@ -28,3 +28,4 @@
 | 2026-11-21T05:35:38+00:00 | finetune_C | OK | 57.71 | loss 0.664034 | v3_extract_ftB_taquari_100m |
 | 2026-11-21T15:45:40+00:00 | pilot_A_ppo_s0_v38 | INVALID_GATE | 6.54 | fps 4371 passed=False | pilot_A_ppo_ca_s0_v38 |
 | 2026-11-21T15:52:20+00:00 | pilot_A_ppo_ca_s0_v38 | INVALID_GATE | 6.54 | fps 4028 passed=False | pilot_A_ppo_ca_alt_s0_v38 |
+| 2026-11-21T15:59:06+00:00 | pilot_A_ppo_ca_alt_s0_v38 | INVALID_GATE | 6.61 | fps 3953 passed=False | v3_extract_ftB_taquari_100m |
