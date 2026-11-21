@@ -1,0 +1,14 @@
+{
+ "job_id": "eval_baselines_A",
+ "git_commit": "c9cb3c17a1fe4ca102ebe44052c2e3c15fe9e7b2",
+ "config_hash": "d1626f228d70cdbe",
+ "gpu_minutes": 82.46,
+ "started_at": "2026-11-21T20:50:43+00:00",
+ "finished_at": "2026-11-21T22:13:10+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "rows": 60000,
+  "episodes_bytes": 9960132
+ }
+}
