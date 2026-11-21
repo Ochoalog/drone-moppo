@@ -1,0 +1,11 @@
+region,scenario,split,method,mode,success,false_loc,flight_time_s
+taquari,S2,train,ppo,argmax,0.962,0.006,131.652
+taquari,S2,train,ppo,sampled,0.962,0.008,131.868
+taquari,S2,train,ppo_ca,argmax,0.946,0.016,133.188
+taquari,S2,train,ppo_ca,sampled,0.964,0.008,134.316
+taquari,S2,train,ppo_ca_alt,argmax,0.954,0.02,142.716
+taquari,S2,train,ppo_ca_alt,sampled,0.956,0.02,140.152
+taquari,S2,train,random,—,0.93,0.014,163.404
+taquari,S2,train,random_ca,—,0.93,0.014,163.404
+taquari,S2,train,straight,—,0.984,0.01,121.836
+taquari,S2,train,straight_ca,—,0.984,0.01,121.836
