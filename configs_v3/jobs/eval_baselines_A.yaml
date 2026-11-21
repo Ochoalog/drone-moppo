@@ -1,0 +1,20 @@
+# Avaliação pareada SÓ DAS BASELINES (V45: RL sem veredito; dobra A, todos os locais): 1000 episódios (seeds 2024 + i) por alvo; baselines com filtro padrão e CA.
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+calibration_file: calibration_v2.json
+modes: [argmax, sampled]   # os dois modos (lição do estudo v1)
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: taquari, scenario: S2}
+  - {site: taquari, scenario: S2, split: train}
+  - {site: taquari, scenario: S1}
+  - {site: poa, scenario: P1, region: ilhas}
+  - {site: poa, scenario: P1, region: centro}
+  - {site: canoas, scenario: C1}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
+  poa: /content/drive/MyDrive/drone_v3/prior/porto_alegre_prior_emsn194_10m.tif
+  canoas: /content/drive/MyDrive/drone_v3/prior/canoas_prior_emsn194_10m.tif

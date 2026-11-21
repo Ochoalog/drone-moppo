@@ -39,13 +39,18 @@ def view(episodes: pd.DataFrame, mode: str, gate: str) -> pd.DataFrame:
 
 def run(episodes: pd.DataFrame, mode: str, gate: str) -> tuple[dict, pd.DataFrame]:
     data = view(episodes, mode, gate)
-    heuristic = verdicts.best_ca_heuristic(select(data, "taquari", "train"))
+    train = select(data, "taquari", "train")
+    heuristic = verdicts.best_ca_heuristic(train) if not train.empty else None
     result = {"mode": mode, "gate_criterion": gate, "best_ca_heuristic": heuristic,
               "runs": data[data.model_seed >= 0].groupby("method").model_seed.nunique().to_dict()}
     present = set(data.method)
-    if {"straight_ca", "straight", "ppo_ca", "ppo_ca_stdfilter"} <= present:
-        h2 = verdicts.verdict_h2({p: select(data, p) for p in H2_PLACES})
-        result["H2"] = {"verdict": h2["verdict"], "table": h2["table"].to_dict("records")}
+    if {"straight_ca", "straight"} <= present:
+        # V45: sem políticas válidas, o H2 sai só pela reta e o veredito fica "parcial" (a §2 pede reta e PPO-CA).
+        with_policy = {"ppo_ca", "ppo_ca_stdfilter"} <= present
+        h2 = verdicts.verdict_h2({p: select(data, p) for p in H2_PLACES},
+                                 methods=("straight", "ppo_ca") if with_policy else ("straight",))
+        result["H2"] = {"verdict": h2["verdict"] if with_policy else f"parcial, só a reta: {h2['verdict']}",
+                        "table": h2["table"].to_dict("records")}
     if "ppo_ca" in present:
         h3 = verdicts.verdict_h3({p: verdicts.verdict_h3_for_place(select(data, p), "ppo_ca", heuristic)
                                   for p in PLACES if not select(data, p).empty})
@@ -59,22 +64,25 @@ def run(episodes: pd.DataFrame, mode: str, gate: str) -> tuple[dict, pd.DataFram
 
 
 def main() -> None:
-    frames = [pd.read_csv(path) for path in sorted(EVAL.glob("eval_A*/episodes.csv"))]
+    frames = [pd.read_csv(path) for path in sorted(EVAL.glob("eval_*A/episodes.csv"))]
     if not frames:
-        raise SystemExit(f"sem episódios em {EVAL}/eval_A*/")
+        raise SystemExit(f"sem episódios em {EVAL}/eval_*A/")
     episodes = pd.concat(frames, ignore_index=True)
     results, tables = [], []
     for mode in ("argmax", "sampled"):
         for gate in ("emended", "original"):
+            if mode == "sampled" and not (episodes["mode"] == "sampled").any():
+                continue  # só baselines (V45): os modos não se aplicam
             result, table = run(episodes, mode, gate)
             results.append(result)
             tables.append(table)
     OUT.mkdir(parents=True, exist_ok=True)
-    payload = {"results": results, "source_file": [str(p) for p in sorted(EVAL.glob("eval_A*/episodes.csv"))],
+    payload = {"results": results, "source_file": [str(p) for p in sorted(EVAL.glob("eval_*A/episodes.csv"))],
                "protocol": "§2 do DECISIONS_V3.md; 1000 episódios pareados (seeds 2024+i); bootstrap B = 2000",
                "git_commit": git_commit()}
     (OUT / "verdicts_v3.json").write_text(json.dumps(payload, indent=1, ensure_ascii=False, default=str))
-    h3 = with_provenance(pd.concat(tables, ignore_index=True), source_file="results_v3/eval/eval_A/episodes.csv",
+    h3 = with_provenance(pd.concat(tables + [pd.DataFrame()], ignore_index=True),
+                         source_file="results_v3/eval/eval_A/episodes.csv",
                          protocol="H3 por local, Holm entre locais", config={"modes": ["argmax", "sampled"]},
                          n_episodes=1000, seeds="0–9", fold="A", region="todas")
     h3.to_csv(OUT / "h3_places.csv", index=False)
