@@ -25,3 +25,4 @@
 | 2026-11-20T23:10:14+00:00 | v3_extract_ft_canoas_60m | OK | 48.07 | crops/s 322.2 | |
 | 2026-11-21T03:40:10+00:00 | v3_extract_ft_canoas_150m | OK | 50.7 | crops/s 304.1 | finetune_B |
 | 2026-11-21T04:37:45+00:00 | finetune_B | OK | 57.41 | loss 1.066313 | finetune_C |
+| 2026-11-21T05:35:38+00:00 | finetune_C | OK | 57.71 | loss 0.664034 | v3_extract_ftB_taquari_100m |
