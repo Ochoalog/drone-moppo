@@ -1,0 +1,12 @@
+# Notebook 04 (kind: calibrate): calibração da dobra (V33/V39): mesma regra da PoC, grade de κ até 0,007,
+# 1000 episódios; empate vai para o maior κ e para o menor α.
+kind: calibrate
+descriptor: dinov2_vits14_ftB
+feature: ft
+fold: B
+scenario: S2
+episodes: 1000
+kappas: [1.0, 0.7, 0.5, 0.35, 0.25, 0.18, 0.125, 0.09, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.007]
+calibration_file: calibration_v2.json
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif

@@ -1,0 +1,27 @@
+{
+ "job_id": "v3_extract_ft_canoas_150m",
+ "git_commit": "d398eb08a1f83e0766034ad1c83441dda6313168",
+ "config_hash": "19300aa5971fcf06",
+ "gpu_minutes": 50.7,
+ "started_at": "2026-11-21T02:49:29+00:00",
+ "finished_at": "2026-11-21T03:40:10+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "specs": {
+   "v3_canoas_poa_pre_feb24_map_150m": {
+    "rows": 153600,
+    "crops_per_second": 307.1504555502879
+   },
+   "v3_canoas_poa_post_map_150m": {
+    "rows": 153600,
+    "crops_per_second": 306.42090205706734
+   },
+   "v3_canoas_poa_post_obs_150m": {
+    "rows": 614400,
+    "crops_per_second": 304.138058051639
+   }
+  },
+  "minutes": 50.69910155534744
+ }
+}

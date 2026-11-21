@@ -40,6 +40,8 @@ v3_extract_ftC_taquari_150m,colab/01_data_and_crops.ipynb,configs_v3/jobs/v3_ext
 pilot_A_ppo_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA_v2,60,2,done
 pilot_A_ppo_ca_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA_v2,60,2,done
 pilot_A_ppo_ca_alt_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA_v2,60,2,done
-pilot_A_ppo_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA_v2,10,2,queued
-pilot_A_ppo_ca_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA_v2,10,2,queued
-pilot_A_ppo_ca_alt_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA_v2,10,2,queued
+pilot_A_ppo_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_s0.yaml,calibrate_A_ftA_v2,10,1,queued
+pilot_A_ppo_ca_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_s0.yaml,calibrate_A_ftA_v2,10,1,queued
+pilot_A_ppo_ca_alt_s0_v38,colab/04_train_matrix.ipynb,configs_v3/jobs/pilot_A_ppo_ca_alt_s0.yaml,calibrate_A_ftA_v2,10,1,queued
+calibrate_B_ftB,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_B_ftB.yaml,v3_extract_ftB_taquari_100m;v3_extract_ftB_taquari_60m;v3_extract_ftB_taquari_150m,10,17,queued
+calibrate_C_ftC,colab/04_train_matrix.ipynb,configs_v3/jobs/calibrate_C_ftC.yaml,v3_extract_ftC_taquari_100m;v3_extract_ftC_taquari_60m;v3_extract_ftC_taquari_150m,10,17,queued
