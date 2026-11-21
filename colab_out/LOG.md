@@ -33,3 +33,4 @@
 | 2026-11-21T22:13:10+00:00 | eval_baselines_A | OK | 82.46 | episodes 60000 | mx_A_ppo_s0 |
 | 2026-11-21T22:19:09+00:00 | mx_A_ppo_s0 | INVALID_GATE | 5.84 | fps 4589 pass=False adv=+0.010 | mx_A_ppo_ca_s0 |
 | 2026-11-21T22:25:34+00:00 | mx_A_ppo_ca_s0 | INVALID_GATE | 6.28 | fps 4184 pass=False adv=+0.025 | mx_A_ppo_ca_alt_s0 |
+| 2026-11-21T22:32:06+00:00 | mx_A_ppo_ca_alt_s0 | INVALID_GATE | 6.39 | fps 4121 pass=False adv=+0.020 | mx_A_ppo_s1 |
