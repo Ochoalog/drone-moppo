@@ -32,3 +32,4 @@
 | 2026-11-21T16:46:35+00:00 | diag_pilots_A | OK | 1.09 | episodes 5000 | v3_extract_ftB_taquari_100m |
 | 2026-11-21T22:13:10+00:00 | eval_baselines_A | OK | 82.46 | episodes 60000 | mx_A_ppo_s0 |
 | 2026-11-21T22:19:09+00:00 | mx_A_ppo_s0 | INVALID_GATE | 5.84 | fps 4589 pass=False adv=+0.010 | mx_A_ppo_ca_s0 |
+| 2026-11-21T22:25:34+00:00 | mx_A_ppo_ca_s0 | INVALID_GATE | 6.28 | fps 4184 pass=False adv=+0.025 | mx_A_ppo_ca_alt_s0 |
