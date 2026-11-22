@@ -64,3 +64,4 @@
 | 2026-11-22T01:34:41+00:00 | calibrate_canoas_ftA | FAILED | 0.26 | kappa = 0.0000 | E_canoas_ppo_s0 |
 | 2026-11-22T04:56:23+00:00 | E_eval_taquari_L0 | OK | 19.72 | episodes 50000 | scan_noise_A |
 | 2026-11-22T05:45:27+00:00 | scan_noise_A | OK | 48.98 | scan rows 8 | aguardando_selecao_niveis_ruido |
+| 2026-11-22T15:17:45+00:00 | diag_canoas_split | FAILED | 0.72 | split_diagnostic | aguardando_decisao_vitor |
