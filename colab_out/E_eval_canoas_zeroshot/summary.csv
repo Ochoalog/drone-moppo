@@ -1,0 +1,8 @@
+region,scenario,split,method,mode,success,false_loc,flight_time_s
+canoas,C1,test,greedy_map,—,0.369,0.088,363.186
+canoas,C1,test,lawnmower,—,0.527,0.021,339.996
+canoas,C1,test,ppo,argmax,0.5328,0.049,334.8222
+canoas,C1,test,ppo,sampled,0.5419,0.0458,339.0642
+canoas,C1,test,random,—,0.408,0.046,381.606
+canoas,C1,test,straight,—,0.645,0.042,329.37
+canoas,C1,test,straight_150,—,0.706,0.036,321.562

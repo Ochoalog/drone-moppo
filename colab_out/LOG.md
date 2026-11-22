@@ -66,3 +66,4 @@
 | 2026-11-22T05:45:27+00:00 | scan_noise_A | OK | 48.98 | scan rows 8 | aguardando_selecao_niveis_ruido |
 | 2026-11-22T15:17:45+00:00 | diag_canoas_split | FAILED | 0.72 | split_diagnostic | aguardando_decisao_vitor |
 | 2026-11-22T16:06:07+00:00 | scan_noise_A_ext | OK | 27.71 | scan ext rows 4 | aguardando_selecao_niveis_ruido |
+| 2026-11-22T16:14:02+00:00 | E_eval_canoas_zeroshot | OK | 7.79 | episodes 25000 | aguardando_jobs_E_synth |
