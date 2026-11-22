@@ -4,8 +4,8 @@
 
 ## [AÇÃO DO VITOR]
 
-1. **Canoas (V51, decidido):** o E-real foi cortado; Canoas fica no artigo pelas baselines. Item descritivo novo na fila: `E_eval_canoas_zeroshot` (as 10 `mx_A_ppo` nas 31 janelas de Canoas, ~15 min). **Repassar à IA-2:** atualizar para o novo `CURRENT_COMMIT` depois do `scan_noise_A_ext` e rodar o `E_eval_canoas_zeroshot`.
-2. **Ruído (V50, decidido):** `scan_noise_A_ext` (σ ∈ {4; 6; 8; 12}) rodando. Quando publicar, eu escolho L1–L3 pela regra da V46 sobre as 12 σ, commito o `noise_levels.json` e libero os 15 treinos e as 3 avaliações do E-synth (L3 primeiro). Se ainda não houver σ < 75%, paro e pergunto.
+1. **Canoas zero-shot (V51, descritivo; `results_v3/E/canoas_zeroshot.csv`):** as PPOs de Taquari, no modo amostrado, acertam 54,2% nas 31 janelas. Contra cada heurística: aleatória **+13,4 [+8,9; +17,9]**, gulosa **+17,3 [+11,4; +22,6]**, zigue-zague +1,5 [−3,5; +6,3], reta **−10,3 [−14,9; −5,8]**, reta a 150 m **−16,4 [−21,3; −11,8]**. Ou seja, a PPO transfere melhor que a exploração sem plano, mas continua abaixo das retas, como em Taquari.
+2. **E-synth (V53):** níveis L1 = σ 6, L2 = σ 8, L3 = σ 12; 18 jobs na fila, com o L3 primeiro. `CURRENT_COMMIT` = `fa28665`.
 3. **Referência L0 (Taquari, 10 seeds, amostrado):** PPO 97,8%; PPO − aleatória **+3,8 p.p. [+2,3; +5,3]**; PPO − melhor heurística (reta a 150 m, escolhida no treino) **−1,8 p.p. [−2,5; −1,0]**. Argmax: +3,3 [+1,3; +5,2] e −2,3 [−3,8; −0,9].
 
 4. **Correção para o `PLANO_ARTIGO.md` v4 (§5 e §6):** "gulosa < aleatória" vale só em **Canoas** (36,9 × 40,8%). Nas **ilhas** é empate (43,3 × 44,4%) e no **Centro** a gulosa fica **acima** da aleatória (35,8 × 27,8%). O texto do artigo (VI-B) já diz assim: "a gulosa é a pior estratégia informada em todo lugar; fica abaixo da aleatória em Canoas e empata nas ilhas". Não mexi no plano, porque o arquivo é seu.
