@@ -71,3 +71,4 @@
 | 2026-11-22T20:03:16+00:00 | E_synth_L3_ppo_s1 | OK | 5.51 | fps 4922 pass=True adv=+0.135 | E_synth_L3_ppo_s2 |
 | 2026-11-22T20:08:55+00:00 | E_synth_L3_ppo_s2 | OK | 5.52 | fps 4893 pass=True adv=+0.090 | E_synth_L3_ppo_s3 |
 | 2026-11-22T20:14:31+00:00 | E_synth_L3_ppo_s3 | OK | 5.49 | fps 4910 pass=True adv=+0.120 | E_synth_L3_ppo_s4 |
+| 2026-11-22T20:20:06+00:00 | E_synth_L3_ppo_s4 | OK | 5.48 | fps 4928 pass=True adv=+0.080 | E_eval_synth_L3 |
