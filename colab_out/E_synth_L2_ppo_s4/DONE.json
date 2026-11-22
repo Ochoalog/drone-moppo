@@ -1,0 +1,28 @@
+{
+ "job_id": "E_synth_L2_ppo_s4",
+ "git_commit": "6f2a567fe78ed6e79b7c514fd352ef4480c64e21",
+ "config_hash": "688f3fa43d5e00aa",
+ "gpu_minutes": 5.44,
+ "started_at": "2026-11-22T21:44:00+00:00",
+ "finished_at": "2026-11-22T21:49:27+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "run_dir": "/content/drive/MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/runs/E_synth_L2_ppo_s4",
+  "global_step": 1409024,
+  "gate": {
+   "policy_success": 0.9549999833106995,
+   "policy_false_loc": 0.009999999776482582,
+   "policy_flight_time_success_s": 203.9371795654297,
+   "random_success": 0.8549999594688416,
+   "random_false_loc": 0.02499999850988388,
+   "random_flight_time_success_s": 237.40350341796875,
+   "advantage": 0.10000002384185791,
+   "threshold": 0.05,
+   "flight_time_ratio_threshold": 0.75,
+   "passed": true
+  },
+  "steps_per_s_median": 4871.1,
+  "invalid_gate": false
+ }
+}
