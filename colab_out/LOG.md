@@ -84,3 +84,4 @@
 | 2026-11-22T21:38:23+00:00 | E_synth_L2_ppo_s2 | INVALID_GATE | 5.49 | fps 4844 pass=False adv=+0.035 | E_synth_L2_ppo_s3 |
 | 2026-11-22T21:43:55+00:00 | E_synth_L2_ppo_s3 | OK | 5.44 | fps 4885 pass=True adv=+0.050 | E_synth_L2_ppo_s4 |
 | 2026-11-22T21:49:27+00:00 | E_synth_L2_ppo_s4 | OK | 5.44 | fps 4871 pass=True adv=+0.100 | E_eval_synth_L2 |
+| 2026-11-22T22:05:47+00:00 | E_eval_synth_L2 | OK | 16.24 | episodes 30000 | L2_concluido |
