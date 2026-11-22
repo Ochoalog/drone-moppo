@@ -2,6 +2,23 @@
  "status": "exploratório (V46); E1 e E2 cortados com o E-real (V51)",
  "main_mode": "sampled",
  "regimes": [
-  "Taquari L0"
- ]
+  "Taquari L0",
+  "Taquari L3 (σ=12)"
+ ],
+ "E3": {
+  "estimate": -0.1673,
+  "low": -0.21569787259842096,
+  "high": -0.1253636157227902,
+  "criterion": "Δ(L3) − Δ(L0) > 0, IC exclui 0",
+  "regime_high": "Taquari L3 (σ=12)",
+  "verdict": "contrária"
+ },
+ "E3_argmax": {
+  "estimate": -0.15090000000000015,
+  "low": -0.22204749793869427,
+  "high": -0.08243053214994572,
+  "criterion": "Δ(L3) − Δ(L0) > 0, IC exclui 0",
+  "regime_high": "Taquari L3 (σ=12)",
+  "verdict": "contrária"
+ }
 }
