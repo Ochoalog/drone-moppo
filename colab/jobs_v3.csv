@@ -108,7 +108,7 @@ E_canoas_ppo_s4,colab/04_train_matrix.ipynb,configs_v3/jobs/E/E_canoas_ppo_s4.ya
 E_eval_canoas,colab/05_evaluate.ipynb,configs_v3/jobs/E/E_eval_canoas.yaml,E_canoas_ppo_s0;E_canoas_ppo_s1;E_canoas_ppo_s2;E_canoas_ppo_s3;E_canoas_ppo_s4,45,5,blocked
 E_eval_taquari_L0,colab/05_evaluate.ipynb,configs_v3/jobs/E/E_eval_taquari_L0.yaml,mx_A_ppo_s0;mx_A_ppo_s1;mx_A_ppo_s2;mx_A_ppo_s3;mx_A_ppo_s4;mx_A_ppo_s5;mx_A_ppo_s6;mx_A_ppo_s7;mx_A_ppo_s8;mx_A_ppo_s9,50,6,done
 scan_noise_A,colab/04_train_matrix.ipynb,configs_v3/jobs/E/scan_noise_A.yaml,,45,7,done
-scan_noise_A_ext,colab/04_train_matrix.ipynb,configs_v3/jobs/E/scan_noise_A_ext.yaml,,25,7,queued
+scan_noise_A_ext,colab/04_train_matrix.ipynb,configs_v3/jobs/E/scan_noise_A_ext.yaml,,25,7,done
 E_canoas_ppo_alt_s0,colab/04_train_matrix.ipynb,configs_v3/jobs/E/E_canoas_ppo_alt_s0.yaml,calibrate_canoas_ftA,8,9,blocked
 E_canoas_ppo_alt_s1,colab/04_train_matrix.ipynb,configs_v3/jobs/E/E_canoas_ppo_alt_s1.yaml,calibrate_canoas_ftA,8,9,blocked
 E_canoas_ppo_alt_s2,colab/04_train_matrix.ipynb,configs_v3/jobs/E/E_canoas_ppo_alt_s2.yaml,calibrate_canoas_ftA,8,9,blocked
