@@ -8,6 +8,10 @@
 2. **Se `calibrate_canoas_ftA` terminar `FAILED` ("< 20 janelas de teste"):** é ponto de decisão seu (V46). A divisão de Canoas não rende 20 janelas de teste nem com 2 janelas de largura.
 3. **Depois do `scan_noise_A`:** eu escolho os níveis L1–L3 pela regra da V46, commito o `results_v3/E/noise_levels.json` e libero os `E_synth_*`. Se nenhum σ válido der aleatória < 75%, é ponto de decisão seu.
 
+4. **Correção para o `PLANO_ARTIGO.md` v4 (§5 e §6):** "gulosa < aleatória" vale só em **Canoas** (36,9 × 40,8%). Nas **ilhas** é empate (43,3 × 44,4%) e no **Centro** a gulosa fica **acima** da aleatória (35,8 × 27,8%). O texto do artigo (VI-B) já diz assim: "a gulosa é a pior estratégia informada em todo lugar; fica abaixo da aleatória em Canoas e empata nas ilhas". Não mexi no plano, porque o arquivo é seu.
+5. **Pedir à IA-2 (opcional, quando houver folga):** publicar os episódios do `eval_baselines_A` (`MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/eval/eval_baselines_A/episodes.csv`) em parquet na `colab/results`, para dar IC às baselines da v3 no apêndice.
+6. **Artigo:** a LaTeX não compila nesta máquina (sem TeX). Compile no Overleaf para conferir o tamanho da Tab. II (está com `\resizebox`).
+
 ## Experimento E: previsão (T4, um job por vez)
 
 | Bloco | Jobs | GPU (min) | Término previsto |
