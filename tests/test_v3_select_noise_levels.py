@@ -40,3 +40,13 @@ def test_invalid_sigma_is_skipped_for_the_nearest_valid_one():
 def test_stops_when_no_valid_level_is_below_75_percent():
     with pytest.raises(module.NoValidLevelError):
         module.select_levels(_scan([0.95, 0.90, 0.80, 0.03, 0.01]))
+
+
+def test_v53_order_picks_hardest_level_first_and_keeps_difficulty_monotone():
+    select_levels = module.select_levels
+    scan = pd.DataFrame({"sigma": [0.25, 4.0, 6.0, 8.0, 12.0], "kappa": 0.1,
+                         "random_success": [0.94, 0.929, 0.902, 0.862, 0.673], "calibration_file": "c.json"})
+    v46 = select_levels(scan)["levels"]
+    assert [v46[k]["sigma"] for k in ("L1", "L2", "L3")] == [12.0, 8.0, 6.0]  # o caso invertido da V52
+    v53 = select_levels(scan, order="V53")
+    assert [v53["levels"][k]["sigma"] for k in ("L1", "L2", "L3")] == [6.0, 8.0, 12.0] and v53["rule"] == "V53"

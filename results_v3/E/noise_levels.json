@@ -1,0 +1,40 @@
+{
+ "levels": {
+  "L1": {
+   "sigma": 6.0,
+   "target_random_success": 0.75,
+   "random_success": 0.9020000696182251,
+   "kappa": 0.35,
+   "calibration_file": "calibration_noise_6.json"
+  },
+  "L2": {
+   "sigma": 8.0,
+   "target_random_success": 0.55,
+   "random_success": 0.862000048160553,
+   "kappa": 0.5,
+   "calibration_file": "calibration_noise_8.json"
+  },
+  "L3": {
+   "sigma": 12.0,
+   "target_random_success": 0.35,
+   "random_success": 0.6730000376701355,
+   "kappa": 1.0,
+   "calibration_file": "calibration_noise_12.json"
+  }
+ },
+ "invalid_sigmas": [],
+ "rule": "V53",
+ "min_random_success": 0.05,
+ "source_file": [
+  "results_v3/E/scan_noise_A/scan.csv",
+  "results_v3/E/scan_noise_A_ext/scan.csv"
+ ],
+ "scan_git_commit": [
+  "093d9ffef8cd00cafdff86fa49f4b6f3f4a7ed7a",
+  "24878f822f3689447d05d6a6448092b20733cfa4"
+ ],
+ "scan_config_hash": [
+  "acafbf59fbf13a96",
+  "d4a653a5a831633c"
+ ]
+}

@@ -1,0 +1,26 @@
+# Experimento E-synth (V46), avaliação do nível L1 (σ = 6). Gerado por
+# scripts/make_synth_jobs_v3.py. NÃO EDITAR. Mesmo protocolo do E_eval_taquari_L0, com o ruído do nível.
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+calibration_file: calibration_noise_6.json
+obs_noise_sigma: 6.0
+obs_noise_seed: 0
+include_invalid_gate: true
+publish_parquet: true
+baseline_filters: [standard]
+modes: [sampled, argmax]
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: taquari, scenario: S2, split: test}
+  - {site: taquari, scenario: S2, split: train}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
+models:
+  - {method: ppo, seed: 0, run: E_synth_L1_ppo_s0, label: ppo}
+  - {method: ppo, seed: 1, run: E_synth_L1_ppo_s1, label: ppo}
+  - {method: ppo, seed: 2, run: E_synth_L1_ppo_s2, label: ppo}
+  - {method: ppo, seed: 3, run: E_synth_L1_ppo_s3, label: ppo}
+  - {method: ppo, seed: 4, run: E_synth_L1_ppo_s4, label: ppo}

@@ -29,14 +29,19 @@ class NoValidLevelError(RuntimeError):
 
 
 def select_levels(scan: pd.DataFrame, targets: dict[str, float] = TARGETS,
-                  min_random_success: float = MIN_RANDOM_SUCCESS) -> dict:
-    """Função pura: {nível: {sigma, random_success, target, ...}} e a lista de σ inválidos."""
+                  min_random_success: float = MIN_RANDOM_SUCCESS, order: str = "V46") -> dict:
+    """Função pura: {nível: {sigma, random_success, target, ...}} e a lista de σ inválidos.
+
+    `order="V46"`: escolhe L1 → L2 → L3. `order="V53"`: escolhe L3 → L2 → L1 (o nível mais difícil primeiro), para
+    que a dificuldade seja monótona (L1 < L2 < L3 em σ) quando a grade não cobre os alvos (V52/V53).
+    """
     valid = scan[scan.random_success >= min_random_success].sort_values("sigma")
     invalid = sorted(scan.loc[scan.random_success < min_random_success, "sigma"].astype(float).tolist())
     if not (valid.random_success < 0.75).any():
         raise NoValidLevelError("nenhum σ válido com sucesso da aleatória < 75%")
     chosen, levels = set(), {}
-    for level, target in targets.items():
+    items = list(targets.items())
+    for level, target in (reversed(items) if order == "V53" else items):
         candidates = valid[~valid.sigma.isin(chosen)].copy()
         if candidates.empty:
             raise NoValidLevelError(f"sem σ válido sobrando para {level}")
@@ -46,11 +51,13 @@ def select_levels(scan: pd.DataFrame, targets: dict[str, float] = TARGETS,
         levels[level] = {"sigma": float(best.sigma), "target_random_success": target,
                          "random_success": float(best.random_success), "kappa": float(best.kappa),
                          "calibration_file": str(best.get("calibration_file", ""))}
-    return {"levels": levels, "invalid_sigmas": invalid, "rule": "V46", "min_random_success": min_random_success}
+    levels = {level: levels[level] for level in targets}
+    return {"levels": levels, "invalid_sigmas": invalid, "rule": order, "min_random_success": min_random_success}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--order", default="V53", choices=["V46", "V53"])
     parser.add_argument("--scan", nargs="+", default=[str(p) for p in DEFAULT_SCANS if p.exists()])
     args = parser.parse_args()
     paths = [Path(p) for p in args.scan]
@@ -58,7 +65,7 @@ def main() -> None:
     scan = pd.concat(scans, ignore_index=True)
     if scan.sigma.duplicated().any():
         raise ValueError("σ repetido entre as varreduras")
-    result = select_levels(scan)
+    result = select_levels(scan, order=args.order)
     result["source_file"] = [str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p) for p in paths]
     for column in ("git_commit", "config_hash"):
         if column in scan.columns:

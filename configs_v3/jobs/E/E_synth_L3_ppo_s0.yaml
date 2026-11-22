@@ -1,0 +1,18 @@
+# Experimento E-synth (V46), nível L3 (σ = 12; aleatória no treino 0.673).
+# Gerado por scripts/make_synth_jobs_v3.py a partir de results_v3/E/noise_levels.json. NÃO EDITAR.
+# Igual ao mx_A_ppo (matriz), mais o ruído na observação e a calibração recalibrada do nível.
+kind: train
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+scenario: S2
+method: ppo
+seed: 0
+total_timesteps: 1400000
+n_envs: 512
+calibration_file: calibration_noise_12.json
+obs_noise_sigma: 12.0
+obs_noise_seed: 0
+gate_flight_time_ratio: 0.75
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
