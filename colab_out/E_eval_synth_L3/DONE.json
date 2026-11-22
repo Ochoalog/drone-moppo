@@ -1,0 +1,14 @@
+{
+ "job_id": "E_eval_synth_L3",
+ "git_commit": "6f2a567fe78ed6e79b7c514fd352ef4480c64e21",
+ "config_hash": "e530eb9e55a115bc",
+ "gpu_minutes": 16.53,
+ "started_at": "2026-11-22T20:20:12+00:00",
+ "finished_at": "2026-11-22T20:36:43+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "rows": 30000,
+  "episodes_bytes": 6420132
+ }
+}
