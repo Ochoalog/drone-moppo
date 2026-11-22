@@ -1,238 +1,172 @@
-# Plano de escrita do artigo v3 (entrega 25/11/2026)
+# Plano de escrita do artigo v4 (projeto final de Aprendizado por Reforço, UFRGS)
 
-**Versão:** v3, de 18/11/2026. Substitui a v2 (preservada em `docs/PLANO_ARTIGO_v2.md`). O artigo deixa de ser "um estudo do PPO sobre mapas desatualizados" e passa a ser um **artigo de método**: o estudo atual vira o estudo preliminar que motiva o método, e o método novo (percepção aprendida, modelo realista, localização ciente da mudança, altitude) é avaliado com 10 seeds, validação espacial e transferência.
+**Versão:** v4, de 21/11/2026. Substitui a v3 (preservada em `docs/PLANO_ARTIGO_v3.md`).
+**Por que mudou:** a v3 vendia um método de percepção ("change-aware"), mas os dados mostram outra coisa:
+- com o descritor ajustado, as baselines chegaram ao teto em Taquari (aleatória 94%, reta 99,8% em S2 teste);
+- nenhum dos treinos de PPO passou no gate de aprendizado;
+- a calibração desligou o filtro ciente da mudança (α = 0).
 
-**Formato:** template a confirmar com o professor (o enunciado sugere arXiv/Prime AI; a proposta do grupo é IEEE Conference, duas colunas). Alvo: **8 páginas de texto + referências**. Se o limite for 6, cortar conforme a §8.
-**Idioma:** confirmar. O padrão IEEE é inglês, e uma versão em inglês já serve de base para uma submissão futura (ICUAS 2027, prazo 05/02/2027, revisão duplo-cega).
-**Fonte da verdade:** só números da tag `results-final` (congelamento de segunda, 23/11, 12:00), lidos de `paper/tables/*.csv`.
-**Relação com o seminário:** o método é uma extensão direta do Active Neural Localization (filtro de histograma + política aprendida). Isso precisa estar explícito na introdução e no método, porque é exigência da disciplina.
+O artigo de uma disciplina de RL precisa ter o RL no centro. A v4 reorganiza o texto em torno de uma pergunta de RL que os dados respondem, e acrescenta um experimento curto, exploratório e pré-especificado (experimento E) para responder a ela diretamente.
 
----
-
-## 1. Tese e título
-
-**Tese:** quando o mapa de referência foi desatualizado por um desastre, a localização ativa falha exatamente onde o mapa mudou: tanto o filtro quanto a política confiam em lugares que hoje estão debaixo d'água. **Informar ao localizador onde o mapa provavelmente mudou** (com a delimitação de inundação que serviços de emergência publicam em dias) e **deixar a política escolher a altitude** recupera a robustez. Com isso, a política aprendida passa a pagar a pena contra heurísticas fortes.
-
-A tese tem três partes, e cada uma depende de um resultado:
-- "falha onde o mapa mudou": estudo v1 (M1 e índice de mudança, já especificados);
-- "o filtro CA recupera robustez": H2;
-- "a política aprendida passa a pagar a pena": H3 e H4.
-
-Se H3 não for suportada, a tese recua para: "a percepção e o filtro cientes da mudança resolvem a maior parte do problema, e a escolha ativa de trajetória acrescenta pouco sobre uma heurística CA". Isso continua sendo um resultado útil e publicável.
-
-**Títulos propostos** (escolher no domingo, 22/11, com os resultados):
-1. *Change-Aware Active Localization for GNSS-Denied UAVs over Outdated Post-Flood Maps*
-2. *Where the Map Lies: Change-Aware Active Localization of UAVs after Floods*
-3. (se H3 não for suportada) *When Does Active Localization Pay Off over Outdated Post-Disaster Maps?*
+**Formato:** IEEE Conference, duas colunas (decisão do Vitor, V35), **8 páginas de texto + referências**.
+**Datas:** congelamento dos resultados na segunda, 23/11, 12:00 (tag `results-final`); artigo em 25/11; apresentação em 27/11.
+**Fonte da verdade:** só números de `paper/tables/*.csv` na tag `results-final`, com `source_file` e commit.
+**Relação com os seminários:** o método é o do Active Neural Localization (política sobre a crença de um filtro de histograma), o seminário do grupo. A extensão multiobjetivo vem do AMOR (seminário de outro grupo). As duas relações precisam estar explícitas.
 
 ---
 
-## 2. Perguntas de pesquisa e hipóteses
+## 1. Tese, pergunta e título
 
-Critérios completos em `DECISIONS_V3.md` (commitado antes da matriz) e em `PLANO_DESENVOLVIMENTO.md` §4.
+**Pergunta central:** quando aprender a agir compensa na localização ativa?
 
-| Pergunta | Hipótese | Enunciado curto |
+**Tese:** o valor de uma política aprendida sobre a crença depende da **ambiguidade perceptual**.
+- Com percepção ambígua (estudo v1; Canoas e Porto Alegre na v3), decidir para onde voar importa: a aleatória fica bem abaixo da reta. A PPO aprende a ser mais eficiente que as heurísticas, mas assume mais risco de localização falsa, e o condicionamento em preferências (MOPPO) não conseguiu controlar esse risco.
+- Quando a percepção remove a ambiguidade (Taquari na v3), qualquer movimento localiza: sobra pouco valor de informação para a política explorar, e ela não passa no gate.
+- Planejar com as previsões do mapa desatualizado (gulosa por ganho de informação) é a pior estratégia nos locais difíceis, pior até que a aleatória.
+
+O experimento E testa a tese diretamente. Se ele não mostrar a vantagem da PPO crescendo com a ambiguidade, a tese recua para a parte descritiva: "a política aprendida supera o movimento sem informação onde há ambiguidade, mas uma heurística de cobertura simples continua difícil de bater". O título 1 funciona nos dois casos.
+
+**Títulos:**
+1. *When Does Learning to Act Pay Off? Belief-Space Reinforcement Learning for UAV Localization over Outdated Post-Flood Maps*
+2. *Learning Where to Fly When the Map Is Wrong: Active UAV Localization after Floods*
+
+"Change-aware" sai do título e da tese: com α = 0, o filtro CA não foi exercido.
+
+---
+
+## 2. Perguntas de pesquisa e de onde vêm as respostas
+
+| Pergunta | Resposta | Origem | Situação |
+|---|---|---|---|
+| **RQ1:** com percepção ambígua, uma política aprendida sobre a crença supera heurísticas simples? | PPO ≈ reta em sucesso, com menos passos e menos distância, mas mais localizações falsas; generaliza norte→sul | estudo v1 (H1–H3 v1) | pronta |
+| **RQ2:** o que torna o problema difícil, e a política transfere? | o sucesso de todos cai com o descasamento mapa–observação; transferência mantida no Centro, quebrada nas ilhas; gulosa com o mapa é a pior nos locais difíceis | estudo v1 (HP1–HP3, F1–F2, M1 não suportada) + baselines v3 nos 6 alvos | pronta |
+| **RQ3:** dá para controlar o equilíbrio eficiência × risco com uma política condicionada em preferências? | não neste orçamento: o gate de condicionamento falhou, o argmax era idêntico entre presets, e a avaliação amostrada só mostra diferenças pequenas | estudo v1 (MOPPO, errata, `results_mo_v1fix/`) | pronta |
+| **RQ4:** quando a percepção melhora, o que acontece com o valor da política? E a vantagem dela cresce com a ambiguidade? | Taquari v3: teto das baselines, 0 de 30 treinos no gate; **experimento E**: Canoas (ambiguidade real) e ruído controlado no descritor | v3 (H1, G3, V44, matriz) + **E** | E em andamento |
+
+Os vereditos das hipóteses pré-especificadas (v1: H1–H7, HP1–HP3; v3: H1–H5) vão para uma tabela do apêndice, com a tabela de alterações de critério e de protocolo. No texto principal, cada resultado aparece como resposta a uma RQ.
+
+---
+
+## 3. Experimento E: quando aprender a agir compensa (exploratório, pré-especificado em 21/11)
+
+**Por que existe:** os dois regimes do artigo (v1 e v3) diferem em muitas coisas ao mesmo tempo (grade, sensor, descritor). O experimento E isola a ambiguidade perceptual **dentro do mesmo ambiente v3**, com a mesma PPO, o mesmo orçamento e as mesmas heurísticas.
+
+**Status:** exploratório. Surgiu depois de ver o teto em Taquari, então é declarado como tal no texto. Os critérios abaixo são escritos no `DECISIONS_V3.md` (V46) e commitados **antes** de qualquer treino de E, e o resultado é reportado qualquer que seja.
+
+**Exceção ao gate (decisão do Vitor, V46):** no experimento E, todas as execuções são avaliadas no teste, passem ou não no gate de aprendizado. A taxa de aprovação no gate é ela mesma um resultado (deve subir com a ambiguidade). As hipóteses H3–H5 da v3 continuam sem veredito, como na V45.
+
+### E-real: ambiguidade real (prioridade 1)
+- **Canoas C1** (mapa fev/24 → pós-evento 09/05/24), ambiente realista v3, descritor ftA (zero-shot em Canoas), sem altitude, filtro padrão.
+- Divisão espacial dentro de Canoas: ao longo do eixo mais longo da caixa, com margem de 200 m e uma faixa de teste que caiba ≥ 1,4 janela. Calibração de β₁ e κ só na faixa de treino, com a regra da PoC e a grade estendida da V33.
+- PPO (sem canal de prior), **5 seeds**, 1,4 M passos, os mesmos hiperparâmetros da matriz.
+- Heurísticas nos mesmos episódios: reta, zigue-zague, aleatória, greedy_map, reta a 150 m. Teste e treino (o treino serve para escolher a melhor heurística).
+- Referência fácil: Taquari S2, com as 10 execuções `mx_A_ppo_s0–9` já treinadas, avaliadas no teste da dobra A (exceção da V46).
+
+### E-synth: ambiguidade controlada (prioridade 2)
+- Taquari S2, dobra A. Ruído gaussiano no descritor da **observação** (não no mapa): z' = normalizar(z + σ·g), g ~ N(0, I/D), determinístico por semente, igual para todos os métodos.
+- **Escolha dos níveis (regra fixada antes):** varrer σ ∈ {0,25; 0,5; 0,75; 1,0; 1,25; 1,5; 2,0; 3,0}; para cada σ, recalibrar β₁ e κ no treino e medir o sucesso da aleatória no treino. Escolher L1, L2 e L3 como os σ com sucesso da aleatória mais perto de **75%, 55% e 35%**. Nível inválido se a calibração escolher um κ em que a aleatória acerta < 5% (filtro que não concentra); nesse caso, usar o σ válido mais próximo.
+- L0 = σ 0 (as execuções `mx_A_ppo` já existentes).
+- PPO, 5 seeds por nível; heurísticas nos mesmos episódios.
+
+### E-alt (prioridade 3, só se sobrar GPU)
+- PPO com altitude em Canoas, 3 seeds. Motivo: a "reta a 150 m" supera a reta nos locais difíceis (Canoas 70,6% × 64,5%; ilhas 82,8% × 79,1%), enquanto em Taquari a PPO com altitude não sobe. A pergunta é se ela aprende a subir onde subir ajuda.
+
+### Critérios (exploratórios)
+Estatística: 1000 episódios pareados por método e local; bootstrap hierárquico seeds → janelas, B = 2000; política nos dois modos (argmax e amostrado), com o amostrado como principal; melhor heurística escolhida no treino de cada local ou nível.
+
+| Id | Pergunta | Critério |
 |---|---|---|
-| **RQ1:** por que a localização ativa falha sobre mapas desatualizados? | M1 + F1/F2 (estudo v1) | As falhas acontecem onde o mapa mudou, e a política v1 é atraída por células distintivas no mapa antigo |
-| **RQ2:** a percepção e o filtro cientes da mudança resolvem a falha? | H1 | O descritor aprendido supera o hand |
-| | H2 | O filtro CA reduz a localização falsa para todos os métodos |
-| **RQ3:** com percepção forte e modelo realista, a escolha ativa de trajetória e de altitude paga a pena? | H3 (principal) | A PPO-CA supera (ou empata com menos tempo de voo) a melhor heurística CA |
-| | H4 | A altitude como ação ajuda, e a política sobe mais onde o mapa mudou mais |
-| | H5 | A relação do H3 se mantém zero-shot em Porto Alegre e na terceira área |
-
-**Estudo v1 no artigo:** os vereditos antigos (H1–H7, HP1–HP3) aparecem numa tabela do apêndice, com a errata da MO e a tabela de alterações de critério e protocolo. No texto principal, o estudo v1 entra só como motivação (§3, seção III).
+| **E1** | Onde há ambiguidade real, a PPO aprende mais que o movimento sem informação? | Canoas: PPO − aleatória ≥ 5 p.p. de sucesso, com limite inferior do IC > 0 |
+| **E2** | A vantagem sobre a melhor heurística é maior no regime ambíguo? | Δ = (PPO − melhor heurística) em Canoas menos o mesmo Δ em Taquari S2 > 0, com IC que exclui 0 |
+| **E3** | A vantagem cresce com a ambiguidade controlada? | Δ(L3) − Δ(L0) > 0, com IC que exclui 0; a curva Δ × nível é reportada inteira |
+| E4 (descritivo) | Em que níveis a PPO iguala ou supera a melhor heurística, e a que custo? | sucesso, localização falsa e tempo de voo por nível, sem veredito |
+| E5 (descritivo) | O gate passa mais vezes com mais ambiguidade? | fração de execuções aprovadas no gate (critério original) por nível e local |
 
 ---
 
-## 3. Estrutura das seções e orçamento de páginas (8 páginas)
+## 4. Estrutura do artigo (8 páginas)
 
-Orçamento visual: **5 figuras + 3 tabelas** (≈ 2,25 páginas).
+| Seção | Pág. | Conteúdo | Figuras e tabelas |
+|---|---|---|---|
+| **Abstract** | — | Pergunta, abordagem (PPO sobre a crença, à la ANL), dados reais de enchente, 3 achados com números, conclusão | — |
+| **I. Introduction** | 0,7 | Drone sem GNSS e mapa anterior ao desastre; localização ativa como POMDP; pergunta "quando aprender a agir compensa?". Contribuições: (i) adaptação do ANL com PPO a imagens reais antes/depois de enchente em 4 locais; (ii) comparação pareada com heurísticas fortes, mostrando eficiência × risco; (iii) resultado negativo do MOPPO, com diagnóstico; (iv) evidência de que o valor da política depende da ambiguidade perceptual (v3 + experimento E) | — |
+| **II. Background and Related Work** | 0,8 | POMDP e filtro de histograma; ANL e Deep Active Localization; PPO; MORL e AMOR; localização visual de UAVs (revisões, UAV-VisLoc, AnyLoc); AiRLoc; avaliação confiável em RL (rliable) | — |
+| **III. Problem and Environments** | 0,8 | POMDP, ações, recompensa, sucesso, localização falsa, regra de parada pela crença. Dois ambientes: **v1** (grade de 50 m, descritor artesanal, 8 ações) e **v3** (25 m, descritor DINOv2 ajustado, footprint por altitude, deriva de odometria, tempo de voo). Dados: Taquari, Porto Alegre (ilhas, Centro), Canoas | Tab. I (locais, datas, papel de cada imagem, divisões) |
+| **IV. Methods** | 0,7 | PPO sobre a crença (entradas como no ANL: crença, máscara, distintividade); heurísticas (reta, zigue-zague, aleatória, gulosa por ganho de informação com o mapa); MOPPO (crítico vetorial, pesos Dirichlet, memória de ações); gate de aprendizado; ambiente em lote em GPU com teste de paridade | Fig. 1 (visão geral: câmera → descritor → filtro → política) |
+| **V. Experimental Protocol** | 0,4 | Episódios pareados, números aleatórios comuns; bootstrap hierárquico; dois modos de avaliação; critérios pré-especificados e o status exploratório do experimento E | — |
+| **VI-A. RQ1: learning to act under ambiguity** | 0,6 | v1: PPO × heurísticas em S1 e S2; passos, distância nos sucessos, localização falsa; generalização norte→sul | Tab. II |
+| **VI-B. RQ2: what makes it hard, and transfer** | 0,6 | v1: sucesso × índice de mudança; zero-shot em Porto Alegre; M1 não suportada. v3: baselines nos 6 alvos; a gulosa com o mapa é a pior nos locais difíceis | Fig. 2 |
+| **VI-C. RQ3: controlling risk with preferences** | 0,4 | MOPPO: gate de condicionamento falhou; argmax idêntico; avaliação amostrada no mesmo modo para todos | linha curta na Tab. II ou Tab. III |
+| **VI-D. RQ4: when does learning to act pay off?** | 0,9 | Taquari v3: teto das baselines e 0 de 30 no gate (H1 em uma frase); **experimento E**: Canoas × Taquari, curva da vantagem × nível de ruído, taxa de aprovação no gate | **Fig. 3** (figura principal: vantagem da PPO sobre a aleatória e sobre a melhor heurística × ambiguidade, com IC) + Tab. III |
+| **VII. Discussion** | 0,7 | Valor da informação e ambiguidade; por que a reta é forte (cobre terreno novo e não confia no mapa); a política achou eficiência, não robustez; lições de avaliação em RL (gates, argmax × amostrado, seeds, ICs hierárquicos); limitações; ameaças à validade | — |
+| **VIII. Conclusion** | 0,2 | Respostas às 4 RQs e trabalhos futuros | — |
+| **Apêndice ou repositório** | — | Percepção da v3 (G1, ajuste fino, H1), prior de inundação e α = 0, vereditos de todas as hipóteses, tabela de alterações (V22–V46), hiperparâmetros | — |
 
-### Abstract (150–250 palavras), escrever na segunda, 23/11
-Problema → achado do estudo preliminar (a falha se concentra onde o mapa mudou) → método (descritor aprendido, sensor e odometria realistas, filtro e política cientes da mudança com a delimitação do Copernicus EMS, altitude como ação) → avaliação (imagens Maxar de 2023–2024 do Taquari, de Porto Alegre e de uma terceira área; 10 seeds; validação cruzada espacial; transferência zero-shot) → dois ou três números principais com IC → conclusão.
-
-### Index Terms
-Active localization, reinforcement learning, UAV, visual geo-localization, outdated maps, change-aware localization, disaster response.
-
-### I. Introduction (~0,8 página)
-1. Motivação: enchentes do RS; drones de resposta sem GNSS; a única referência é a imagem anterior ao desastre; serviços como o Copernicus EMS publicam a delimitação da inundação em dias.
-2. Lacuna: a localização ativa aprendida (ANL; Deep Active Localization) supõe mapa correto; a localização aérea por RL (AiRLoc) busca um alvo, não a própria pose; a localização visual absoluta de UAVs é quase toda passiva. "Até onde sabemos, nenhum trabalho trata a localização ativa sobre mapas desatualizados por um desastre real nem usa a delimitação do desastre para isso."
-3. Achado preliminar em uma frase (a falha se concentra onde o mapa mudou) e a ideia do método.
-4. Contribuições:
-   (i) um estudo que mostra **onde e por que** a localização ativa falha sobre mapas pós-enchente (índice de mudança, mecanismo);
-   (ii) um localizador ativo ciente da mudança, que estende o ANL com prior de mudança no filtro e na política e com escolha de altitude;
-   (iii) um benchmark com imagens reais de antes e depois em três áreas, sensor e odometria realistas e validação cruzada espacial;
-   (iv) avaliação com 10 seeds, critérios pré-especificados e resultados negativos reportados.
-5. Rodapé com o link do repositório (anonimizar numa submissão duplo-cega).
-
-### II. Related Work (~0,7 página)
-- **A. Localização ativa:** Markov localization ativa; *Probabilistic Robotics*; ANL; Deep Active Localization.
-- **B. Localização visual absoluta de UAVs e reconhecimento de lugar:** as revisões de Couturier & Akhloufi (2021, 2024); UAV-VisLoc; AnyLoc e características de modelos de fundação (DINOv2); AiRLoc.
-- **C. Mapas desatualizados e mapeamento de desastres:** localização sob mudança de aparência; produtos de rapid mapping (Copernicus EMS) e máscaras de água de radar (Sentinel-1).
-- **D. Avaliação confiável em RL:** rliable (IQM, bootstrap estratificado).
-- Posicionamento: o que só este trabalho combina.
-
-### III. Preliminary Study: Why Active Localization Fails on Outdated Maps (~0,8 página)
-- O cenário do estudo v1 em um parágrafo (grade de 50 m, descritor hand, PPO à la ANL, Taquari e Porto Alegre).
-- Três achados, com números canônicos:
-  1. a PPO não se distingue da reta em sucesso (IC hierárquico da diferença em S2: [−7,1; +9,8] p.p.; *corrigido em 18/11 pela IA-1: o [−6,1; +9,8] veio de uma rodada de teste com B = 200; use a macro `\vOneDiffSuccessSTwoLow`*), com menos passos e ~2/3 da distância **nos sucessos** (1,25 × 1,89 km), mas mais localizações falsas (20,2% × 13,0%);
-  2. o sucesso de todos os métodos cai com o índice de mudança (F1), e a covariável independente do descritor aponta na mesma direção (F2);
-  3. mecanismo M1 (se suportado): as localizações falsas da PPO acontecem em células distintivas no mapa antigo e mudadas.
-- **Fig. 2:** sucesso × quintil do índice de mudança (Taquari e Porto Alegre) + painel do M1.
-- Frase de transição: "isso sugere dois remédios: percepção mais invariante e um localizador que saiba onde o mapa mudou."
-
-### IV. Problem Formulation (~0,5 página)
-- POMDP com posição contínua, altitude h ∈ {60, 100, 150} m, 10 ações, horizonte de 80 passos; custo em tempo de voo.
-- Modelo de observação: footprint 2·h·tan(FOV/2); variantes com deslocamento, yaw, inclinação e fotometria.
-- Modelo de movimento com deriva; predição do filtro.
-- Equações numeradas: atualização bayesiana, verossimilhança temperada, **verossimilhança CA** (mistura com ρ_x = α·m_x), entropia.
-- Definições de sucesso, localização falsa e timeout (a regra de parada usa só a crença).
-
-### V. Method (~1,0 página)
-- **A. Descritor:** DINOv2 + GeM + PCA; ajuste fino contrastivo com pares antes/depois só da faixa de treino.
-- **B. Filtro ciente da mudança:** prior de mudança a partir do Copernicus EMS (EMSR720, EMSN194) ou de radar, rasterizado na grade; por que ele é independente da observação; calibração de α.
-- **C. Política:** PPO (como no ANL, com crença, máscara, distintividade e prior de mudança na entrada); variante com altitude.
-- **D. Ambiente vetorizado em GPU:** uma frase e o teste de paridade com o ambiente de referência.
-- **Fig. 1:** visão geral (câmera em altitude → descritor → filtro CA com prior → política → ação), com um recorte antes/depois e o prior de inundação.
-
-### VI. Experimental Setup (~0,6 página)
-- **Tabela I:** áreas, datas, papel de cada imagem, fonte e data do prior de mudança, alinhamento, nuvens, dobras.
-- Validação cruzada espacial em 3 faixas; zero-shot em Porto Alegre (ilhas, Centro), na terceira área e, se houver, no evento externo.
-- Métodos: reta, zigue-zague, aleatória, greedy_map, cada um com filtro padrão e CA; PPO, PPO-CA, PPO-CA-ALT; ablações de descritor e deriva.
-- Estatística: 10 seeds; IQM e probabilidade de melhora (rliable); bootstrap estratificado por dobra e região; bootstrap hierárquico nas diferenças pareadas; Holm entre locais. Critérios pré-especificados e tabela de alterações (apêndice).
-- Hardware: notebook i7 (CPU) e uma T4 no Colab; tempo de GPU total.
-
-### VII. Results (~1,9 página)
-- **A. Percepção (H1):** top-1 de recuperação por descritor, em uma linha da Tabela III ou num painel pequeno.
-- **B. Resultado principal (H3):** **Tabela II** (sucesso, localização falsa, tempo de voo, distância nos sucessos, por método e local, com IC e n) e **Fig. 3** (IQM com IC e probabilidade de melhora, por local).
-- **C. Filtro ciente da mudança (H2):** **Fig. 4**: sucesso e localização falsa × quintil do índice de mudança, filtro padrão × CA, para a reta e a PPO. É a figura que fecha o argumento iniciado na Fig. 2.
-- **D. Altitude (H4):** **Fig. 5**: altitude escolhida × índice de mudança, e o ganho em tempo de voo.
-- **E. Transferência (H5)** e validação espacial: linhas da Tabela II.
-- **F. Ablações:** **Tabela III** (descritor, filtro, entrada CA na política, altitude, deriva).
-- Uma frase de veredito por hipótese, no formato do critério.
-
-### VIII. Discussion (~0,6 página)
-- O que o prior de mudança resolve e o que não resolve (mudanças fora da delimitação: lama, nuvens, ângulo de visada no Centro).
-- Quando a escolha ativa paga a pena e quando uma heurística CA basta.
-- A extensão multiobjetivo: uma frase com o resultado negativo e o link para o apêndice.
-- **Limitações:** simulação com imagens reais, mas sem dinâmica de voo completa nem teste em voo; uma data pós-evento por área; prior de mudança com resolução e atraso próprios; 10 seeds numa única GPU; escolha manual de recompensa.
-- **Ameaças à validade:** dependência espacial (mitigada pela validação em faixas e pelo bootstrap por janela); padronização transdutiva em Porto Alegre no estudo v1; sobreposição das regiões de Porto Alegre; desalinhamento local; o índice de mudança depende do descritor (mitigado pela covariável independente); critérios e protocolos alterados (tabela do apêndice).
-
-### IX. Conclusion (~0,2 página)
-Responder às 3 perguntas. Trabalhos futuros: teste em voo real, dinâmica e simulador (PX4 SITL + Gazebo), prior de mudança estimado online, outros tipos de desastre, multiobjetivo com orçamento adequado.
-
-### Apêndice (se o template permitir; senão, no repositório)
-- Vereditos do estudo v1 e tabela de alterações de critério e de protocolo.
-- Extensão multiobjetivo: errata, diagnóstico (gate de condicionamento que falhou, argmax idêntico entre presets) e a reavaliação amostrada no mesmo modo para todas as políticas (`results_mo_v1fix/`).
-- Hiperparâmetros, calibração de β, κ e α, detalhes do ambiente em GPU e da paridade.
+**Orçamento visual:** 3 figuras + 3 tabelas no corpo (≈ 1,75 página).
 
 ---
 
-## 4. Registro de afirmações
+## 5. Números que já podem ir para o texto (conferir na tabela canônica antes)
 
-| Afirmação | Pode? | Forma correta e evidência |
+| Resultado | Valor | Fonte |
 |---|---|---|
-| "O RL reduz a distância voada pela metade" (estudo v1) | **não** | "Nos episódios com sucesso, a PPO voa ~2/3 da distância da reta (1,25 × 1,89 km)" (`docs/conciliacao_numeros.md` nº 7) |
-| "Sucesso equivalente à reta" (estudo v1) | **não** | "Não distinguível: IC hierárquico da diferença [−7,1; +9,8] p.p." (*corrigido em 18/11; macros `\vOneDiffSuccessSTwoLow`/`High`*) |
-| "A PPO generaliza do norte para o sul" (estudo v1) | sim | S2: 0,701 → 0,707; S1: 0,917 → 0,840, com a reta também caindo |
-| "A dificuldade é governada pela mudança do mapa" | sim, como associação | F1 e F2; nunca causal |
-| "O filtro CA reduz a localização falsa" | só se H2 for suportada | IC da diferença por método e local |
-| "Nossa política supera as heurísticas" | só se H3 for suportada **por superioridade** | Probabilidade de melhora com IC; dizer em quais locais |
-| "Nossa política iguala as heurísticas com menos tempo de voo" | só se H3 for suportada **por não inferioridade** | Margem de −3 p.p. pré-especificada + IC do tempo de voo |
-| "A política aprende a subir onde o mapa mudou" | só se H4(b) for suportada | Spearman com IC |
-| "Generaliza para outras áreas" | só pelo H5 | Dizer quais regiões; o evento externo é exploratório |
-| "O MOPPO domina" / "a memória triplica o hipervolume" | **não** | Errata do estudo v1 |
-| "A avaliação com argmax apagou o condicionamento" | só qualificada | Junto com "o gate de condicionamento falhou no treino" |
-| "Primeiro trabalho a…" | **não** | "Até onde sabemos, …" |
-| "Hipóteses pré-registradas" | **não** | "Critérios pré-especificados", com a tabela de alterações |
-| "Funciona em tempo real a bordo" | só com medição | Tempo por decisão medido; dizer o hardware; não extrapolar para um computador de bordo sem medir |
-
-Toda frase do resumo, da introdução e da conclusão passa por esta tabela antes da versão final (terça, 24/11).
+| v1, S2: sucesso PPO × reta × aleatória | 70,7% × 70,0% × 41,7% | `REPORT.md` |
+| v1, S2: IC hierárquico de Δsucesso PPO − reta | [−7,1; +9,8] p.p. (B = 2000) | V18; **corrigir o valor antigo [−6,1; +9,8] na tag `v1-study-final`** |
+| v1, S2: localização falsa PPO × reta | 20,2% × 13,0% | `REPORT.md` |
+| v1, S2: distância nos sucessos PPO × reta | 1,25 × 1,89 km | `docs/conciliacao_numeros.md` nº 7 |
+| v1, S2: passos penalizados (Wilcoxon) | p = 5,6e-6 | `REPORT.md` |
+| v1, generalização norte→sul (S2) | 0,701 → 0,707 | `REPORT.md` |
+| v3, Taquari S2 teste: aleatória × reta × zigue-zague × gulosa | 94,0% × 99,8% × 97,3% × 83,4% | `colab_out/eval_baselines_A/summary.csv` |
+| v3, Canoas C1: aleatória × reta × reta a 150 m × gulosa | 40,8% × 64,5% × 70,6% × 36,9% | idem |
+| v3, ilhas P1: aleatória × reta × reta a 150 m × gulosa | 44,4% × 79,1% × 82,8% × 43,3% | idem |
+| v3, Centro P1: aleatória × reta × gulosa | 27,8% × 67,9% × 35,8% | idem |
+| v3, gate de aprendizado | 0 de 30 execuções aprovadas (16 de 30 até 21/11 20:51; confirmar) | `colab_out/mx_A_*` |
+| v3, H1 | +9,2 p.p. de top-1 em S1 e em S2 | `results_v3/verdicts/h1.json` |
 
 ---
 
-## 5. Figuras e tabelas → arquivos
+## 6. Registro de afirmações
 
-| Item | Conteúdo | Origem |
+| Afirmação | Pode? | Forma correta |
 |---|---|---|
-| Fig. 1 | Visão geral do método | **a criar** (TikZ ou draw.io) + recortes de `results_v3/figs/` |
-| Fig. 2 | Estudo v1: sucesso × índice de mudança + M1 | `results_final/` (F1–F3) |
-| Fig. 3 | Resultado principal: IQM e probabilidade de melhora por local | `results_v3/rliable/` |
-| Fig. 4 | Filtro padrão × CA por quintil de mudança | `results_v3/change_quintiles/` |
-| Fig. 5 | Altitude × índice de mudança; tempo de voo | `results_v3/altitude/` |
-| Tab. I | Áreas, datas, prior de mudança, dobras | `results_v3/data_summary.csv` |
-| Tab. II | Resultado principal e transferência | `paper/tables/main.csv` |
-| Tab. III | Ablações | `paper/tables/ablations.csv` |
-
-Figuras em PDF vetorial, legíveis numa coluna (3,5 in), fonte ≥ 8 pt, paleta segura para daltônicos. `paper/make_figures.py` regenera tudo.
-
----
-
-## 6. Referências
-
-Estilo IEEE (`IEEEtran.bst`). ✓ = conferida em 18/11; o resto a IA-2 confere na fonte antes de terça.
-
-1. D. S. Chaplot, E. Parisotto, R. Salakhutdinov, "Active Neural Localization," ICLR 2018.
-2. ✓ S. K. Gottipati et al., "Deep Active Localization," *IEEE RA-L*, 2019, doi:10.1109/LRA.2019.2932575.
-3. ✓ A. Pirinen et al., "Aerial View Localization with Reinforcement Learning: Towards Emulating Search-and-Rescue," arXiv:2209.03694 (conferir o local de publicação final).
-4. ✓ A. Couturier, M. A. Akhloufi, "A review on absolute visual localization for UAV," *Robotics and Autonomous Systems*, vol. 135, 103666, 2021.
-5. ✓ A. Couturier, M. A. Akhloufi, "A Review on Deep Learning for UAV Absolute Visual Localization," *Drones*, vol. 8, no. 11, 622, 2024.
-6. ✓ N. Keetha et al., "AnyLoc: Towards Universal Visual Place Recognition," *IEEE RA-L*, vol. 9, no. 2, pp. 1286–1293, 2023.
-7. ✓ W. Xu et al., "UAV-VisLoc: A Large-scale Dataset for UAV Visual Localization," arXiv:2405.11936, 2024.
-8. M. Oquab et al., "DINOv2: Learning Robust Visual Features without Supervision" (conferir local e ano).
-9. F. Radenović, G. Tolias, O. Chum, GeM pooling, *IEEE TPAMI*, 2019 (conferir).
-10. A. van den Oord, Y. Li, O. Vinyals, "Representation Learning with Contrastive Predictive Coding" (InfoNCE), arXiv:1807.03748.
-11. ✓ R. Agarwal et al., "Deep Reinforcement Learning at the Edge of the Statistical Precipice," NeurIPS 2021, arXiv:2108.13264.
-12. ✓ Copernicus Emergency Management Service, ativação EMSR720 (Rapid Mapping, Rio Grande do Sul, maio de 2024) e EMSN194 (Porto Alegre).
-13. W. Burgard, D. Fox, S. Thrun, "Active Mobile Robot Localization," IJCAI 1997.
-14. S. Thrun, W. Burgard, D. Fox, *Probabilistic Robotics*, MIT Press, 2005.
-15. J. Schulman et al., "Proximal Policy Optimization Algorithms," arXiv:1707.06347, 2017.
-16. 1–2 trabalhos de localização sob mudança de aparência e 1 de mapeamento de inundação por Sentinel-1 (a pesquisar).
-17. Dados: Maxar Open Data / OpenAerialMap (CC BY-NC 4.0).
-18. Apêndice: L. N. Alegre et al., AMOR, SIGGRAPH 2025; C. F. Hayes et al., guia prático de MORL, JAAMAS 2022.
+| "O RL supera as heurísticas" | **não** (v1 e v3) | "A PPO não se distingue da reta em sucesso (IC [a; b]) e usa menos passos" |
+| "O RL é mais eficiente" | sim, qualificada | sempre ao lado da localização falsa maior |
+| "O RL aprende onde há ambiguidade" | só se E1 for suportada | número de Canoas com IC |
+| "A vantagem do RL cresce com a ambiguidade" | só se E2 ou E3 forem suportadas | dizer qual, e que E é exploratório |
+| "Planejar com o mapa desatualizado é pior que andar ao acaso" | sim, só nos locais em que os dados mostram | Canoas, Centro, ilhas (gulosa < aleatória); em Taquari, não |
+| "Subir ajuda nos locais difíceis" | sim, para a reta | reta a 150 m × reta; a PPO com altitude só se E-alt rodar |
+| "Change-aware" / "o prior de inundação melhora a localização" | **não** | "a calibração escolheu α = 0; o efeito do prior não foi testado na prática" |
+| "Melhor percepção" na v3 | só para recuperação | H1 vale na grade de 50 m da v1 |
+| "O MOPPO domina" / "controla o risco" | **não** | errata e diagnóstico |
+| "Pré-registrado" | **não** | "pré-especificado"; E é exploratório |
+| "Primeiro trabalho a…" | **não** | "até onde sabemos, …" |
 
 ---
 
-## 7. Cronograma de escrita (alinhado ao plano de desenvolvimento)
+## 7. Divisão e cronograma de escrita
 
-| Dia | Seções | Quem |
+| Dia | O quê | Quem |
 |---|---|---|
-| Qua 18 | Esqueleto LaTeX em `paper/`, macros de números lidos dos CSVs, Fig. 1 em rascunho | IA-1 |
-| Qui 19 | II (Trabalhos relacionados) e referências conferidas | IA-2 → revisão do Vitor |
-| Sex 20 | III (Estudo preliminar), com os números do estudo v1 já canônicos | Vitor + IA-1 |
-| Sáb 21 | IV (Formulação) e V (Método) | Vitor |
-| Dom 22 | VI (Setup) e VII (Resultados) com números provisórios; escolha do título | Vitor + IA-1 |
-| Seg 23 | Números finais da tag `results-final`; I (Introdução), VIII (Discussão), IX (Conclusão), Abstract | Vitor |
-| Ter 24 | Registro de afirmações, revisão cruzada (IA-2 + colegas), formato, slides | todos |
-| Qua 25 | PDF final | Vitor |
+| Sáb 21 (noite) | V46 commitado; jobs de E na fila | IA-1, Vitor aprova |
+| Dom 22 | II, III e IV escritos; VI-A, VI-B e VI-C com os números do v1 e das baselines; figuras 1 e 2 | Vitor + IA-1 (texto), IA-2 (relacionados) |
+| Seg 23, até 12:00 | Resultados de E; **congelamento**; Fig. 3 e Tab. III | IA-1 |
+| Seg 23 (tarde) | VI-D, VII, VIII, Abstract | Vitor |
+| Ter 24 | Conferência número a número contra a §5 e a §6; revisão cruzada | todos |
+| Qua 25 | PDF final, release `v1.0` | Vitor |
+| Até 27 | Slides e ensaio (a mesma estrutura das 4 RQs) | Vitor |
 
-**Ordem de escrita:** Trabalhos relacionados → Estudo preliminar → Formulação → Método → Setup → Resultados → Discussão → Introdução → Conclusão → Abstract.
+## 8. Se o tempo apertar
 
----
+Cortar nesta ordem: E-alt → E-synth (fica só L0 e L3) → E-synth inteiro (fica só E-real). Sem nenhum E, a seção VI-D fica descritiva (Taquari no teto + baselines difíceis em Canoas e Porto Alegre), e a tese é dita como hipótese para trabalho futuro.
 
-## 8. Se o espaço ou o tempo apertar
+## 9. Checklist de entrega
 
-Cortar nesta ordem:
-1. Fig. 5 vira duas linhas da Tabela III;
-2. apêndice vai para o repositório;
-3. a seção III encolhe para meia página (Fig. 2 fica, o texto do M1 encolhe);
-4. evento externo e terceira área viram uma linha cada na Tabela II.
-
-Se a §8 do plano de desenvolvimento cortar componentes (altitude, ajuste fino, validação espacial), as seções correspondentes saem, e a hipótese vira trabalho futuro na conclusão. O artigo mínimo é: Estudo preliminar + filtro CA + PPO-CA × heurísticas CA + transferência para Porto Alegre.
-
----
-
-## 9. Checklist de entrega (25/11)
-
-- [ ] Template e idioma confirmados com o professor
-- [ ] Relação com o ANL explícita na introdução e no método
-- [ ] Todo número confere com `paper/tables/` da tag `results-final`
-- [ ] Toda afirmação do resumo, da introdução e da conclusão está no registro (§4) com a forma correta
-- [ ] IC de 95%, n, seeds e dobra em todas as tabelas
-- [ ] Critérios pré-especificados citados e tabela de alterações no apêndice
-- [ ] Fonte e data do prior de mudança declaradas (independente da imagem observada)
-- [ ] Localização falsa ao lado de todo ganho de tempo, passos ou distância
-- [ ] Limitações e ameaças à validade explícitas
-- [ ] Referências conferidas uma a uma
-- [ ] Link do repositório (anonimizável)
-- [ ] Dentro do limite de páginas; compila sem warnings
+- [ ] RL no centro: cada seção de resultados responde a uma RQ de RL
+- [ ] Relação com o ANL (e com o AMOR) explícita
+- [ ] V46 commitado antes de qualquer treino de E; E chamado de exploratório no texto
+- [ ] Todo número confere com `paper/tables/` na tag `results-final`
+- [ ] Localização falsa ao lado de todo ganho de eficiência
+- [ ] "Change-aware" fora do título e da tese
+- [ ] IC [−7,1; +9,8] corrigido em todo lugar
+- [ ] Tabela de alterações e vereditos de todas as hipóteses no apêndice ou no repositório
+- [ ] Dentro de 8 páginas; compila sem warnings
