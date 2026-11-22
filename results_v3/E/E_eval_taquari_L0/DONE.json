@@ -1,0 +1,14 @@
+{
+ "job_id": "E_eval_taquari_L0",
+ "git_commit": "24878f822f3689447d05d6a6448092b20733cfa4",
+ "config_hash": "456538761d03cd83",
+ "gpu_minutes": 19.72,
+ "started_at": "2026-11-22T04:36:40+00:00",
+ "finished_at": "2026-11-22T04:56:23+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "rows": 50000,
+  "episodes_bytes": 10700132
+ }
+}

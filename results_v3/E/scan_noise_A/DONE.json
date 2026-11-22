@@ -1,0 +1,13 @@
+{
+ "job_id": "scan_noise_A",
+ "git_commit": "24878f822f3689447d05d6a6448092b20733cfa4",
+ "config_hash": "acafbf59fbf13a96",
+ "gpu_minutes": 48.98,
+ "started_at": "2026-11-22T04:56:29+00:00",
+ "finished_at": "2026-11-22T05:45:27+00:00",
+ "status": "OK",
+ "reason": "",
+ "metrics": {
+  "rows": 8
+ }
+}

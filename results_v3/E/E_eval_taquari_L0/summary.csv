@@ -1,0 +1,15 @@
+region,scenario,split,method,mode,success,false_loc,flight_time_s
+taquari,S2,test,greedy_map,—,0.834,0.011,200.754
+taquari,S2,test,lawnmower,—,0.973,0.004,135.738
+taquari,S2,test,ppo,argmax,0.9733,0.0067,127.2468
+taquari,S2,test,ppo,sampled,0.9783,0.0053,138.7224
+taquari,S2,test,random,—,0.94,0.009,179.382
+taquari,S2,test,straight,—,0.998,0.002,119.52
+taquari,S2,test,straight_150,—,0.996,0.003,128.014
+taquari,S2,train,greedy_map,—,0.87,0.01,176.796
+taquari,S2,train,lawnmower,—,0.972,0.008,129.864
+taquari,S2,train,ppo,argmax,0.9462,0.0142,131.4438
+taquari,S2,train,ppo,sampled,0.9597,0.012,137.4294
+taquari,S2,train,random,—,0.93,0.014,166.542
+taquari,S2,train,straight,—,0.986,0.009,120.3
+taquari,S2,train,straight_150,—,0.988,0.007,126.64
