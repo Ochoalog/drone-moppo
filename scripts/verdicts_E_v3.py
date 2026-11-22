@@ -1,11 +1,15 @@
-"""Vereditos e saídas do experimento E (DECISIONS_V3.md V46), gerados por código a partir dos episódios.
+"""Vereditos e saídas do experimento E (DECISIONS_V3.md V46, V50, V51), gerados por código a partir dos episódios.
+
+V51: o E-real saiu (E1 e E2 cortados). O E é E-synth + L0 (E3–E5), mais um item descritivo, a transferência
+zero-shot Taquari → Canoas das 10 `mx_A_ppo` (PPO − cada heurística, com IC, sem veredito).
 
 Entradas (cópias da branch `colab/results`, feitas por este script com `--colab-out`):
 - `results_v3/E/<job>/episodes.parquet` das avaliações `E_eval_*`;
 - `results_v3/E/<job>/DONE.json` dos treinos (gate aos 25%) e das avaliações (commit, hash da config).
 
 Saídas:
-- `results_v3/E/verdicts_E.json`: E1–E3 (amostrado = principal; argmax ao lado), melhor heurística por regime;
+- `results_v3/E/canoas_zeroshot.csv` e `paper/tables/E_canoas_zeroshot.csv`: item descritivo da V51;
+- `results_v3/E/verdicts_E.json`: E3 (amostrado = principal; argmax ao lado), melhor heurística por regime;
 - `results_v3/E/curve.csv`: vantagem da PPO sobre a aleatória e sobre a melhor heurística, por regime, e E5;
 - `results_v3/E/table3.csv`: E4 (sucesso, localização falsa, tempo de voo nos sucessos);
 - `paper/tables/E_curve.csv`, `paper/tables/E_table3.csv` (com proveniência) e `paper/figures/fig3_E.pdf`.
@@ -39,14 +43,37 @@ def regime_specs() -> list[dict]:
             specs.append({"name": f"Taquari {level} (σ={info['sigma']:g})", "eval": f"E_eval_synth_{level}",
                           "region": "taquari", "runs": [f"E_synth_{level}_ppo_s{s}" for s in range(5)],
                           "kind": "taquari", "level": level})
-    specs.append({"name": "Canoas", "eval": "E_eval_canoas", "region": "canoas",
-                  "runs": [f"E_canoas_ppo_s{s}" for s in range(5)], "kind": "canoas"})
     return specs
+
+
+ZEROSHOT = {"name": "Canoas zero-shot", "eval": "E_eval_canoas_zeroshot", "region": "canoas",
+            "runs": [f"mx_A_ppo_s{s}" for s in range(10)], "kind": "descriptive"}
+
+
+def canoas_zeroshot() -> pd.DataFrame:
+    """V51, descritivo: PPO de Taquari nas 31 janelas de Canoas contra cada heurística (sem treino em Canoas,
+    então não há "melhor heurística no treino"; nenhuma é escolhida, todas são reportadas)."""
+    path = OUT / ZEROSHOT["eval"] / "episodes.parquet"
+    if not path.exists():
+        return pd.DataFrame()
+    episodes = exp_e.with_method_key(pd.read_parquet(path))
+    regime = exp_e.Regime(ZEROSHOT["name"], episodes[episodes.region == "canoas"], episodes.iloc[0:0])
+    rows = []
+    for mode in ("sampled", "argmax"):
+        for index, heuristic in enumerate(exp_e.HEURISTICS):
+            diff = exp_e.advantage(regime, heuristic, mode, seed=400 + index)
+            rows.append({"mode": mode, "over": heuristic, "advantage": diff.estimate, "low": diff.low,
+                         "high": diff.high, **provenance(ZEROSHOT)})
+    for method in (*exp_e.HEURISTICS, regime.policy_key("sampled"), regime.policy_key("argmax")):
+        summary = exp_e.method_summary(regime, method, seed=499)
+        rows.append({"mode": "summary", "over": method, "advantage": summary["success"],
+                     "low": summary["success_low"], "high": summary["success_high"], **provenance(ZEROSHOT)})
+    return pd.DataFrame(rows)
 
 
 def sync(colab_out: Path, specs: list[dict]) -> None:
     """Copia da colab/results só o que a análise usa (episódios e DONE.json)."""
-    names = {s["eval"] for s in specs} | {r for s in specs for r in s["runs"]} | {"scan_noise_A"}
+    names = {s["eval"] for s in specs} | {ZEROSHOT["eval"]} | {r for s in specs for r in s["runs"]} | {"scan_noise_A"}
     names |= {f"mx_A_{m}_s{s}" for m in ("ppo", "ppo_ca", "ppo_ca_alt") for s in range(10)}
     for name in names:
         source = colab_out / name
@@ -108,21 +135,10 @@ def analyse(specs: list[dict]) -> tuple[dict, pd.DataFrame, pd.DataFrame]:
     curve = pd.DataFrame(curve_rows)
     if not curve.empty:
         curve = curve.sort_values("random_train_success", ascending=False)
-    verdicts = {"status": "exploratório (V46)", "main_mode": exp_e.MAIN_MODE, "regimes": list(regimes)}
+    verdicts = {"status": "exploratório (V46); E1 e E2 cortados com o E-real (V51)", "main_mode": exp_e.MAIN_MODE,
+                "regimes": list(regimes)}
     for mode in ("sampled", "argmax"):
         key = "" if mode == exp_e.MAIN_MODE else "_argmax"
-        if "Canoas" in regimes:
-            canoas = regimes["Canoas"][1]
-            e1 = exp_e.advantage(canoas, "random", mode, seed=101)
-            verdicts[f"E1{key}"] = {**e1.summary(), "criterion": "PPO − aleatória ≥ 5 p.p. e IC inferior > 0",
-                                    "verdict": exp_e.classify(e1, exp_e.E1_MIN_ADVANTAGE)}
-        if "Canoas" in regimes and "Taquari L0" in regimes:
-            canoas, taquari = regimes["Canoas"][1], regimes["Taquari L0"][1]
-            e2 = exp_e.difference_of_independent(exp_e.advantage(canoas, canoas.best, mode, seed=201),
-                                             exp_e.advantage(taquari, taquari.best, mode, seed=202))
-            verdicts[f"E2{key}"] = {**e2.summary(), "criterion": "Δ(Canoas) − Δ(Taquari L0) > 0, IC exclui 0",
-                                    "best_canoas": canoas.best, "best_taquari": taquari.best,
-                                    "verdict": exp_e.classify(e2)}
         l3 = next((name for name in regimes if " L3 " in f" {name} "), None)
         if l3 and "Taquari L0" in regimes:
             e3 = exp_e.difference_of_paired(regimes[l3][1], regimes["Taquari L0"][1], mode, seed=301)
@@ -147,6 +163,10 @@ def main() -> None:
     PAPER_TABLES.mkdir(parents=True, exist_ok=True)
     curve.to_csv(PAPER_TABLES / "E_curve.csv", index=False)
     table.to_csv(PAPER_TABLES / "E_table3.csv", index=False)
+    zeroshot = canoas_zeroshot()
+    if not zeroshot.empty:
+        zeroshot.to_csv(OUT / "canoas_zeroshot.csv", index=False)
+        zeroshot.to_csv(PAPER_TABLES / "E_canoas_zeroshot.csv", index=False)
     if not args.no_figure and not curve.empty:
         from dal.v3.reporting.figures_e import figure_3
 

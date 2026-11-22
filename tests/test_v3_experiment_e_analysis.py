@@ -67,3 +67,22 @@ def test_method_summary_and_gate_rate():
                             {"advantage": 0.01, "threshold": 0.05, "passed": True},
                             {"advantage": 0.0, "threshold": 0.05, "passed": False}])
     assert rate["gate_original_passed"] == 1 and rate["gate_amended_passed"] == 2 and rate["n_runs"] == 3
+
+
+def test_canoas_zeroshot_reports_policy_against_every_heuristic(tmp_path, monkeypatch):
+    import importlib.util
+
+    from dal.config import ROOT
+    spec = importlib.util.spec_from_file_location("verdicts_e", ROOT / "scripts" / "verdicts_E_v3.py")
+    verdicts = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verdicts)
+    monkeypatch.setattr(verdicts, "OUT", tmp_path)
+    rates = {"ppo": 0.5, **{h: 0.4 for h in exp_e.HEURISTICS}}
+    episodes = _episodes(rates).assign(region="canoas", mode=lambda d: d["mode"])
+    episodes["method"] = episodes.method.str.split("@").str[0]  # formato bruto (sem a chave)
+    (tmp_path / "E_eval_canoas_zeroshot").mkdir()
+    episodes.drop(columns="key").to_parquet(tmp_path / "E_eval_canoas_zeroshot" / "episodes.parquet")
+    table = verdicts.canoas_zeroshot()
+    diffs = table[table["mode"] == "sampled"]
+    assert set(diffs.over) == set(exp_e.HEURISTICS) and (diffs.advantage > 0).all()
+    assert set(table.loc[table["mode"] == "summary", "over"]) >= {"ppo@sampled", "ppo@argmax"}

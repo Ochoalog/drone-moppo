@@ -189,3 +189,19 @@ def test_failed_canoas_split_carries_masks_only_diagnostic(out_root, monkeypatch
     assert {r["side"] for r in failure.value.diagnostic} == {"all", "east", "west", "south", "north"}
     assert len(failure.value.column_valid) == 480
     assert not (jobs.work_dir(out_root, "fake", "A") / "calibration_canoas.json").exists()
+
+
+def test_taquari_policy_evaluates_zero_shot_on_whole_canoas_box(out_root):
+    base = {"descriptor": "fake", "fold": "A", "episodes": 8}
+    jobs.calibrate_job(base, out_root, "cpu")
+    jobs.train_job({**base, "method": "ppo", "seed": 0, "total_timesteps": 256, "n_envs": 8,
+                    "gate_min_advantage": 0.05}, out_root, "cpu", "mx_A_ppo_s0")
+    eval_job = {**base, "episodes": 4, "include_invalid_gate": True, "baseline_filters": ["standard"],
+                "baselines": ["random", "straight"], "modes": ["sampled"],
+                "targets": [{"site": "canoas", "scenario": "C1"}],
+                "models": [{"method": "ppo", "seed": 0, "run": "mx_A_ppo_s0"}]}
+    episodes = jobs.evaluate_job(eval_job, out_root, "cpu", "E_eval_canoas_zeroshot")
+    assert set(episodes.method) == {"random", "straight", "ppo"} and (episodes.region == "canoas").all()
+    env = jobs.make_env(base, out_root, "canoas", "C1", "test", False, False, "cpu")
+    whole = valid_windows(site_split.with_columns(env.tables, np.arange(480)), 128, 0.7)
+    assert len(env.windows) == len(whole) and env.windows[:, 1].min() == 0  # caixa inteira, sem divisão

@@ -1,0 +1,31 @@
+# Experimento E, item DESCRITIVO (V51): transferência zero-shot Taquari → Canoas. As 10 PPOs mx_A_ppo_s0–9
+# (treinadas em Taquari S2, dobra A; exceção ao gate: as _INVALID_GATE entram) avaliadas nas 31 janelas válidas de
+# Canoas C1 (caixa inteira, sem divisão), com as 5 heurísticas no filtro padrão nos mesmos episódios. Mesmo ambiente
+# e mesma calibração do eval_baselines_A (calibration_v2.json do Taquari). Sem veredito: não entra em E1–E3.
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+calibration_file: calibration_v2.json
+include_invalid_gate: true
+publish_parquet: true
+baseline_filters: [standard]
+modes: [sampled, argmax]
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: canoas, scenario: C1}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
+  canoas: /content/drive/MyDrive/drone_v3/prior/canoas_prior_emsn194_10m.tif
+models:
+  - {method: ppo, seed: 0, run: mx_A_ppo_s0, label: ppo}
+  - {method: ppo, seed: 1, run: mx_A_ppo_s1, label: ppo}
+  - {method: ppo, seed: 2, run: mx_A_ppo_s2, label: ppo}
+  - {method: ppo, seed: 3, run: mx_A_ppo_s3, label: ppo}
+  - {method: ppo, seed: 4, run: mx_A_ppo_s4, label: ppo}
+  - {method: ppo, seed: 5, run: mx_A_ppo_s5, label: ppo}
+  - {method: ppo, seed: 6, run: mx_A_ppo_s6, label: ppo}
+  - {method: ppo, seed: 7, run: mx_A_ppo_s7, label: ppo}
+  - {method: ppo, seed: 8, run: mx_A_ppo_s8, label: ppo}
+  - {method: ppo, seed: 9, run: mx_A_ppo_s9, label: ppo}
