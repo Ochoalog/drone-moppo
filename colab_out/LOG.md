@@ -62,3 +62,4 @@
 | 2026-11-22T01:10:20+00:00 | mx_A_ppo_ca_s9 | INVALID_GATE | 6.12 | fps 4204 pass=False adv=+0.040 | mx_A_ppo_ca_alt_s9 |
 | 2026-11-22T01:16:41+00:00 | mx_A_ppo_ca_alt_s9 | INVALID_GATE | 6.27 | fps 4117 pass=False adv=+0.015 | matriz_concluida |
 | 2026-11-22T01:34:41+00:00 | calibrate_canoas_ftA | FAILED | 0.26 | kappa = 0.0000 | E_canoas_ppo_s0 |
+| 2026-11-22T04:56:23+00:00 | E_eval_taquari_L0 | OK | 19.72 | episodes 50000 | scan_noise_A |
