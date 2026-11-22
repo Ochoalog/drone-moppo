@@ -1,0 +1,29 @@
+{
+ "job_id": "mx_A_ppo_ca_alt_s8",
+ "git_commit": "c9cb3c17a1fe4ca102ebe44052c2e3c15fe9e7b2",
+ "config_hash": "512d4ed62197a4a2",
+ "gpu_minutes": 6.21,
+ "started_at": "2026-11-22T00:52:10+00:00",
+ "finished_at": "2026-11-22T00:58:22+00:00",
+ "status": "INVALID_GATE",
+ "reason": "gate de aprendizado aos 25% reprovado",
+ "metrics": {
+  "run_dir": "/content/drive/MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/runs/mx_A_ppo_ca_alt_s8_INVALID_GATE",
+  "global_step": 1409024,
+  "gate": {
+   "policy_success": 0.9350000023841858,
+   "policy_false_loc": 0.014999999664723873,
+   "policy_flight_time_success_s": 144.6951904296875,
+   "random_success": 0.9199999570846558,
+   "random_false_loc": 0.019999999552965164,
+   "random_flight_time_success_s": 139.04348754882812,
+   "flight_time_ratio": 1.0406470161277754,
+   "advantage": 0.01500004529953003,
+   "threshold": 0.05,
+   "flight_time_ratio_threshold": 0.75,
+   "passed": false
+  },
+  "steps_per_s_median": 4137.65,
+  "invalid_gate": true
+ }
+}
