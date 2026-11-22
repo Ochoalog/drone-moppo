@@ -77,3 +77,4 @@
 | 2026-11-22T20:48:04+00:00 | E_synth_L1_ppo_s1 | INVALID_GATE | 5.57 | fps 4789 pass=False adv=+0.010 | E_synth_L1_ppo_s2 |
 | 2026-11-22T20:53:44+00:00 | E_synth_L1_ppo_s2 | INVALID_GATE | 5.58 | fps 4781 pass=False adv=+0.010 | E_synth_L1_ppo_s3 |
 | 2026-11-22T20:59:21+00:00 | E_synth_L1_ppo_s3 | INVALID_GATE | 5.53 | fps 4814 pass=False adv=+0.030 | E_synth_L1_ppo_s4 |
+| 2026-11-22T21:05:02+00:00 | E_synth_L1_ppo_s4 | INVALID_GATE | 5.58 | fps 4774 pass=False adv=+0.030 | E_eval_synth_L1 |
