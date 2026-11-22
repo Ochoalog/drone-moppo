@@ -58,3 +58,4 @@
 | 2026-11-22T00:45:52+00:00 | mx_A_ppo_s8 | INVALID_GATE | 5.66 | fps 4584 pass=False adv=+0.020 | mx_A_ppo_ca_s8 |
 | 2026-11-22T00:52:04+00:00 | mx_A_ppo_ca_s8 | INVALID_GATE | 6.11 | fps 4212 pass=False adv=+0.000 | mx_A_ppo_ca_alt_s8 |
 | 2026-11-22T00:58:22+00:00 | mx_A_ppo_ca_alt_s8 | INVALID_GATE | 6.21 | fps 4137 pass=False adv=+0.015 | mx_A_ppo_s9 |
+| 2026-11-22T01:04:07+00:00 | mx_A_ppo_s9 | INVALID_GATE | 5.66 | fps 4574 pass=False adv=+0.025 | mx_A_ppo_ca_s9 |
