@@ -1,0 +1,11 @@
+{
+ "job_id": "calibrate_canoas_ftA",
+ "git_commit": "24878f822f3689447d05d6a6448092b20733cfa4",
+ "config_hash": "3345c976e6ddbb62",
+ "gpu_minutes": 0.26,
+ "started_at": "2026-11-22T01:34:25+00:00",
+ "finished_at": "2026-11-22T01:34:41+00:00",
+ "status": "FAILED",
+ "reason": "canoas: < 20 janelas de teste mesmo com 2 janelas de largura",
+ "metrics": {}
+}
