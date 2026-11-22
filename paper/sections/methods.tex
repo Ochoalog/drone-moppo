@@ -1,0 +1,20 @@
+\section{Methods}
+\label{sec:methods}
+% Seção IV (~0,7 pág.). Fig. 1 (visão geral) a desenhar pelo Vitor.
+
+\textbf{Belief-space PPO.}
+Following ANL~\cite{chaplot2018anl}, the policy sees the filter's state rather than the raw image. Its input is a stack of window-sized channels: the belief, the map validity mask and a map \emph{distinctiveness} channel (one minus the highest descriptor similarity to the cells 3--5 cells away). A small vector (remaining steps, border contact, current altitude) is appended. A convolutional encoder feeds actor and critic heads. The network is trained with PPO~\cite{schulman2017ppo} using 512 parallel environments, 32-step rollouts, 5 epochs, minibatches of 4096, learning rate $3\times10^{-4}$, $\gamma=0.99$, $\lambda_{\text{GAE}}=0.95$, clipping 0.2 and entropy coefficient 0.01. Each v3 run trains for 1.4\,M environment steps (about 6~min on a T4 GPU). The v1 policy uses the same inputs on the v1 grid.
+
+\textbf{Heuristic baselines.}
+All baselines use the same filter and stopping rule; only the motion differs.
+\emph{Straight} flies in a fixed random heading and reflects off the window border.
+\emph{Lawnmower} sweeps the window in parallel tracks.
+\emph{Random} picks a uniformly random move at each step.
+\emph{Greedy (map)} picks the move with the largest expected entropy reduction, \emph{predicting} future observations from the (outdated) map.
+\emph{Straight 150~m} is the straight policy flown at the highest altitude (larger footprint).
+
+\textbf{Preference-conditioned PPO (MOPPO).}
+To control the efficiency--risk trade-off, we adapted AMOR~\cite{alegre2025amor} to localization in the v1 study. The reward is split into a vector (information, time, success, false localization), and the critic is vector-valued. Preference weights are sampled from a Dirichlet distribution at each episode and given to both heads. An action memory is added to the input. At test time, presets (``fast'', ``balanced'', ``safe'') select a point on the trade-off.
+
+\textbf{Learning gate.}
+Before any policy is evaluated on test data, each training run must pass a pre-specified \emph{learning gate}. At 25\% of training, on 200 training episodes, the sampled policy must beat the random baseline by at least 5~p.p.\ of success. An amended criterion, registered before the main runs, also accepts a policy that matches random within 2~p.p.\ while using at most 75\% of its flight time. A run that fails is marked invalid and, in the pre-specified hypotheses, produces no verdict; it still finishes training. The gate guards against reporting a policy that has not learned anything beyond moving.

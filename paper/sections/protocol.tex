@@ -1,0 +1,15 @@
+\section{Experimental Protocol}
+\label{sec:protocol}
+% Seção V (~0,4 pág.).
+
+\textbf{Paired episodes.}
+Every method is evaluated on the same 1000 test episodes per site (seed $2024+i$ fixes the window, the start cell, the observation variants and the odometry noise). Methods therefore face identical conditions (common random numbers), and differences are computed episode by episode.
+
+\textbf{Uncertainty.}
+Confidence intervals (95\%) come from a hierarchical bootstrap with $B=2000$. Each replicate resamples map windows (episodes in a window move together), and then resamples training seeds within each policy. This captures both the spatial dependence between episodes and the seed-to-seed variance, which dominates in our RL results. Treating episodes as independent gives much narrower intervals: for the v1 PPO$-$straight difference in S2, $[\vOneNaiveDiffLow; +\vOneNaiveDiffHigh]$ instead of $[\vOneDiffSuccessSTwoLow; +\vOneDiffSuccessSTwoHigh]$~p.p. We report only the hierarchical intervals.
+
+\textbf{Evaluation modes.}
+Each policy is evaluated with greedy actions (argmax) and with sampled actions. They can differ sharply (Section~\ref{sec:rq3}), so the same mode is always used across the methods being compared.
+
+\textbf{Pre-specification.}
+Hypotheses, criteria and statistics for both studies were written and committed before the corresponding test evaluations. Changes made afterwards are listed with their dates in the repository. Experiment E (Section~\ref{sec:rq4}) was designed \emph{after} we saw the ceiling effect in Taquari. It is therefore exploratory, although its criteria were also committed before any of its runs. Following our pre-specification, we write ``supported'' only when the stated criterion holds.

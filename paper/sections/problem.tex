@@ -1,0 +1,40 @@
+\section{Problem and Environments}
+\label{sec:problem}
+% Seção III (~0,8 pág.). Tab. I com os locais, as datas, o papel de cada imagem e as divisões.
+
+\textbf{POMDP.}
+The drone flies at a fixed altitude (or chooses among three altitudes in one variant) over a square window of $3.2\times3.2$~km whose position on the map is unknown. The state is its cell in the window. At each step it captures a nadir image, which a descriptor turns into a vector $z$. The map provides one descriptor $m_c$ per cell, computed from \emph{pre-event} imagery. The belief $b$ over cells is updated by a histogram filter with a tempered likelihood
+\begin{equation}
+  b'(c) \propto b(c\ominus a)\,\exp\!\big(\beta\, z^\top m_c\big),
+\end{equation}
+where $c\ominus a$ is the cell the drone came from under action $a$, with odometry noise blurring the prediction. The temperature $\beta=\kappa\beta_1$ is calibrated on training windows only: $\beta_1$ maximizes the likelihood of the true cell, and $\kappa$ maximizes success minus false localization of a random-walk policy.
+
+\textbf{Episodes and outcomes.}
+An episode starts at a random cell of a random valid window and lasts up to 80 steps. It stops when the belief puts $\ge0.9$ of its mass within 100~m of its mode (the stopping rule uses only the belief). It is a \emph{success} if that mode is within 100~m of the true position, and a \emph{false localization} if it is not. Otherwise it is a timeout. False localizations are the dangerous outcome: the drone is confidently wrong.
+
+\textbf{Reward.}
+The policy is rewarded for the entropy reduction of the belief at each step, with $+1$ for success, $-1$ for a false localization, a small time cost and a penalty for pushing against the window border (the same constants in both environments).
+
+\textbf{Two environments.}
+\emph{v1} uses a 50~m grid, a hand-crafted color--texture descriptor and 8 compass moves, with a fixed cost per step. \emph{v3} uses a 25~m grid and a DINOv2~\cite{oquab2023dinov2} descriptor fine-tuned contrastively on the training band (Appendix). It also models the camera footprint at 60, 100 or 150~m altitude, 2\% odometry drift in scale and heading, and the flight time of each move (6~s per 50~m move, 16~s per altitude change). The v3 environment runs thousands of episodes in parallel on a GPU. A parity test reproduces the v1 environment exactly on its own grid: 1000 of 1000 trajectories are identical for the deterministic baselines, and episode outcomes are identical for the v1 PPO seeds.
+
+\textbf{Data.}
+All imagery is Maxar open data of the May~2024 floods in Rio Grande do Sul, Brazil (Table~\ref{tab:sites}). The observations always come from the post-event image. The map comes from an earlier date, so the drone must match flooded terrain against a dry map. Train and test regions are disjoint latitude bands, separated by a 200~m margin. Porto Alegre is used zero-shot. In Canoas the bands run along the longer east--west axis (Section~\ref{sec:rq4}).
+
+\begin{table}[t]
+\centering
+\caption{Sites, image dates and splits. Observations always come from the post-event image; the map date defines the scenario.}
+\label{tab:sites}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Site & Map (scenario) & Observation & Use \\
+\midrule
+Taquari valley & 2024-05 (S0), 2023-03 (S1), & 2024-05-07 & train north / test south (v1); \\
+ & 2023-10 (S2) & & 3 spatial folds, fold A (v3) \\
+Porto Alegre & 2024-02 (P1), 2022-12 (P2) & 2024-05-09 & zero-shot: islands, center \\
+Canoas & 2024-02 (C1) & 2024-05-09 & east test band (exp.\ E) \\
+\bottomrule
+\end{tabular}
+\end{table}

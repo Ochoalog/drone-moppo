@@ -1,0 +1,18 @@
+\section{Background and Related Work}
+\label{sec:background}
+% Seção II do PLANO_ARTIGO.md v4 (~0,8 pág.). Rascunho da IA-1 em 21/11; números só por macro.
+
+\textbf{Active localization as a POMDP.}
+A drone that has lost GNSS must infer its position from what its camera sees. Its position is the hidden state. Each image is an observation, and the agent chooses where to fly next. This is a partially observable Markov decision process (POMDP), and the standard way to track the hidden position is a Bayesian histogram filter over a discretized map~\cite{thrun2005probabilistic}. \emph{Active} localization adds a decision layer: choose the motion that will make the belief collapse faster or more reliably. Classical approaches greedily maximize the expected information gain or entropy reduction~\cite{burgard1997active}. They require an accurate observation model to predict what each move will reveal.
+
+\textbf{Learning to act on the belief.}
+The Active Neural Localizer (ANL)~\cite{chaplot2018anl} keeps the structured histogram filter and replaces the hand-designed action rule with a policy trained by reinforcement learning (RL). The policy reads the belief map (and the map itself) and outputs the next move. Deep Active Localization~\cite{gottipati2019dal} extends the idea to real robots with learned perception. We follow the ANL design and train the policy with Proximal Policy Optimization (PPO)~\cite{schulman2017ppo}. The question we ask is not whether this works in a clean simulator. It is \emph{when} a learned policy beats simple motion rules on real post-disaster imagery.
+
+\textbf{Multi-objective RL.}
+Localization trades off success, flight time and the risk of confidently wrong answers (false localizations). AMOR~\cite{alegre2025amor} trains one policy conditioned on reward weights, with a vector-valued critic, so the trade-off can be chosen after training. We test whether the same idea gives control over the efficiency--risk trade-off in localization (Section~\ref{sec:rq3}).
+
+\textbf{Visual localization of UAVs.}
+Absolute visual localization matches downward-looking UAV images against geo-referenced imagery~\cite{couturier2021review,couturier2024review}. Benchmarks such as UAV-VisLoc~\cite{xu2024uavvisloc} show large drops under viewpoint and appearance change. Foundation features (DINOv2~\cite{oquab2023dinov2} with GeM pooling~\cite{radenovic2019gem}, as in AnyLoc~\cite{keetha2023anyloc}) are strong zero-shot place descriptors, and contrastive fine-tuning~\cite{oord2018cpc} adapts them to a domain. AiRLoc~\cite{pirinen2022airloc} uses RL to search for a target view on a static aerial map. Here the map is outdated by a flood: the reference imagery predates the event, so a matching model is uncertain exactly where the terrain changed.
+
+\textbf{Reliable evaluation in RL.}
+RL results vary widely across training seeds. Agarwal et al.~\cite{agarwal2021rliable} recommend interval estimates over seeds instead of point estimates. Our episodes are also spatially dependent (episodes in the same map window share their terrain). We therefore use a hierarchical bootstrap over seeds and windows, and we apply pre-specified learning gates before any policy is evaluated on test data (Section~\ref{sec:protocol}).

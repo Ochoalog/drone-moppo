@@ -1,29 +1,27 @@
-% Esqueleto do artigo v3 (PLANO_ARTIGO.md v3). Template: IEEE Conference, duas colunas (confirmado pelo Vitor em 20/11; apresentação 27/11).
-% Compilar no Overleaf (classe IEEEtran). Números: SEMPRE pelas macros de numbers.tex (paper/make_numbers.py).
+% Artigo v4 (docs/PLANO_ARTIGO.md v4): projeto final de RL, IEEE Conference, duas colunas, 8 páginas + referências.
+% Números: SEMPRE pelas macros de numbers.tex (paper/make_numbers.py); tabelas por paper/make_tables_v4.py.
+% "Change-aware" não aparece no título nem na tese (§1 e §6 do plano).
 \documentclass[conference]{IEEEtran}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
-\usepackage{siunitx}
 \usepackage[hidelinks]{hyperref}
 \input{numbers}
 
 \begin{document}
 
-% Título: escolher no domingo, 22/11, com os resultados (PLANO_ARTIGO.md §1).
-\title{Change-Aware Active Localization for GNSS-Denied UAVs over Outdated Post-Flood Maps}
+\title{When Does Learning to Act Pay Off? Belief-Space Reinforcement Learning for UAV Localization over Outdated Post-Flood Maps}
 \author{\IEEEauthorblockN{Autores a definir}\IEEEauthorblockA{UFRGS}}
 \maketitle
 
 \input{sections/abstract}
 \input{sections/introduction}
-\input{sections/related}
-\input{sections/preliminary}
-\input{sections/formulation}
-\input{sections/method}
-\input{sections/setup}
+\input{sections/background}
+\input{sections/problem}
+\input{sections/methods}
+\input{sections/protocol}
 \input{sections/results}
 \input{sections/discussion}
 \input{sections/conclusion}

@@ -1,4 +1,59 @@
 \section{Results}
-% ~1,9 pág. A: percepção (H1); B: principal (H3, Tabela II, Fig. 3); C: filtro CA (H2, Fig. 4);
-% D: altitude (H4, Fig. 5); E: transferência (H5) e validação espacial; F: ablações (Tabela III).
-% Uma frase de veredito por hipótese, no formato do critério (DECISIONS_V3.md §2).
+\label{sec:results}
+
+\subsection{RQ1: Does learning to act pay off under ambiguous perception?}
+\label{sec:rq1}
+% Estudo v1, Taquari, teste sul, 1000 episódios pareados, argmax, 3 seeds da PPO. Tab. II.
+
+In the v1 environment the descriptor is weak, and the choice of route matters. In S2 (map from October 2023), random motion succeeds in only \vOneSuccRandomSTwo\% of the test episodes, against \vOneSuccStraightSTwo\% for the straight line (Table~\ref{tab:v1}).
+The PPO policy reaches \vOneSuccessPpoSTwo\% success. This is indistinguishable from the straight line: the hierarchical interval of the difference is $[\vOneDiffSuccessSTwoLow; +\vOneDiffSuccessSTwoHigh]$~p.p.
+The policy is more \emph{efficient}. It needs fewer penalized steps (median \vOnePenStepsPpo{} vs.\ \vOnePenStepsStraight, Wilcoxon $p=\vOneWilcoxonP$) and flies about two thirds of the distance in its successful episodes (\vOneDistSuccessPpoSTwo{} vs.\ \vOneDistSuccessStraightSTwo~km).
+It is also \emph{riskier}: \vOneFalseLocPpoSTwo\% false localizations against \vOneFalseLocStraightSTwo\%.
+With the less outdated S1 map, the straight line is better than the policy (\vOneDiffPpoStraightSOne{} p.p., $[\vOneDiffPpoStraightSOneLow; \vOneDiffPpoStraightSOneHigh]$).
+The learned policy clearly beats random motion, the lawnmower and greedy information gain in S2. It does not beat a heading-keeping rule that keeps reaching new terrain and never trusts the map.
+
+\begin{table}[t]
+\centering
+\caption{Study v1, Taquari test band (1000 paired episodes, argmax). $\Delta$: PPO or heuristic minus straight, with hierarchical 95\% CI (seeds $\rightarrow$ windows). Dist.\ succ.: mean flight distance in successful episodes.}
+\label{tab:v1}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\columnwidth}{!}{\input{tables/tab2_v1}}
+\end{table}
+
+\subsection{RQ2: What makes the problem hard, and does the policy transfer?}
+\label{sec:rq2}
+% v1: índice de mudança (F1, F2), zero-shot em POA, M1 não suportada. v3: baselines nos alvos (Fig. 2).
+
+\textbf{Map change.}
+Success falls with the map--observation change of the episode window, for every method (Fig.~\ref{fig:hard}a). From the least to the most changed quintile, the straight line drops from \vOneSuccessQOneStraight\% to \vOneSuccessQFiveStraight\% and the PPO from \vOneSuccessQOnePpo\% to \vOneSuccessQFivePpo\%. A color-difference covariate that does not depend on the descriptor points the same way (Spearman $\rho$ from \vOneRhoColorMin{} to \vOneRhoColorMax).
+We had pre-specified a mechanism: the policy would be drawn to cells that look distinctive on the old map. It was \vOneMOneVerdict. False localizations do visit more changed cells (+\vOneMOneChangeDiff, CI $[\vOneMOneChangeDiffLow; \vOneMOneChangeDiffHigh]$), but these cells are neither more distinctive nor more changed than the cells visited by the straight line.
+
+\textbf{Transfer.}
+Applied zero-shot to Porto Alegre (map of February 2024), the S2 policy matches the straight line in the city center (\vOnePoaCenterPpo\% vs.\ \vOnePoaCenterStraight\%, CI $[\vOnePoaCenterDiffLow; +\vOnePoaCenterDiffHigh]$) and falls behind on the river islands (\vOnePoaIslandsPpo\% vs.\ \vOnePoaIslandsStraight\%, CI $[\vOnePoaIslandsDiffLow; +\vOnePoaIslandsDiffHigh]$).
+
+\textbf{Which strategies survive ambiguity (v3).}
+With the stronger v3 descriptor, the same heuristics separate into two regimes (Fig.~\ref{fig:hard}b, Appendix table). In Taquari every heuristic exceeds 83\%, and random motion alone reaches \vThreeTaqSTwoRandom\% (S2). In Canoas and Porto Alegre, random motion drops to \vThreeCanoasRandom\%, \vThreeIslandsRandom\% (islands) and \vThreeCenterRandom\% (center), while the straight line keeps \vThreeCanoasStraight\%, \vThreeIslandsStraight\% and \vThreeCenterStraight\%. Flying the straight line at 150~m helps where perception is hardest: \vThreeCanoasStraightHigh\% vs.\ \vThreeCanoasStraight\% in Canoas and \vThreeIslandsStraightHigh\% vs.\ \vThreeIslandsStraight\% on the islands.
+Greedy information gain, which predicts observations from the outdated map, is the weakest informed strategy everywhere. In Canoas it falls below random motion (\vThreeCanoasGreedy\% vs.\ \vThreeCanoasRandom\%), and on the islands it only matches it (\vThreeIslandsGreedy\% vs.\ \vThreeIslandsRandom\%). Planning on what the old map predicts is the wrong inductive bias after a flood.
+% Registro de afirmações (§6): "gulosa < aleatória" só em Canoas; nas ilhas é empate; no Centro a gulosa (\vThreeCenterGreedy) fica ACIMA da aleatória (\vThreeCenterRandom). Não generalizar.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig2_v4.pdf}
+\caption{What makes localization hard. (a) Study v1: success by map--observation change quintile in the Taquari test band (95\% CI). (b) v3 environment: success of the heuristics on the test sets, sites sorted by the success of random motion.}
+\label{fig:hard}
+\end{figure}
+
+\subsection{RQ3: Can a preference-conditioned policy control the risk?}
+\label{sec:rq3}
+% Estudo v1, MOPPO (errata e results_mo_v1fix/). Linha curta; detalhes no apêndice.
+
+Not with our budget. The conditioning gate, which checks at 25\% of training that different preference weights produce different behavior, had already failed during training. With greedy actions, the policy chose the same action in 100\% of the probed states for the ``uniform'', ``fast'' and ``safe'' presets, so the original grid evaluation reported identical numbers for 32 of 37 weights. Re-evaluated with sampled actions (the mode used in training), the presets differ only slightly. The pre-specified hypotheses on the response to the weights (\moHSixVerdict) and on fewer false localizations in Porto Alegre (\moHSevenVerdict) both failed, and the comparison against fixed-weight PPOs was \moHFourVerdict. Averaged over presets, the expected utility of the conditioned policy (\moEumSampled) is no better than that of the plain PPO seeds (\moEumPocSampled). We report this as a negative result: in this problem, the weight conditioning was too weak to steer the trade-off.
+
+\subsection{RQ4: When does learning to act pay off?}
+\label{sec:rq4}
+% Escrita na segunda, 23/11, depois do congelamento (Vitor + IA-1). Conteúdo (PLANO_ARTIGO.md v4 §4):
+% - Taquari v3: teto das baselines (aleatória \vThreeTaqSTwoRandom, reta \vThreeTaqSTwoStraight) e 0 de 30 execuções no gate
+%   (macro a gerar do results_v3/E/curve.csv e dos DONE.json); H1 em uma frase (apêndice).
+% - Experimento E (exploratório, V46): E1 (Canoas), E2, E3, curva da Fig. 3; E4 na Tab. III; E5 (taxa do gate).
+% - Vereditos SÓ de results_v3/E/verdicts_E.json.
