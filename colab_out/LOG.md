@@ -67,3 +67,4 @@
 | 2026-11-22T15:17:45+00:00 | diag_canoas_split | FAILED | 0.72 | split_diagnostic | aguardando_decisao_vitor |
 | 2026-11-22T16:06:07+00:00 | scan_noise_A_ext | OK | 27.71 | scan ext rows 4 | aguardando_selecao_niveis_ruido |
 | 2026-11-22T16:14:02+00:00 | E_eval_canoas_zeroshot | OK | 7.79 | episodes 25000 | aguardando_jobs_E_synth |
+| 2026-11-22T19:57:36+00:00 | E_synth_L3_ppo_s0 | INVALID_GATE | 6.12 | fps 4928 pass=False adv=+0.040 | E_synth_L3_ppo_s1 |
