@@ -5,7 +5,16 @@
 ## [AÇÃO DO VITOR]
 
 1. **Canoas zero-shot (V51, descritivo; `results_v3/E/canoas_zeroshot.csv`):** as PPOs de Taquari, no modo amostrado, acertam 54,2% nas 31 janelas. Contra cada heurística: aleatória **+13,4 [+8,9; +17,9]**, gulosa **+17,3 [+11,4; +22,6]**, zigue-zague +1,5 [−3,5; +6,3], reta **−10,3 [−14,9; −5,8]**, reta a 150 m **−16,4 [−21,3; −11,8]**. Ou seja, a PPO transfere melhor que a exploração sem plano, mas continua abaixo das retas, como em Taquari.
-2. **E-synth (V53):** L3 (σ 12) pronto; L1 e L2 na fila. **E3 = Δ(L3) − Δ(L0) = −16,7 p.p. [−21,6; −12,5] → contrária** (argmax: −15,1 [−22,2; −8,2], contrária). Em L3: PPO − aleatória **+10,3 [+5,1; +15,5]** (em L0, +3,8), e **4 de 5 execuções passam no gate** (em L0, 0 de 10). Mas PPO − melhor heurística (reta a 150 m, 91,2% no teste) = **−18,5 [−23,3; −14,3]** (em L0, −1,8). Leitura: com mais ambiguidade, aprender a agir passa a valer contra a exploração sem plano, mas a varredura sistemática ganha ainda mais. As retas quase não sentem o ruído (99,8 → 91,2%), e a aleatória cai de 94 para 62%. Fig. 3 em `paper/figures/fig3_E.pdf`.
+2. **E-synth completo (V53):** E3 = Δ(L3) − Δ(L0) = **−16,7 p.p. [−21,6; −12,5] → contrária** (argmax −15,1, contrária). A curva (PPO amostrada; melhor heurística = reta a 150 m em todos os níveis) é monótona nos dois sentidos:
+
+   | Nível | aleatória (treino) | gate | PPO − aleatória | PPO − melhor heurística |
+   |---|---|---|---|---|
+   | L0 σ 0 | 93,0% | 0/10 | +3,8 [+2,3; +5,3] | −1,8 [−2,5; −1,0] |
+   | L1 σ 6 | 87,8% | 0/5 | +8,1 [+5,6; +10,3] | −4,3 [−5,6; −3,2] |
+   | L2 σ 8 | 83,5% | 2/5 | +9,6 [+7,0; +12,3] | −6,5 [−8,4; −4,7] |
+   | L3 σ 12 | 66,2% | 4/5 | +10,3 [+5,1; +15,5] | −18,5 [−23,3; −14,3] |
+
+   Leitura: com mais ambiguidade, a PPO aprende a superar a exploração sem plano (e passa no gate), mas a reta a 150 m se degrada ainda menos (99,6 → 91,2%), e a distância para ela cresce. Fig. 3 e Tab. III (`paper/tables/E_table3.csv`) gerados por código. **Falta (segunda até 12:00):** macros do E no `numbers.tex`, VI-D, Tab. III em LaTeX, Abstract, Introdução, VII e VIII.
 3. **Referência L0 (Taquari, 10 seeds, amostrado):** PPO 97,8%; PPO − aleatória **+3,8 p.p. [+2,3; +5,3]**; PPO − melhor heurística (reta a 150 m, escolhida no treino) **−1,8 p.p. [−2,5; −1,0]**. Argmax: +3,3 [+1,3; +5,2] e −2,3 [−3,8; −0,9].
 
 4. **Correção para o `PLANO_ARTIGO.md` v4 (§5 e §6):** "gulosa < aleatória" vale só em **Canoas** (36,9 × 40,8%). Nas **ilhas** é empate (43,3 × 44,4%) e no **Centro** a gulosa fica **acima** da aleatória (35,8 × 27,8%). O texto do artigo (VI-B) já diz assim: "a gulosa é a pior estratégia informada em todo lugar; fica abaixo da aleatória em Canoas e empata nas ilhas". Não mexi no plano, porque o arquivo é seu.

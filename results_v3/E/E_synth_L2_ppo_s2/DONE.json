@@ -1,0 +1,29 @@
+{
+ "job_id": "E_synth_L2_ppo_s2",
+ "git_commit": "6f2a567fe78ed6e79b7c514fd352ef4480c64e21",
+ "config_hash": "924efd67d1bd600e",
+ "gpu_minutes": 5.49,
+ "started_at": "2026-11-22T21:32:53+00:00",
+ "finished_at": "2026-11-22T21:38:23+00:00",
+ "status": "INVALID_GATE",
+ "reason": "gate de aprendizado aos 25% reprovado",
+ "metrics": {
+  "run_dir": "/content/drive/MyDrive/drone_v3/v3/dinov2_vits14_ftA/fold_A/runs/E_synth_L2_ppo_s2_INVALID_GATE",
+  "global_step": 1409024,
+  "gate": {
+   "policy_success": 0.8899999856948853,
+   "policy_false_loc": 0.029999999329447746,
+   "policy_flight_time_success_s": 226.44944763183594,
+   "random_success": 0.8549999594688416,
+   "random_false_loc": 0.02499999850988388,
+   "random_flight_time_success_s": 237.40350341796875,
+   "flight_time_ratio": 0.953858912659569,
+   "advantage": 0.0350000262260437,
+   "threshold": 0.05,
+   "flight_time_ratio_threshold": 0.75,
+   "passed": false
+  },
+  "steps_per_s_median": 4844.200000000001,
+  "invalid_gate": true
+ }
+}

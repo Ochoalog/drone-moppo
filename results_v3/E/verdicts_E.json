@@ -3,6 +3,8 @@
  "main_mode": "sampled",
  "regimes": [
   "Taquari L0",
+  "Taquari L1 (σ=6)",
+  "Taquari L2 (σ=8)",
   "Taquari L3 (σ=12)"
  ],
  "E3": {
