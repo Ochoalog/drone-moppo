@@ -1,11 +1,11 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 21/11/2026, 21:35 (prompt v4: artigo centrado em RL; experimento E pré-especificado na V46, commit `9ff0248`; código e fila de E prontos). Antes, ≈ 14:30 (V44/V45).
+**Última atualização:** 22/11/2026, madrugada (V48: Canoas FAILED; 30/30 `mx_A` INVALID_GATE). Antes, 21/11/2026, 21:35 (prompt v4: artigo centrado em RL; experimento E pré-especificado na V46, commit `9ff0248`; código e fila de E prontos). Antes, ≈ 14:30 (V44/V45).
 
 ## [AÇÃO DO VITOR]
 
-1. **Repassar à IA-2:** atualizar para o novo `CURRENT_COMMIT` **depois** do treino `mx_A_*` em curso (não interromper). A fila continua com os `mx_A_*_s7–s9` (prioridade 2) e depois os jobs de E, na ordem: `calibrate_canoas_ftA` (3) → `E_canoas_ppo_s0–4` (4) → `E_eval_canoas` (5) → `E_eval_taquari_L0` (6) → `scan_noise_A` (7). O E-alt fica `on_hold`.
-2. **Se `calibrate_canoas_ftA` terminar `FAILED` ("< 20 janelas de teste"):** é ponto de decisão seu (V46). A divisão de Canoas não rende 20 janelas de teste nem com 2 janelas de largura.
+1. **DECISÃO SUA: divisão de Canoas (V48).** `calibrate_canoas_ftA` terminou `FAILED` ("< 20 janelas de teste mesmo com 2 janelas de largura"). Não mudei nada da V46. Os jobs de E-real estão `on_hold`. Para decidir com base nas máscaras, rodei na fila o `diag_canoas_split` (~1 min de GPU), que grava `split_diagnostic.csv` (janelas válidas por lado e largura, limiares 0,7/0,6/0,5) e `column_valid.csv`. Opções que eu vejo, todas escolhidas só pelas máscaras: (a) teste a **oeste** em vez de leste; (b) divisão por **linhas** (sul ou norte); (c) aceitar menos de 20 janelas (por exemplo ≥ 10, com IC mais largo); (d) teste com até metade da caixa (240 colunas já cabem; acima de 256 muda a regra); (e) desistir do E-real e ficar com o E-synth (a ordem de corte da V46 corta E-real por último, então isso é uma mudança de prioridade). Recomendo esperar o diagnóstico e escolher (a) ou (b), a que der ≥ 20 janelas com a menor faixa.
+2. **Repassar à IA-2:** atualizar para o novo `CURRENT_COMMIT` depois dos jobs em curso (`E_eval_taquari_L0`, `scan_noise_A`) e rodar o `diag_canoas_split`.
 3. **Depois do `scan_noise_A`:** eu escolho os níveis L1–L3 pela regra da V46, commito o `results_v3/E/noise_levels.json` e libero os `E_synth_*`. Se nenhum σ válido der aleatória < 75%, é ponto de decisão seu.
 
 4. **Correção para o `PLANO_ARTIGO.md` v4 (§5 e §6):** "gulosa < aleatória" vale só em **Canoas** (36,9 × 40,8%). Nas **ilhas** é empate (43,3 × 44,4%) e no **Centro** a gulosa fica **acima** da aleatória (35,8 × 27,8%). O texto do artigo (VI-B) já diz assim: "a gulosa é a pior estratégia informada em todo lugar; fica abaixo da aleatória em Canoas e empata nas ilhas". Não mexi no plano, porque o arquivo é seu.

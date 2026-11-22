@@ -80,3 +80,29 @@ def choose_column_split(tables: PerceptionTables, window: int = 128, min_valid: 
             n_train = count_windows(tables, train_cols, window, min_valid)
             return ColumnSplit(n_cols, width, margin, n_test, n_train)
     return None
+
+
+def with_rows(tables: PerceptionTables, rows: np.ndarray) -> PerceptionTables:
+    restricted = copy.copy(tables)
+    restricted.rows_allowed = np.asarray(rows)
+    return restricted
+
+
+def split_diagnostic(tables: PerceptionTables, window: int = 128,
+                     min_valids: tuple[float, ...] = (0.7, 0.6, 0.5)) -> list[dict]:
+    """Janelas válidas por lado (leste/oeste nas colunas, sul/norte nas linhas), largura da faixa e limiar.
+
+    Só máscaras de validade, sem desempenho: subsídio para o Vitor quando a regra da V46 falha. Não escolhe nada.
+    """
+    n_rows, n_cols = tables.grid_shape
+    rows = []
+    for min_valid in min_valids:
+        whole = len(valid_windows(tables, window, min_valid))
+        rows.append({"side": "all", "width": None, "min_valid": min_valid, "n_windows": whole})
+        for side, n in (("east", n_cols), ("west", n_cols), ("south", n_rows), ("north", n_rows)):
+            for width in range(window, n + 1, 16):
+                band = np.arange(n - width, n) if side in ("east", "south") else np.arange(0, width)
+                restricted = with_columns(tables, band) if side in ("east", "west") else with_rows(tables, band)
+                rows.append({"side": side, "width": width, "min_valid": min_valid,
+                             "n_windows": len(valid_windows(restricted, window, min_valid))})
+    return rows

@@ -24,7 +24,7 @@ from dal.v3.agents.ppo_batched import NetworkPolicy, PolicyAdapter, PPOTrainConf
 from dal.v3.descriptors.obs_noise import add_observation_noise
 from dal.v3.descriptors.tables import PCAFit
 from dal.v3.envs.realistic_env import RealisticBatchedEnv, RealisticConfig
-from dal.v3.evaluation.site_split import ColumnSplit, choose_column_split, with_columns
+from dal.v3.evaluation.site_split import ColumnSplit, choose_column_split, split_diagnostic, with_columns
 from dal.v3.localization import calibration
 from dal.v3.localization.change_prior import rasterize_prior
 from dal.v3.pipeline import DataRequest, load_tables
@@ -110,7 +110,13 @@ def calibrate_job(job: dict, out_root: Path, device: str) -> dict:
                                 pca_fits=load_pca(directory, specs.ALTITUDES_M))
         column_split = choose_column_split(tables, RealisticConfig().window_cells, RealisticConfig().min_window_valid)
         if column_split is None:
-            raise SplitUnavailableError(f"{site}: < 20 janelas de teste mesmo com 2 janelas de largura")
+            error = SplitUnavailableError(f"{site}: < 20 janelas de teste mesmo com 2 janelas de largura")
+            error.diagnostic = split_diagnostic(tables, RealisticConfig().window_cells)
+            ok = tables.map_ok & tables.obs_ok
+            error.column_valid = pd.DataFrame({"col": np.arange(ok.shape[1]), "valid_frac": ok.mean(0),
+                                               "map_ok_frac": tables.map_ok.mean(0),
+                                               "obs_ok_frac": tables.obs_ok.mean(0)})
+            raise error
         split_info = column_split.to_dict()
         tables = with_columns(tables, column_split.cols("train"))
     sigma, noise_seed = noise_settings(job)
@@ -383,6 +389,10 @@ def main() -> None:
             metrics = calibrate_job(job, Path(args.out_root), args.device)
         except SplitUnavailableError as error:  # V46: parar e perguntar (sem calibração)
             metrics, status, reason = {}, "FAILED", str(error)
+            if getattr(error, "diagnostic", None):  # só máscaras: subsídio para a decisão do Vitor
+                pd.DataFrame(error.diagnostic).to_csv(out / "split_diagnostic.csv", index=False)
+                error.column_valid.to_csv(out / "column_valid.csv", index=False)
+                metrics = {"split_diagnostic": "split_diagnostic.csv"}
         else:
             # A calibração completa (com as linhas de κ e α) vai também para colab_out: publicada na colab/results.
             name = calibration_file(job, job.get("site"))

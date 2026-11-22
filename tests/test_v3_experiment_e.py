@@ -72,6 +72,16 @@ def test_column_split_widens_when_east_is_invalid_and_gives_up_beyond_two_window
     assert site_split.choose_column_split(_tables((320, 480), ok)) is None  # parar e perguntar (V46)
 
 
+def test_split_diagnostic_counts_windows_per_side_only_from_masks():
+    ok = np.ones((320, 480), bool)
+    ok[:, 250:] = False  # leste inválido: o oeste e as linhas ainda têm janelas
+    rows = {(r["side"], r["width"], r["min_valid"]): r["n_windows"]
+            for r in site_split.split_diagnostic(_tables((320, 480), ok), min_valids=(0.7,))}
+    assert rows[("east", 256, 0.7)] == 0 and rows[("west", 256, 0.7)] > 20
+    assert rows[("all", None, 0.7)] == len(valid_windows(_tables((320, 480), ok), 128, 0.7))
+    assert rows[("south", 320, 0.7)] == rows[("all", None, 0.7)]
+
+
 def test_canoas_calibration_and_training_never_touch_test_or_margin_columns(out_root, monkeypatch):
     base = {"descriptor": "fake", "fold": "A", "episodes": 8}
     jobs.calibrate_job(base, out_root, "cpu")  # PCA da dobra A do Taquari (aplicada em Canoas)
@@ -167,3 +177,15 @@ def test_all_methods_of_a_level_share_the_same_noisy_table(out_root):
     assert torch.equal(first.map_desc[100], clean.map_desc[100])
     with pytest.raises(ValueError):  # calibração de outro σ
         jobs.make_env({**job, "obs_noise_sigma": 1.0}, out_root, "taquari", "S2", "test", False, False, "cpu")
+
+
+def test_failed_canoas_split_carries_masks_only_diagnostic(out_root, monkeypatch):
+    base = {"descriptor": "fake", "fold": "A", "episodes": 8}
+    jobs.calibrate_job(base, out_root, "cpu")
+    monkeypatch.setattr(jobs, "choose_column_split", lambda *a, **k: None)
+    with pytest.raises(jobs.SplitUnavailableError) as failure:
+        jobs.calibrate_job({**base, "site": "canoas", "column_split": True, "kappas": [0.5],
+                            "calibration_file": "calibration_canoas.json"}, out_root, "cpu")
+    assert {r["side"] for r in failure.value.diagnostic} == {"all", "east", "west", "south", "north"}
+    assert len(failure.value.column_valid) == 480
+    assert not (jobs.work_dir(out_root, "fake", "A") / "calibration_canoas.json").exists()
