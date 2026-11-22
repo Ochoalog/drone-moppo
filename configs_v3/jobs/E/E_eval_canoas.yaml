@@ -1,0 +1,24 @@
+# Experimento E-real (V46), notebook 05 (kind: evaluate): Canoas C1, teste e treino (o treino escolhe a melhor
+# heurística), 1000 episódios pareados (seeds 2024 + i). Heurísticas só com filtro padrão; as 5 PPO nos dois modos
+# (amostrado = principal). Exceção ao gate (V46): execuções _INVALID_GATE também entram (include_invalid_gate).
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+site_calibration:
+  canoas: calibration_canoas.json
+include_invalid_gate: true
+publish_parquet: true
+baseline_filters: [standard]
+modes: [sampled, argmax]
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: canoas, scenario: C1, split: test}
+  - {site: canoas, scenario: C1, split: train}
+models:
+  - {method: ppo, seed: 0, run: E_canoas_ppo_s0, label: ppo}
+  - {method: ppo, seed: 1, run: E_canoas_ppo_s1, label: ppo}
+  - {method: ppo, seed: 2, run: E_canoas_ppo_s2, label: ppo}
+  - {method: ppo, seed: 3, run: E_canoas_ppo_s3, label: ppo}
+  - {method: ppo, seed: 4, run: E_canoas_ppo_s4, label: ppo}

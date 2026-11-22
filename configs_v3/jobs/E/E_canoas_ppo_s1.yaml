@@ -1,0 +1,16 @@
+# Experimento E-real (V46), notebook 04 (kind: train): PPO sem canal de prior, sem altitude, filtro padrão, na faixa
+# de treino de Canoas C1. Mesmos hiperparâmetros da matriz (1,4 M passos, 512 ambientes). O gate aos 25% é registrado
+# (original e emendado, V38) e NÃO interrompe o treino; pela exceção da V46 a execução é avaliada de qualquer forma.
+kind: train
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+site: canoas
+scenario: C1
+method: ppo
+seed: 1
+total_timesteps: 1400000
+n_envs: 512
+site_calibration:
+  canoas: calibration_canoas.json
+gate_flight_time_ratio: 0.75

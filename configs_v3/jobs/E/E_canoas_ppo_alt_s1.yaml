@@ -1,0 +1,15 @@
+# Experimento E-alt (V46, prioridade 3, só com GPU sobrando), notebook 04: PPO com altitude como ação, sem filtro CA
+# nem canal de prior, na faixa de treino de Canoas C1. Demais parâmetros como no E-real.
+kind: train
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+site: canoas
+scenario: C1
+method: ppo_alt
+seed: 1
+total_timesteps: 1400000
+n_envs: 512
+site_calibration:
+  canoas: calibration_canoas.json
+gate_flight_time_ratio: 0.75

@@ -1,0 +1,14 @@
+# Experimento E-real (V46), notebook 04 (kind: calibrate). Divisão de Canoas por colunas (teste a leste, w ≥ 180
+# células com ≥ 20 janelas válidas, margem de 8) escolhida só pelas máscaras; β₁ por altitude e κ pela regra da PoC,
+# com a grade e os episódios da V33, SÓ na faixa de treino de Canoas. PCA da dobra A do Taquari (zero-shot).
+# Se não houver 20 janelas de teste nem com 256 colunas, o job termina FAILED: parar e perguntar ao Vitor.
+kind: calibrate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+site: canoas
+scenario: C1
+column_split: true
+episodes: 1000
+kappas: [1.0, 0.7, 0.5, 0.35, 0.25, 0.18, 0.125, 0.09, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.007]
+calibration_file: calibration_canoas.json

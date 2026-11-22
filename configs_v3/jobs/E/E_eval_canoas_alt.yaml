@@ -1,0 +1,21 @@
+# Experimento E-alt (V46): avaliação das PPO com altitude em Canoas C1 (teste e treino), nos mesmos episódios do
+# E_eval_canoas. Só as políticas (as heurísticas já estão no E_eval_canoas, com o mesmo protocolo).
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+site_calibration:
+  canoas: calibration_canoas.json
+include_invalid_gate: true
+publish_parquet: true
+baseline_filters: [standard]
+modes: [sampled, argmax]
+baselines: []
+targets:
+  - {site: canoas, scenario: C1, split: test}
+  - {site: canoas, scenario: C1, split: train}
+models:
+  - {method: ppo_alt, seed: 0, run: E_canoas_ppo_alt_s0, label: ppo_alt}
+  - {method: ppo_alt, seed: 1, run: E_canoas_ppo_alt_s1, label: ppo_alt}
+  - {method: ppo_alt, seed: 2, run: E_canoas_ppo_alt_s2, label: ppo_alt}

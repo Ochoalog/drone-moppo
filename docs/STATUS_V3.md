@@ -1,10 +1,34 @@
 # STATUS v3 (IA-1)
 
-**Última atualização:** 21/11/2026, ≈ 14:30 (diagnóstico dos pilotos, V44; decisão: só bloco principal p/ o gate + avaliação das baselines, V45; cortes de deriva e validação espacial). Antes, ≈ 16:00 (vereditos H2–H5 prontos). Antes, 13:00 (patches da IA-2 aceitos, V39). Antes, 12:30. Antes, 09:00 (G1 aprovado com o ajuste fino, V29). Antes, 18/11 ≈ 21:30 (`finetune_A` iniciado; extração local reiniciada com autorização; Valência com alerta de proveniência, V28). Antes, 18/11 ≈ 21:00 (G1 do grid4 conferido: não passa em S1; `finetune_A` liberado com G1 pré-especificado na faixa de teste; Canoas e Valência registradas). Antes, 17:45 (extração local parada por falta de memória). Antes, 17:05 (descritor em grade e ajuste fino revistos; hand v3 local em andamento). Antes, 14:45 (fila do Colab: só `g1_legacy_grid4`; demais jobs `on_hold`). Antes, 14:10 (G1 preliminar recebido; Canoas e Valência decididas). Antes, 13:55: Prior rasterizado na grade de 25 m. Antes: Fim da etapa B (parte local): `pytest` 123/123 na `feat/v3-change-aware`, `ruff` sem erros, manifestos OK. **Etapa:** A concluída (tag `v1-study-final`); B quase toda pronta (falta só o que depende dos descritores da IA-2).
+**Última atualização:** 21/11/2026, 21:35 (prompt v4: artigo centrado em RL; experimento E pré-especificado na V46, commit `9ff0248`; código e fila de E prontos). Antes, ≈ 14:30 (V44/V45).
 
 ## [AÇÃO DO VITOR]
 
-1. **Repassar à IA-2:** novo `CURRENT_COMMIT`; rodar `eval_baselines_A` (prioridade 1, ~40 min) e os 30 treinos `mx_A_*` (prioridade 2, ~8 min cada). Extrações/calibrações B/C e o resto da matriz ficam `on_hold` (cortados, V45).
+1. **Repassar à IA-2:** atualizar para o novo `CURRENT_COMMIT` **depois** do treino `mx_A_*` em curso (não interromper). A fila continua com os `mx_A_*_s7–s9` (prioridade 2) e depois os jobs de E, na ordem: `calibrate_canoas_ftA` (3) → `E_canoas_ppo_s0–4` (4) → `E_eval_canoas` (5) → `E_eval_taquari_L0` (6) → `scan_noise_A` (7). O E-alt fica `on_hold`.
+2. **Se `calibrate_canoas_ftA` terminar `FAILED` ("< 20 janelas de teste"):** é ponto de decisão seu (V46). A divisão de Canoas não rende 20 janelas de teste nem com 2 janelas de largura.
+3. **Depois do `scan_noise_A`:** eu escolho os níveis L1–L3 pela regra da V46, commito o `results_v3/E/noise_levels.json` e libero os `E_synth_*`. Se nenhum σ válido der aleatória < 75%, é ponto de decisão seu.
+
+## Experimento E: previsão (T4, um job por vez)
+
+| Bloco | Jobs | GPU (min) | Término previsto |
+|---|---|---|---|
+| resto do bloco principal | `mx_A_*_s7–s9` (9) | ~60 | 21/11 ~22:30 |
+| E-real | `calibrate_canoas_ftA`, `E_canoas_ppo_s0–4`, `E_eval_canoas` | ~10 + 40 + 45 | 22/11 ~00:10 |
+| L0 | `E_eval_taquari_L0` (10 `mx_A_ppo` × 2 modos × teste/treino + heurísticas) | ~50 | ~01:00 |
+| E-synth, varredura | `scan_noise_A` (8 σ) | ~45 | ~01:45 |
+| E-synth, níveis | `E_synth_L{1,2,3}_ppo_s0–4` (15) + 3 avaliações | ~105 + 135 | ~06:00 (+ a latência da seleção dos níveis) |
+| E-alt (opcional) | `E_canoas_ppo_alt_s0–2` + avaliação | ~45 | ~07:00, se liberado |
+
+Folga grande até o limite de domingo às 20:00 (V46). A ordem de corte (E-alt → E-synth parcial → E-synth inteiro) só entra se a fila atrasar mais de ~12 h.
+
+## Resultados que já chegaram (21/11)
+
+- `eval_baselines_A` (OK, 82 min de GPU), sucesso de aleatória / reta / reta a 150 m / gulosa no teste:
+  - Taquari S2: 94,0 / 99,8 / 99,6 / 83,4%;
+  - Canoas C1: 40,8 / 64,5 / 70,6 / 36,9%;
+  - ilhas P1: 44,4 / 79,1 / 82,8 / 43,3%;
+  - Centro P1: 27,8 / 67,9 / 67,4 / 35,8%.
+- Gate do bloco principal: **22 de 22** execuções terminadas são `INVALID_GATE` pelos dois critérios (s0–s6 dos três métodos e `mx_A_ppo_s7`). Vantagem sobre a aleatória de −1,5 a +4,0 p.p.; razão de tempo de voo de 0,87 a 1,08.
 
 ## Gates
 
@@ -18,8 +42,8 @@
 
 ## Rodando agora
 
-- **Colab:** `eval_baselines_A` → 30 treinos do bloco principal (só para o gate).
-- **Local:** resumo do gate nos 30 treinos; tabelas e figuras do artigo a partir de H1, baselines e diagnóstico.
+- **Colab:** `mx_A_*_s7–s9`, depois a fila do experimento E (acima).
+- **Local:** análise do E (`scripts/verdicts_E_v3.py`), tabelas e figuras do artigo v4 (Tab. I–II, Fig. 2), seções II–VI-C em LaTeX.
 
 ## Feito hoje
 

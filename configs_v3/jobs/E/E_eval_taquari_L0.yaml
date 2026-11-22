@@ -1,0 +1,31 @@
+# Experimento E, referência fácil L0 (V46): Taquari S2, dobra A, teste e treino, com as 10 execuções mx_A_ppo_s0–9
+# (exceção ao gate: as _INVALID_GATE entram) nos dois modos. As heurísticas são reavaliadas aqui com filtro padrão
+# nos mesmos episódios e no mesmo commit (o protocolo é o do eval_baselines_A; reavaliar custa pouco e evita misturar
+# arquivos). Mesma calibração (calibration_v2.json) e o mesmo prior da matriz (o ambiente fica idêntico ao do treino).
+kind: evaluate
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+episodes: 1000
+calibration_file: calibration_v2.json
+include_invalid_gate: true
+publish_parquet: true
+baseline_filters: [standard]
+modes: [sampled, argmax]
+baselines: [straight, lawnmower, random, greedy_map, straight_150]
+targets:
+  - {site: taquari, scenario: S2, split: test}
+  - {site: taquari, scenario: S2, split: train}
+prior:
+  taquari: /content/drive/MyDrive/drone_v3/prior/taquari_prior_emsr720_le0605_10m.tif
+models:
+  - {method: ppo, seed: 0, run: mx_A_ppo_s0, label: ppo}
+  - {method: ppo, seed: 1, run: mx_A_ppo_s1, label: ppo}
+  - {method: ppo, seed: 2, run: mx_A_ppo_s2, label: ppo}
+  - {method: ppo, seed: 3, run: mx_A_ppo_s3, label: ppo}
+  - {method: ppo, seed: 4, run: mx_A_ppo_s4, label: ppo}
+  - {method: ppo, seed: 5, run: mx_A_ppo_s5, label: ppo}
+  - {method: ppo, seed: 6, run: mx_A_ppo_s6, label: ppo}
+  - {method: ppo, seed: 7, run: mx_A_ppo_s7, label: ppo}
+  - {method: ppo, seed: 8, run: mx_A_ppo_s8, label: ppo}
+  - {method: ppo, seed: 9, run: mx_A_ppo_s9, label: ppo}

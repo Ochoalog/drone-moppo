@@ -1,0 +1,13 @@
+# Experimento E-synth (V46), notebook 04 (kind: scan_noise): ruído na observação z' = normalizar(z + σ·g),
+# g ~ N(0, I/D), semente 0, nas três altitudes. Para cada σ: β₁ e κ recalibrados (grade e episódios da V33) SÓ no
+# treino da dobra A; sucesso da aleatória no κ escolhido e top-1 a 100 m. Grava calibration_noise_<σ>.json por σ.
+# A escolha dos níveis é local (scripts/select_noise_levels_v3.py), commitada antes dos treinos de E-synth.
+kind: scan_noise
+descriptor: dinov2_vits14_ftA
+feature: ft
+fold: A
+scenario: S2
+episodes: 1000
+obs_noise_seed: 0
+sigmas: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0]
+kappas: [1.0, 0.7, 0.5, 0.35, 0.25, 0.18, 0.125, 0.09, 0.06, 0.04, 0.03, 0.02, 0.015, 0.01, 0.007]
