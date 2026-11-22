@@ -1,0 +1,117 @@
+{
+ "beta1": {
+  "60": 7.749,
+  "100": 8.969,
+  "150": 8.969
+ },
+ "kappa": 1.0,
+ "beta": {
+  "60": 7.749,
+  "100": 8.969,
+  "150": 8.969
+ },
+ "alpha": 0.0,
+ "kappa_rows": [
+  {
+   "kappa": 1.0,
+   "success": 0.6730000376701355,
+   "false_loc": 0.07500000298023224,
+   "utility": 0.5980000346899033
+  },
+  {
+   "kappa": 0.7,
+   "success": 0.5210000276565552,
+   "false_loc": 0.013000000268220901,
+   "utility": 0.5080000273883343
+  },
+  {
+   "kappa": 0.5,
+   "success": 0.21700000762939453,
+   "false_loc": 0.0,
+   "utility": 0.21700000762939453
+  },
+  {
+   "kappa": 0.35,
+   "success": 0.02500000037252903,
+   "false_loc": 0.0,
+   "utility": 0.02500000037252903
+  },
+  {
+   "kappa": 0.25,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.18,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.125,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.09,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.06,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.04,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.03,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.02,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.015,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.01,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  },
+  {
+   "kappa": 0.007,
+   "success": 0.0,
+   "false_loc": 0.0,
+   "utility": 0.0
+  }
+ ],
+ "alpha_rows": [],
+ "has_prior": false,
+ "top1_by_altitude": {
+  "60": 0.0006875,
+  "100": 0.0004375,
+  "150": 0.000625
+ },
+ "site": "taquari",
+ "column_split": null,
+ "obs_noise_sigma": 12.0,
+ "obs_noise_seed": 0
+}
