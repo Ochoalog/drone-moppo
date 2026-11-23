@@ -1,8 +1,8 @@
-# Relatório para revisão independente: estudo v1 e v3 "change-aware" (IA-1, 18–21/11/2026)
+# Relatório para revisão independente: estudo v1 e v3 "change-aware" (IA-1, 18–23/11/2026)
 
-> **Para o agente revisor.** Este arquivo resume o que foi feito, com números, decisões, desvios do plano e pontos fracos conhecidos, e diz onde conferir cada coisa. A fonte de verdade é o repositório. Tudo que está aqui tem um registro mais detalhado em `DECISIONS_V3.md` (V1–V45), `docs/STATUS_V3.md` e nos arquivos de resultado citados. Se algo aqui divergir desses arquivos, valem os arquivos, e a divergência é um achado.
+> **Para o agente revisor.** Este arquivo resume o que foi feito, com números, decisões, desvios do plano e pontos fracos conhecidos, e diz onde conferir cada coisa. A fonte de verdade é o repositório. Tudo que está aqui tem um registro mais detalhado em `DECISIONS_V3.md` (V1–V53), `docs/STATUS_V3.md` e nos arquivos de resultado citados. Se algo aqui divergir desses arquivos, valem os arquivos, e a divergência é um achado.
 >
-> **Escrito por:** IA-1 (Claude Code), 21/11/2026, ≈ 15:00 (horário de Brasília).
+> **Escrito por:** IA-1 (Claude Code), 21/11/2026, ≈ 15:00 (horário de Brasília). **Atualizado em 23/11, antes do congelamento:** §6 (H2 e E), §7 (V46–V53) e §11.
 > **Branch:** `feat/v3-change-aware`, no worktree `/storage/projects/RL_project_final/dal_v3`; na hora deste relatório ela estava em `2c85667`.
 > **Repositório:** https://github.com/Ochoalog/drone-moppo. Os resultados do Colab ficam na branch `colab/results`.
 
@@ -86,11 +86,16 @@
 | Id | Situação | Números |
 |---|---|---|
 | **H1** (ft > hand) | **suportada** | S1 +9,2 p.p. [8,3; 10,1]; S2 +9,2 p.p. [8,4; 10,0]; bootstrap de células consulta, B = 2000. Cálculo refeito pela IA-1 a partir dos `.npz` publicados, idênticos byte a byte (`results_v3/verdicts/h1.json`) |
-| **H2** (CA reduz a falsa) | **será parcial, só a reta** (V45). Com α = 0 o filtro CA é idêntico ao padrão, então a diferença é zero | `eval_baselines_A` na fila |
+| **H2** (CA reduz a falsa) | **não avaliável.** Com α = 0 (V36), o filtro CA é idêntico ao padrão. O `eval_baselines_A` publicou só o `summary.csv` do filtro padrão, sem `episodes.csv`, então o `scripts/verdicts_v3.py` nunca rodou | `results_v3/eval/eval_baselines_A/summary.csv` |
 | **H3** (PPO-CA × melhor heurística CA) | **não avaliável**: nenhuma execução passou no gate | — |
 | **H4** (altitude) | **não avaliável** | diagnóstico: a PPO-CA-ALT quase não muda de altitude (média de 100–101 m) |
 | **H5** (zero-shot) | **não avaliável** | — |
 | M1 (v1) | não suportada | v1 |
+| **E1, E2** (Canoas) | **cortadas** (V51) | Canoas tem só 31 janelas válidas |
+| **E3** (Δ(L3) − Δ(L0) > 0, contra a melhor heurística) | **contrária** (amostrado e argmax) | −16,7 p.p. [−21,6; −12,5]; argmax −15,1 [−22,2; −8,2] (`results_v3/E/verdicts_E.json`) |
+| E4, E5 | descritivas | Tab. III do artigo (`results_v3/E/table3.csv`, `curve.csv`) |
+
+A tabela de vereditos de todas as hipóteses (v1, MO, v3 e E) está no apêndice do artigo (`paper/tables/tab_verdicts.tex`, gerada por `paper/make_tables_v4.py` a partir dos arquivos de veredito).
 
 **Diagnóstico exploratório dos pilotos** (V44; só janelas de treino; sem veredito; `results_v3/diagnostics/diag_pilots_A/`):
 
@@ -115,6 +120,10 @@ As políticas aprendem algo em relação à aleatória, mas terminam no máximo 
 | **V38** | **Emenda do gate de aprendizado** (tempo de voo) | depois dos pilotos falharem no gate original, **antes** de ver os tempos de voo dos pilotos | **alto, para o revisor olhar.** Foi uma mudança da §2 depois do commit, autorizada pelo Vitor; os vereditos sairiam pelos dois critérios. O limiar de 0,75 proposto pela IA-1 se mostrou **mais duro que a própria reta** (0,83; V44), um erro de calibração do limiar |
 | **V39** | Aceito o patch da IA-2 em que, no Taquari, **todos os cenários usam a PCA gravada pela calibração (S2)**, em vez de uma PCA por cenário | depois do G3 e da calibração | baixo para vazamento (só faixa de treino), mas o **G3 rodou antes** dessa mudança |
 | V42 | Operacionalizações dos vereditos: melhor heurística no treino de S2; p-valor do local para o Holm; índice de mudança da janela = prior independente (não o índice de imagem da v1) | antes de qualquer episódio da matriz | baixo |
+| **V46** | **Experimento E** (exploratório); todas as execuções de E avaliadas no teste, passem ou não no gate | depois do teto das baselines em Taquari (V44); antes de qualquer job de E | **médio**: nasceu depois de ver dados; o artigo o chama de exploratório |
+| V50 | Grade de ruído estendida (σ ∈ {4; 6; 8; 12}); regra dos níveis mantida | depois da primeira varredura de ruído (V49: nenhum σ deixava a aleatória < 75%); antes de treinar qualquer política do E | baixo: só a varredura (aleatória e top-1 no treino) foi vista |
+| **V51** | E-real (treino e teste em Canoas), E1, E2 e E-alt cortados; zero-shot das 10 `mx_A_ppo` em Canoas como item descritivo | forçado pela falta de janelas válidas em Canoas (V48: toda divisão com ≥ 20 janelas de teste deixa 0 de treino); depois da primeira varredura de ruído; antes de treinar qualquer política do E | médio: o E perde o regime difícil real; Canoas fica só descritivo |
+| **V53** | Ordem da regra dos níveis invertida: L3 → L2 → L1 (o mais difícil primeiro) | depois de a regra original dar níveis invertidos nas duas varreduras (V52: L3 = σ 6, o mais fácil); antes de treinar qualquer política do E | **médio**: mudança da regra depois de ver o resultado dela, mas só com dados das varreduras (aleatória no treino), sem nenhuma política. O L3 chegou a 66,2% de aleatória no treino (67,3% na varredura), não aos 35% visados |
 
 ## 8. Pontos fracos e erros conhecidos (autocrítica)
 
@@ -191,17 +200,39 @@ unset PYTHONPATH; export PYTHONPATH=$PWD/src
 git log --oneline 65c465b..HEAD -- DECISIONS_V3.md
 ```
 
-## 11. Em andamento e pendências (em 21/11, ≈ 15:00)
+## 11. Estado no congelamento (23/11, antes das 12:00)
 
-- **Colab:**
-  - `eval_baselines_A`: 5 baselines × filtro padrão/CA × 6 alvos × 1000 episódios;
-  - 30 treinos `mx_A_*`, só para medir o gate em 10 seeds; nenhuma execução que falhar é avaliada no teste.
-- **IA-1:**
-  - resumo do gate nos 30 treinos;
-  - vereditos de H2 (parcial) com `scripts/verdicts_v3.py`;
-  - tabelas e figuras do artigo (H1, baselines, teto, diagnóstico, gate);
-  - texto no template IEEE (`paper/`).
-- **Congelamento:** segunda, 23/11, 12:00. Release v1.0 em 25/11. Apresentação em 27/11.
+**Coleta fechada.** A fila de GPU terminou e nada mais será reexecutado, salvo um bug confirmado.
+
+- **Matriz v3 (V45):** **0 de 30** execuções `mx_A_*` passaram no gate, nem pelo critério original nem pelo emendado. A vantagem sobre a aleatória aos 25% ficou entre −1,5 e +4,0 p.p. Por isso H3–H5 não são avaliáveis.
+- **Baselines v3** (`eval_baselines_A`, filtro padrão, 1000 episódios): em Taquari S2 (teste), a aleatória acerta 94,0% e a reta 99,8%. Em Canoas, nas ilhas e no Centro o regime é difícil (tabela de baselines no apêndice do artigo).
+- **Experimento E** (exploratório; V46, V50–V53):
+  - **Níveis.** L0 σ = 0; L1 σ = 6; L2 σ = 8; L3 σ = 12. A aleatória no treino fica em 93,0 / 87,8 / 83,5 / 66,2%.
+  - **Melhor heurística no treino:** a reta a 150 m, em todos os níveis.
+  - **Curva** (PPO amostrada, IC hierárquico):
+
+    | Nível | PPO − aleatória | PPO − reta a 150 m |
+    |---|---|---|
+    | L0 | +3,8 | −1,8 |
+    | L1 | +8,1 | −4,3 |
+    | L2 | +9,6 | −6,5 |
+    | L3 | +10,3 [+5,1; +15,5] | −18,5 [−23,3; −14,3] |
+
+  - **E3 contrária:** −16,7 p.p. [−21,6; −12,5].
+  - **E5 (gate):** L0 0/10, L1 0/5, L2 2/5, L3 4/5; o critério original e o emendado dão o mesmo resultado.
+  - **Altitude não explica a diferença:** em L3, a reta a 100 m (a altitude da PPO) faz 89,9% e o zigue-zague 79,2%, contra 72,7% da PPO; a gulosa faz 71,3%.
+  - **Ressalva de orçamento:** os 1,4 M passos são fixos. Em L3 os episódios são mais longos (tempo nos sucessos da PPO 132 s → 277 s), então a PPO vê menos episódios e pode estar subtreinada lá. Está nas limitações do artigo.
+- **Canoas zero-shot** (descritivo; V51): as 10 `mx_A_ppo` acertam 54,2% [47,5; 60,3].
+  - Acima da aleatória (+13,4) e da gulosa (+17,3).
+  - Empatada com o zigue-zague (+1,5 [−3,5; +6,3]).
+  - Abaixo da reta (−10,3) e da reta a 150 m (−16,4).
+- **Artigo** (`paper/`, todos os números por macro de `paper/numbers.tex`, gerados por `paper/make_figures.py`):
+  - abstract, introdução, VI-D (RQ4, com a Fig. 3 e a Tab. III), discussão, conclusão e apêndice estão escritos;
+  - o apêndice tem a tabela de vereditos de todas as hipóteses, a de alterações V22–V53 e as baselines v3.
+- **Pendências** (Vitor):
+  - compilar no Overleaf (tamanho, overfull; o abstract passou de 250 palavras);
+  - tag `results-final` às 12:00, depois do `pytest` e dos dois manifestos;
+  - release v1.0 em 25/11 e apresentação em 27/11.
 
 ## 12. Perguntas sugeridas ao revisor
 

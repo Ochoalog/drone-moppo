@@ -1,9 +1,16 @@
 \section{Problem and Environments}
 \label{sec:problem}
 % Seção III (~0,8 pág.). Tab. I com os locais, as datas, o papel de cada imagem e as divisões.
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1_overview.pdf}
+\caption{Active localization over an outdated map, with real data from study v1 (Taquari, scenario S2, one $3.2\times3.2$~km test window). (a) Pre-event map (2~Oct 2023) and the trajectory of a PPO policy that localized successfully in 28 steps. The yellow square is the 150~m camera footprint at the last step; the white square is the area shown in (b). (b) The same 1~km area in the post-event image that the camera observes (7~May 2024) and on the map. (c) Belief of the histogram filter after steps 1, 14 and 28 (circle: true position); the episode stops when the belief concentrates. (d) A policy on the belief, as in ANL~\cite{chaplot2018anl}, or a heuristic chooses the next move. Imagery: Maxar Open Data via OpenAerialMap (CC BY-NC 4.0).}
+\label{fig:overview}
+\end{figure*}
+
 
 \textbf{POMDP.}
-The drone flies at a fixed altitude (or chooses among three altitudes in one variant) over a square window of $3.2\times3.2$~km whose position on the map is unknown. The state is its cell in the window. At each step it captures a nadir image, which a descriptor turns into a vector $z$. The map provides one descriptor $m_c$ per cell, computed from \emph{pre-event} imagery. The belief $b$ over cells is updated by a histogram filter with a tempered likelihood
+The drone flies at a fixed altitude (or chooses among three altitudes in one variant) over a square window of $3.2\times3.2$~km whose position on the map is unknown (Fig.~\ref{fig:overview}). The state is its cell in the window. At each step it captures a nadir image, which a descriptor turns into a vector $z$. The map provides one descriptor $m_c$ per cell, computed from \emph{pre-event} imagery. The belief $b$ over cells is updated by a histogram filter with a tempered likelihood
 \begin{equation}
   b'(c) \propto b(c\ominus a)\,\exp\!\big(\beta\, z^\top m_c\big),
 \end{equation}
@@ -19,7 +26,7 @@ The policy is rewarded for the entropy reduction of the belief at each step, wit
 \emph{v1} uses a 50~m grid, a hand-crafted color--texture descriptor and 8 compass moves, with a fixed cost per step. \emph{v3} uses a 25~m grid and a DINOv2~\cite{oquab2023dinov2} descriptor fine-tuned contrastively on the training band (Appendix). It also models the camera footprint at 60, 100 or 150~m altitude, 2\% odometry drift in scale and heading, and the flight time of each move (6~s per 50~m move, 16~s per altitude change). The v3 environment runs thousands of episodes in parallel on a GPU. A parity test reproduces the v1 environment exactly on its own grid: 1000 of 1000 trajectories are identical for the deterministic baselines, and episode outcomes are identical for the v1 PPO seeds.
 
 \textbf{Data.}
-All imagery is Maxar open data of the May~2024 floods in Rio Grande do Sul, Brazil (Table~\ref{tab:sites}). The observations always come from the post-event image. The map comes from an earlier date, so the drone must match flooded terrain against a dry map. Train and test regions are disjoint latitude bands, separated by a 200~m margin. Porto Alegre is used zero-shot. In Canoas the bands run along the longer east--west axis (Section~\ref{sec:rq4}).
+All imagery is Maxar open data of the May~2024 floods in Rio Grande do Sul, Brazil (Table~\ref{tab:sites}). The observations always come from the post-event image. The map comes from an earlier date, so the drone must match flooded terrain against a dry map. Train and test regions are disjoint latitude bands, separated by a 200~m margin. Porto Alegre and Canoas are used zero-shot (Section~\ref{sec:rq4}).
 
 \begin{table}[t]
 \centering

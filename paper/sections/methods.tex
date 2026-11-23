@@ -1,6 +1,6 @@
 \section{Methods}
 \label{sec:methods}
-% Seção IV (~0,7 pág.). Fig. 1 (visão geral) a desenhar pelo Vitor.
+% Seção IV (~0,7 pág.). Fig. 1 (visão geral) fica na Seção III (problem.tex) e é gerada por paper/make_fig1.py.
 
 \textbf{Belief-space PPO.}
 Following ANL~\cite{chaplot2018anl}, the policy sees the filter's state rather than the raw image. Its input is a stack of window-sized channels: the belief, the map validity mask and a map \emph{distinctiveness} channel (one minus the highest descriptor similarity to the cells 3--5 cells away). A small vector (remaining steps, border contact, current altitude) is appended. A convolutional encoder feeds actor and critic heads. The network is trained with PPO~\cite{schulman2017ppo} using 512 parallel environments, 32-step rollouts, 5 epochs, minibatches of 4096, learning rate $3\times10^{-4}$, $\gamma=0.99$, $\lambda_{\text{GAE}}=0.95$, clipping 0.2 and entropy coefficient 0.01. Each v3 run trains for 1.4\,M environment steps (about 6~min on a T4 GPU). The v1 policy uses the same inputs on the v1 grid.

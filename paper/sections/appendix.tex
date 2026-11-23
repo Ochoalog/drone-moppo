@@ -1,7 +1,51 @@
 \section{Supplementary results}
 \label{sec:appendix}
-% Percepção da v3 (G1, ajuste fino, H1), prior de inundação e α = 0, vereditos de todas as hipóteses,
-% tabela de alterações (V22–V46), hiperparâmetros.
+% Vereditos (tables/tab_verdicts.tex, gerada por make_tables_v4.py), alterações do plano (V22–V53 do DECISIONS_V3.md)
+% e baselines da v3. Ids "V" = linhas do DECISIONS_V3.md, publicado com o código.
+
+\subsection{Verdicts of all hypotheses}
+Table~\ref{tab:verdicts} lists every hypothesis that was specified before its data were analyzed, with the verdict produced by code from its criterion. The criteria are in the decision logs released with the code. ``Not evaluable'' means that a precondition of the criterion failed: in the v1 multi-objective study, the conditioning gate failed and the budgets differed; in v3, the calibration set the weight of the flood prior to zero, and no training run of the main matrix passed the learning gate. Experiment E was specified before any of its jobs ran, but after the v3 baseline ceiling had been seen, so its criteria are exploratory.
+
+\begin{table}[h]
+\centering
+\caption{Verdicts of the pre-specified hypotheses and of the exploratory criteria of experiment E. v1 verdicts use the hierarchical intervals; E3 uses sampled actions (argmax: same verdict).}
+\label{tab:verdicts}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\input{tables/tab_verdicts}
+\end{table}
+
+\subsection{Changes to the pre-specified plan}
+Table~\ref{tab:changes} lists the changes made to the v3 plan after it was committed, and when each was decided relative to the data. Ids refer to the v3 decision log. Three times, a pre-specified rule could not be applied as written, and we stopped before deciding: the Canoas split rule found no valid split (V48), no noise level in the first scan brought random success below 75\% (V49), and the level rule applied to the extended scan gave inverted levels (V52).
+
+\begin{table}[h]
+\centering
+\caption{Changes to the pre-specified v3 plan and to experiment E, and when each was decided relative to the data.}
+\label{tab:changes}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lp{0.42\columnwidth}p{0.42\columnwidth}@{}}
+\toprule
+Id & Change & When, relative to the data \\
+\midrule
+V22--V24 & Grid-pooled descriptor and fine-tuning with neighboring cells as negatives & After the preliminary perception gate (G1) failed with global pooling; before any result of the new candidates \\
+V26 & G1 of the fine-tuned descriptor measured on test windows & Before its result; the training windows lie inside the strip used for fine-tuning \\
+V30 & External event (Valencia) dropped & No flood prior independent of the post-event image \\
+V33, V36 & Calibration repeated with a wider $\kappa$ grid; flood-prior weight $\alpha = 0$ kept & Before the recalibration results; $\alpha = 0$ turns the flood prior off \\
+V34, V35 & Baseline ceiling in Taquari recorded; criteria kept unchanged & Before the pilots \\
+V38 & Learning gate amended (flight-time route added) & After the pilots failed the original gate, before their flight times were seen; both criteria reported \\
+V39 & One PCA (from the calibration) for all Taquari scenarios & After G3 and the calibration \\
+V41 & Perception ablation (PPO with the hand-crafted descriptor) cut & Before the matrix; to protect the deadline \\
+V45 & Only the main matrix block trained; no RL verdicts; only baselines evaluated on test & After the exploratory pilot diagnostic (V44) \\
+V46 & Experiment E added as exploratory; all its runs evaluated, whether or not they pass the gate & After the Taquari baseline ceiling; before any job of E \\
+V50 & Noise grid extended with $\sigma \in \{4, 6, 8, 12\}$; level rule unchanged & After the first noise scan (V49); before training any policy of E \\
+V51 & Training and testing inside Canoas (E1, E2 and the altitude variant) cut; zero-shot evaluation of the Taquari policies added as descriptive & Forced by the lack of valid Canoas windows: every split with enough test windows left no training windows (V48). After the first noise scan; before training any policy of E \\
+V53 & Levels chosen from the hardest (L3) to the mildest (L1), instead of L1 first & After the original order gave inverted levels on the two noise scans (V52); before training any policy of E \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Baselines in the v3 environment}
 
 \begin{table}[h]
 \centering
