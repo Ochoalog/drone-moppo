@@ -1,6 +1,18 @@
 \section{Discussion}
 \label{sec:discussion}
-% ~0,7 pág. Valor da informação e ambiguidade; por que a reta é forte (cobre terreno novo, não confia no mapa);
-% a política achou eficiência, não robustez; lições de avaliação em RL (gates, argmax × amostrado, seeds, ICs
-% hierárquicos); limitações; ameaças à validade (dependência espacial, padronização transdutiva no v1, alterações
-% de critério e protocolo, E exploratório, prior "otimista" de POA, α = 0).
+% ~0,7 pág. Números só por macro. Registro de afirmações (§6 do plano): sem "o RL supera as heurísticas", sem "change-aware".
+
+\textbf{Value of information depends on ambiguity.}
+Across both environments, the choice of route matters only when perception is ambiguous. In the v3 Taquari setting, random motion already succeeds in \vThreeTaqSTwoRandom\% of the episodes, and there is little information left for a policy to gather. As ambiguity grows, motion without a plan collapses (\eSuccRandLZero\% to \eSuccRandLThree\%), and the learned policy separates from it. This is the regime in which learning to act is meant to help, and the policy does learn there: most runs pass the learning gate only at the hardest noise level.
+
+\textbf{Why the straight line is hard to beat.}
+A straight flight reaches new terrain at every step. Each new image is evidence about a different part of the map, and the filter combines it without having to trust any single match. In contrast, revisiting the same area adds little, and moving to cells that look distinctive \emph{on the old map} relies on the very predictions that the flood made unreliable; this explains why greedy information gain is the weakest informed heuristic. Flying higher widens the footprint, so each image covers more terrain: the straight line at 150~m is the best heuristic in Canoas, on the islands and at every noise level of experiment E, and ties with the straight line at 100~m in the city center (\vThreeCenterStraightHigh\% vs.\ \vThreeCenterStraight\%). The PPO policy sees the belief and the map, as in ANL, but nothing in its input or reward rewards coverage of new terrain directly, and at 1.4~M steps it did not discover a coverage strategy as good as a fixed heading.
+
+\textbf{The policy found efficiency, not robustness.}
+In the v1 study, the policy matched the straight line in success while flying about two thirds of the distance, at the cost of more false localizations. Its shorter flights reach the stopping threshold of the filter sooner, and when the belief peak is on the wrong cell, the stop becomes a false localization. The preference-conditioned policy was our attempt to let the operator choose this trade-off, and it did not work at our budget.
+
+\textbf{Lessons for evaluating RL.}
+Three practices changed our conclusions. A learning gate kept us from reporting policies that had not learned anything beyond moving: in the v3 matrix, it rejected all \vThreeMatrixRuns{} runs. Evaluating with greedy (argmax) actions alone made the presets of the multi-objective policy look identical, while the sampled actions used in training showed small differences: the evaluation mode must match the claim. Hierarchical intervals over seeds and windows are wider than per-episode intervals, and an earlier per-episode analysis of the v1 study overstated its precision.
+
+\textbf{Limitations and threats to validity.}
+Experiment E is exploratory, its noise levels were fixed after two scans of the noise grid, and the hardest level reached \eRandTrainLThree\% random success on training windows instead of the 35\% we had aimed for. The noise is synthetic, drawn once with a single seed, and added to all altitudes. The E policies fly at 100~m, while the best heuristic flies at 150~m; the straight line at 100~m also beats them, but a policy that controls altitude was not trained. The within-site test in Canoas was dropped for lack of valid windows, and the Canoas result is a zero-shot transfer, not a trained comparison. Episodes are spatially dependent; we account for it with the hierarchical bootstrap, but the number of distinct windows is small at some sites. In the v3 environment, the calibration set the weight of the flood prior to zero, so the change-aware filter was not exercised, and we make no claim about it. Finally, all results come from one flood event and one imagery source.

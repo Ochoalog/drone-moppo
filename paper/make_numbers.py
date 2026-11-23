@@ -155,9 +155,104 @@ def baselines_v3(macros: list) -> None:
                            f"{source}: {region} {scenario} {method} false loc"))
 
 
+E_LEVELS = {"L0": "LZero", "L1": "LOne", "L2": "LTwo", "L3": "LThree"}
+
+
+def signed(value: float) -> str:
+    return f"{100 * value:+.1f}"
+
+
+def experiment_e(macros: list) -> None:
+    """Experimento E (V46, V50–V53): curva, E3, Tab. III, gate (E5), escala do ruído e Canoas zero-shot (V51)."""
+    import re
+
+    source = "results_v3/E/curve.csv"
+    curve = pd.read_csv(ROOT / source)
+    curve["level"] = curve.regime.map(lambda name: re.search(r"L\d", name).group(0))
+    for _, row in curve.iterrows():
+        tag = E_LEVELS[row.level]
+        macros += [(f"eRandTrain{tag}", pct(row.random_train_success), f"{source}: {row.regime}, aleatória no treino"),
+                   (f"eGate{tag}", f"{int(row.gate_original_passed)}/{int(row.n_runs)}",
+                    f"{source}: {row.regime}, aprovadas no gate (critério original)"),
+                   (f"eGateAmended{tag}", f"{int(row.gate_amended_passed)}/{int(row.n_runs)}",
+                    f"{source}: {row.regime}, gate emendado (V38)")]
+        for label, key in (("Rand", "random"), ("Best", "best")):
+            for mode, suffix in (("sampled", ""), ("argmax", "Argmax")):
+                column = f"adv_{key}_{mode}"
+                macros += [(f"eAdv{label}{tag}{suffix}", signed(row[column]), f"{source}: {row.regime} {column}"),
+                           (f"eAdv{label}{tag}{suffix}Low", signed(row[f"{column}_low"]), f"{source}: IC"),
+                           (f"eAdv{label}{tag}{suffix}High", signed(row[f"{column}_high"]), f"{source}: IC")]
+    best = set(curve.best_heuristic)
+    macros.append(("eBestName", "straight line at 150~m" if best == {"straight_150"} else "/".join(sorted(best)),
+                   f"{source}: melhor heurística no treino, todos os níveis"))
+    levels = json.loads((ROOT / "results_v3/E/noise_levels.json").read_text())["levels"]
+    for level, info in levels.items():
+        macros.append((f"eSigma{E_LEVELS[level]}", f"{info['sigma']:g}", "results_v3/E/noise_levels.json"))
+    scans = pd.concat([pd.read_csv(ROOT / f"results_v3/E/{n}/scan.csv") for n in ("scan_noise_A", "scan_noise_A_ext")])
+    scans = scans.set_index("sigma")
+    lowest = scans.loc[scans.index.min()]
+    macros += [("eTopOneLowSigma", pct(lowest.top1_100m), "scan_noise_A: top-1 a 100 m, menor σ"),
+               ("eLowSigma", f"{scans.index.min():g}", "scan_noise_A: menor σ"),
+               ("eTopOneLThree", f"{100 * scans.loc[levels['L3']['sigma']].top1_100m:.2f}",
+                "scan_noise_A_ext: top-1 a 100 m em L3"),
+               ("eMaxSigmaScanThree", f"{scans.loc[3.0].random_success * 100:.1f}",
+                "scan_noise_A: aleatória no treino em σ = 3"),
+               ("eNSigmas", str(len(scans)), "scan_noise_A + _ext: número de σ")]
+    verdicts = json.loads((ROOT / "results_v3/E/verdicts_E.json").read_text())
+    for key, suffix in (("E3", ""), ("E3_argmax", "Argmax")):
+        e3 = verdicts[key]
+        macros += [(f"eThree{suffix}", signed(e3["estimate"]), f"results_v3/E/verdicts_E.json: {key}"),
+                   (f"eThree{suffix}Low", signed(e3["low"]), "idem, IC"),
+                   (f"eThree{suffix}High", signed(e3["high"]), "idem, IC"),
+                   (f"eThree{suffix}Verdict", en(e3["verdict"]), "idem, veredito")]
+    table = pd.read_csv(ROOT / "results_v3/E/table3.csv")
+    table["level"] = table.regime.map(lambda name: re.search(r"L\d", name).group(0))
+    names = {"random": "Rand", "straight_150": "Best", "ppo@sampled": "Ppo", "ppo@argmax": "PpoArgmax"}
+    for _, row in table[table.method.isin(names)].iterrows():
+        tag, name = E_LEVELS[row.level], names[row.method]
+        macros += [(f"eSucc{name}{tag}", pct(row.success), f"results_v3/E/table3.csv: {row.regime} {row.method}"),
+                   (f"eFalseLoc{name}{tag}", pct(row.false_loc), "idem, localização falsa"),
+                   (f"eTime{name}{tag}", f"{row.flight_time_success_s:.0f}", "idem, tempo de voo nos sucessos (s)")]
+    # Heurísticas a 100 m por nível (a PPO do E voa a 100 m; a melhor heurística, a 150 m).
+    evals = {"L0": "E_eval_taquari_L0", "L1": "E_eval_synth_L1", "L2": "E_eval_synth_L2", "L3": "E_eval_synth_L3"}
+    for level, job in evals.items():
+        summary = pd.read_csv(ROOT / f"results_v3/E/{job}/summary.csv")
+        test = summary[(summary.split == "test") & (summary["mode"] == "—")].set_index("method")
+        for method, name in (("straight", "Straight"), ("lawnmower", "Lawnmower"), ("greedy_map", "Greedy")):
+            macros.append((f"eSucc{name}{E_LEVELS[level]}", pct(test.loc[method].success),
+                           f"results_v3/E/{job}/summary.csv: teste, {method}"))
+    # Matriz v3 (V44/V45): aprovadas no gate entre as 30 execuções mx_A.
+    runs = sorted((ROOT / "results_v3/E").glob("mx_A_*/DONE.json"))
+    gates = [json.loads(path.read_text())["metrics"]["gate"] for path in runs]
+    macros += [("vThreeMatrixRuns", str(len(gates)), "results_v3/E/mx_A_*/DONE.json"),
+               ("vThreeMatrixPassed", str(sum(bool(g["passed"]) for g in gates)), "idem, gate (original ou emendado)"),
+               ("vThreeMatrixAdvMin", signed(min(g["advantage"] for g in gates)), "idem, menor vantagem no gate"),
+               ("vThreeMatrixAdvMax", signed(max(g["advantage"] for g in gates)), "idem, maior vantagem no gate")]
+    diag = pd.read_csv(ROOT / "results_v3/E/diag_canoas_split/split_diagnostic.csv")
+    whole = diag[(diag.side == "all") & (diag.min_valid == 0.7)].n_windows.iloc[0]
+    macros.append(("eCanoasWindows", str(int(whole)), "results_v3/E/diag_canoas_split/split_diagnostic.csv: limiar 0,7"))
+    # Canoas zero-shot (V51, descritivo).
+    source = "results_v3/E/canoas_zeroshot.csv"
+    zs = pd.read_csv(ROOT / source)
+    labels = {"random": "Random", "greedy_map": "Greedy", "lawnmower": "Lawnmower", "straight": "Straight",
+              "straight_150": "AltStraight"}  # sem "High" no fim: colidiria com o limite superior do IC
+    for _, row in zs[zs["mode"] == "sampled"].iterrows():
+        tag = labels[row.over]
+        macros += [(f"eZsDiff{tag}", signed(row.advantage), f"{source}: PPO − {row.over}"),
+                   (f"eZsDiff{tag}Low", signed(row.low), "idem, IC"),
+                   (f"eZsDiff{tag}High", signed(row.high), "idem, IC")]
+    summary = zs[zs["mode"] == "summary"].set_index("over")
+    macros += [("eZsPpo", pct(summary.loc["ppo@sampled"].advantage), f"{source}: sucesso da PPO amostrada"),
+               ("eZsPpoLow", pct(summary.loc["ppo@sampled"].low), "idem, IC"),
+               ("eZsPpoHigh", pct(summary.loc["ppo@sampled"].high), "idem, IC")]
+
+
 def main() -> None:
     macros: list[tuple[str, str, str]] = []
-    for builder in (taquari_v1, taquari_v1_extra, naive_v1, poa_v1, baselines_v3, change_index_v1, mechanism_v1, mo_appendix):
+    builders = (taquari_v1, taquari_v1_extra, naive_v1, poa_v1, baselines_v3, change_index_v1, mechanism_v1,
+                mo_appendix,
+                experiment_e)
+    for builder in builders:
         builder(macros)
     lines = ["% Gerado por paper/make_numbers.py a partir dos CSVs. NÃO EDITAR À MÃO."]
     for name, value, origin in macros:

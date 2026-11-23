@@ -2,6 +2,7 @@
 
 - Tab. II (`tables/tab2_v1.tex`): estudo v1, PPO × heurísticas em S1 e S2 (sucesso, localização falsa, distância
   nos sucessos), com o IC hierárquico da diferença para a reta (`tables/v1_rq1_taquari.csv`).
+- Tab. III (`tables/tab3_e.tex`): experimento E (E4 e E5), de `results_v3/E/table3.csv` e `curve.csv`.
 - Baselines v3 nos 6 alvos (`tables/v3_baselines.csv` e `tables/tab_v3_baselines.tex`), a partir do
   `results_v3/eval/eval_baselines_A/summary.csv` (filtro padrão; com α = 0 o CA é idêntico).
 
@@ -75,8 +76,40 @@ def v3_baselines() -> None:
     (TABLES / "tab_v3_baselines.tex").write_text("\n".join(lines) + "\n")
 
 
+def tab3_e() -> None:
+    """Tab. III: por nível de ruído, sucesso (IC), localização falsa e tempo de voo nos sucessos; gate (E5)."""
+    import re
+
+    source = "results_v3/E/table3.csv"
+    table = pd.read_csv(ROOT / source)
+    curve = pd.read_csv(ROOT / "results_v3/E/curve.csv").set_index("regime")
+    levels = json.loads((ROOT / "results_v3/E/noise_levels.json").read_text())["levels"]
+    methods = {"random": "Random", "straight_150": "Straight 150\\,m", "ppo@sampled": "PPO (sampled)",
+               "ppo@argmax": "PPO (argmax)"}
+    lines = [f"% Gerado por paper/make_tables_v4.py a partir de {source} e results_v3/E/curve.csv. NÃO EDITAR.",
+             "\\begin{tabular}{@{}llrrrr@{}}", "\\toprule",
+             "Level ($\\sigma$) & Method & Succ. (\\%) [95\\% CI] & False loc. (\\%) & Time succ. (s) & Gate \\\\",
+             "\\midrule"]
+    regimes = list(dict.fromkeys(table.regime))
+    for index, regime in enumerate(regimes):
+        level = re.search(r"L\d", regime).group(0)
+        sigma = "0" if level == "L0" else f"{levels[level]['sigma']:g}"
+        part = table[table.regime == regime].set_index("method")
+        gate = f"{int(curve.loc[regime].gate_original_passed)}/{int(curve.loc[regime].n_runs)}"
+        for row_index, (method, name) in enumerate(methods.items()):
+            row = part.loc[method]
+            label = f"{level} ({sigma})" if row_index == 0 else ""
+            gate_cell = gate if method == "ppo@sampled" else ""
+            lines.append(f"{label} & {name} & {pct(row.success)} [{pct(row.success_low)}; {pct(row.success_high)}] & "
+                         f"{pct(row.false_loc)} & {row.flight_time_success_s:.0f} & {gate_cell} \\\\")
+        lines.append("\\midrule" if index < len(regimes) - 1 else "\\bottomrule")
+    lines.append("\\end{tabular}")
+    (TABLES / "tab3_e.tex").write_text("\n".join(lines) + "\n")
+
+
 def main() -> None:
     tab2_v1()
+    tab3_e()
     v3_baselines()
     print("tabelas geradas em", TABLES)
 

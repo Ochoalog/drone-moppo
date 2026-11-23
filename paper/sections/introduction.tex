@@ -1,7 +1,17 @@
 \section{Introduction}
 \label{sec:intro}
-% ~0,7 pág. (PLANO_ARTIGO.md v4 §4). Drone sem GNSS e mapa anterior ao desastre; localização ativa como POMDP;
-% pergunta "quando aprender a agir compensa?". Contribuições: (i) adaptação do ANL com PPO a imagens reais antes/depois
-% de enchente em 4 locais; (ii) comparação pareada com heurísticas fortes (eficiência × risco); (iii) resultado
-% negativo do MOPPO, com diagnóstico; (iv) evidência de que o valor da política depende da ambiguidade perceptual
-% (v3 + experimento E, exploratório). Relação explícita com o ANL \cite{chaplot2018anl} e com o AMOR \cite{alegre2025amor}.
+% ~0,7 pág. (PLANO_ARTIGO.md v4 §4). Números só por macro.
+
+After a flood, drones are among the first tools used to assess damage and find people. Their navigation usually relies on GNSS, which can be jammed, degraded or simply lost. Without it, a drone can still localize itself by matching what its camera sees against geo-referenced imagery~\cite{couturier2021review,couturier2024review}. After a disaster, however, the only imagery available is often older than the event: roads are under water, rivers have changed course, and the map no longer matches the ground.
+
+Localization from a camera is then an \emph{active} problem. The drone keeps a belief over its position and must decide where to fly next, so that each new image removes as much uncertainty as possible without wasting flight time or committing to a wrong position~\cite{burgard1997active}. This is a partially observable Markov decision process, and a natural approach is the one of the Active Neural Localizer (ANL)~\cite{chaplot2018anl}: keep a structured Bayesian filter, and train a reinforcement learning (RL) policy that reads the belief and chooses the next move.
+
+This paper asks a simple question: \emph{when does learning to act pay off?} A learned policy is only useful if the choice of route matters, and it is only worth its training cost if it does better than the obvious rules a practitioner would try first. We answer with real pre- and post-flood imagery of the May~2024 floods in Rio Grande do Sul, Brazil, at three sites (four test areas), paired evaluation against strong heuristics, and pre-specified criteria with interval estimates over seeds and map windows~\cite{agarwal2021rliable}.
+
+Our contributions are:
+\begin{itemize}
+\item An adaptation of the ANL design to UAV localization over outdated post-flood maps, with two environments: one with a weak hand-crafted descriptor, and one with a fine-tuned foundation-model descriptor, altitude-dependent footprints, odometry drift and flight time.
+\item A paired comparison of belief-space PPO with five heuristics. With ambiguous perception, the policy matches the straight-line heuristic in success and is more efficient, but takes more risk of false localization (Section~\ref{sec:rq1}). Planning on the predictions of the outdated map is the weakest informed strategy (Section~\ref{sec:rq2}).
+\item A negative result for preference-conditioned multi-objective RL in the style of AMOR~\cite{alegre2025amor}: the conditioning was too weak to control the efficiency--risk trade-off (Section~\ref{sec:rq3}).
+\item Evidence, from an exploratory experiment with controlled perceptual ambiguity, that the value of the learned policy grows with ambiguity relative to random motion, but not relative to systematic coverage, which degrades even less (Section~\ref{sec:rq4}).
+\end{itemize}

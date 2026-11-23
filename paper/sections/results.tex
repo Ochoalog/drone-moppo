@@ -52,8 +52,35 @@ Not with our budget. The conditioning gate, which checks at 25\% of training tha
 
 \subsection{RQ4: When does learning to act pay off?}
 \label{sec:rq4}
-% Escrita na segunda, 23/11, depois do congelamento (Vitor + IA-1). Conteúdo (PLANO_ARTIGO.md v4 §4):
-% - Taquari v3: teto das baselines (aleatória \vThreeTaqSTwoRandom, reta \vThreeTaqSTwoStraight) e 0 de 30 execuções no gate
-%   (macro a gerar do results_v3/E/curve.csv e dos DONE.json); H1 em uma frase (apêndice).
-% - Experimento E (exploratório, V46): E1 (Canoas), E2, E3, curva da Fig. 3; E4 na Tab. III; E5 (taxa do gate).
-% - Vereditos SÓ de results_v3/E/verdicts_E.json.
+% Números só de results_v3/E (make_numbers.py); vereditos só de results_v3/E/verdicts_E.json. E é exploratório (V46, V50–V53).
+
+\textbf{A ceiling in the v3 environment.}
+With the fine-tuned v3 descriptor, Taquari is easy: random motion already succeeds in \vThreeTaqSTwoRandom\% of the S2 test episodes and the straight line in \vThreeTaqSTwoStraight\%. Learning to act has almost nothing left to add. None of the \vThreeMatrixRuns{} PPO runs of the main v3 matrix (three variants, ten seeds each) passed the learning gate: their advantage over random motion at 25\% of training ranged from $\vThreeMatrixAdvMin$ to $\vThreeMatrixAdvMax$~p.p. Following our protocol, these runs produce no verdict on the pre-specified v3 hypotheses (Appendix).
+
+\textbf{Experiment E: controlled ambiguity.}
+To ask when learning to act pays off, we made perception ambiguous on purpose, keeping everything else fixed. We added Gaussian noise of scale $\sigma$ to the observation descriptors of Taquari (fold~A), never to the map, and retrained the same PPO at each level (five seeds, same budget). The levels were chosen from the success of random motion on \emph{training} windows only, before any policy was trained. Random success barely moves for $\sigma\le 3$, although the top-1 retrieval of the true cell falls from \eTopOneLowSigma\% ($\sigma=\eLowSigma$) to almost zero. The filter accumulates evidence over many steps, and the shape of the valid area and the window border carry information of their own. We therefore extended the grid (\eNSigmas{} values of $\sigma$) and used the three levels L1--L3 ($\sigma=\eSigmaLOne,\eSigmaLTwo,\eSigmaLThree$), with random success on training windows of \eRandTrainLOne, \eRandTrainLTwo{} and \eRandTrainLThree\% (L0, no noise: \eRandTrainLZero\%). The hardest level did not reach the 35\% we had aimed for. Experiment E is exploratory; all its runs were evaluated, whether or not they passed the gate.
+
+\textbf{The policy learns to beat motion without a plan.}
+As ambiguity grows, the advantage of the policy over random motion grows (Fig.~\ref{fig:e}, blue): from $\eAdvRandLZero$~p.p.\ $[\eAdvRandLZeroLow; \eAdvRandLZeroHigh]$ at L0 to $\eAdvRandLThree$ $[\eAdvRandLThreeLow; \eAdvRandLThreeHigh]$ at L3. Training also starts to work: \eGateLZero{} runs passed the gate at L0, \eGateLTwo{} at L2 and \eGateLThree{} at L3. In this sense, learning to act starts paying off exactly where perception stops doing the work.
+
+\textbf{But the best heuristic gains even more.}
+The best heuristic on training windows was the \eBestName{} at every level. It is almost insensitive to the noise: \eSuccBestLZero\% at L0 and \eSuccBestLThree\% at L3 (Table~\ref{tab:e}). The PPO falls from \eSuccPpoLZero\% to \eSuccPpoLThree\%, so its gap to the best heuristic widens from $\eAdvBestLZero$~p.p.\ $[\eAdvBestLZeroLow; \eAdvBestLZeroHigh]$ to $\eAdvBestLThree$ $[\eAdvBestLThreeLow; \eAdvBestLThreeHigh]$ (Fig.~\ref{fig:e}, orange). The pre-specified criterion E3, that the advantage over the best heuristic grows from L0 to L3, is therefore \eThreeVerdict: $\Delta(\mathrm{L3})-\Delta(\mathrm{L0})=\eThree$~p.p.\ $[\eThreeLow; \eThreeHigh]$ (argmax: $\eThreeArgmax$, $[\eThreeArgmaxLow; \eThreeArgmaxHigh]$). The comparison is not an artifact of altitude: the PPO flies at 100~m, and at L3 the straight line at 100~m (\eSuccStraightLThree\%) and the lawnmower (\eSuccLawnmowerLThree\%) also beat it, while greedy information gain is close to it (\eSuccGreedyLThree\%). Under ambiguity, the policy also takes no less risk than random motion (\eFalseLocPpoLThree\% vs.\ \eFalseLocRandLThree\% false localizations).
+
+\textbf{Real ambiguity: zero-shot transfer to Canoas.}
+We had planned to train and test the policy inside Canoas, the hardest real site, but its post-event image leaves only \eCanoasWindows{} valid windows, almost all in one corner, which is not enough to train and test on disjoint terrain. As a descriptive check, we evaluated the ten Taquari L0 policies zero-shot on all Canoas windows. They succeed in \eZsPpo\% of the episodes $[\eZsPpoLow; \eZsPpoHigh]$: above random motion ($\eZsDiffRandom$~p.p., $[\eZsDiffRandomLow; \eZsDiffRandomHigh]$) and greedy information gain ($\eZsDiffGreedy$, $[\eZsDiffGreedyLow; \eZsDiffGreedyHigh]$), level with the lawnmower ($\eZsDiffLawnmower$, $[\eZsDiffLawnmowerLow; \eZsDiffLawnmowerHigh]$), and below the straight line ($\eZsDiffStraight$, $[\eZsDiffStraightLow; \eZsDiffStraightHigh]$) and the straight line at 150~m ($\eZsDiffAltStraight$, $[\eZsDiffAltStraightLow; \eZsDiffAltStraightHigh]$). Real and synthetic ambiguity tell the same story.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig3_E.pdf}
+\caption{Experiment E (exploratory). Advantage of the PPO policy (sampled actions, five seeds per noise level; ten at L0) in success over random motion and over the best heuristic chosen on training windows (straight line at 150~m), with hierarchical 95\% CIs (seeds $\rightarrow$ windows). Levels are labeled with the noise scale and the success of random motion on training windows. Numbers on top: runs that passed the learning gate.}
+\label{fig:e}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Experiment E: test results per noise level (Taquari S2, fold A, 1000 paired episodes). Time succ.: mean flight time in successful episodes. Gate: runs that passed the learning gate.}
+\label{tab:e}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\columnwidth}{!}{\input{tables/tab3_e}}
+\end{table}
