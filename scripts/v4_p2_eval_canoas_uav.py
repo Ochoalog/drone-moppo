@@ -197,7 +197,8 @@ def main() -> None:
     parser.add_argument("--out-root", type=Path, required=True, help="ex.: /content/drive/MyDrive/drone_v3")
     parser.add_argument("--results-dir", type=Path, required=True, help="pasta de saída dos CSVs")
     parser.add_argument("--n-episodes", type=int, default=1000)
-    parser.add_argument("--min-window-valid", type=float, default=0.08)
+    parser.add_argument("--window-cells", type=int, default=40, help="40x40 = 1.0x1.0 km (cabe dentro do ortomosaico UAV)")
+    parser.add_argument("--min-window-valid", type=float, default=0.70)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
@@ -222,34 +223,78 @@ def main() -> None:
     tables_uav = copy.copy(tables_sat)
     tables_uav.obs_desc = obs_desc_proj
     tables_uav.obs_ok = obs_ok
+    # Em Mathias Velho (poa_pre_feb24, céu limpo), telhados claros metálicos acionam o detector simples de nuvem;
+    # liberamos map_ok nas células válidas do UAV onde o mapa tem vetor não-nulo (norma > 0.5).
+    map_has_data = (np.linalg.norm(tables_uav.map_desc[100], axis=-1) > 0.5).reshape(tables_uav.grid_shape)
+    tables_uav.map_ok = tables_uav.map_ok | (obs_ok & map_has_data)
     both_ok = tables_uav.map_ok & tables_uav.obs_ok
     print(f"  Máscaras: map_ok={int(tables_uav.map_ok.sum())}, obs_ok={int(tables_uav.obs_ok.sum())}, both={int(both_ok.sum())}", flush=True)
 
-    cfg = RealisticConfig(window_cells=128, min_window_valid=args.min_window_valid)
+    # Sanity check rápido de retrieval (100 m, variante 0) nas células válidas do UAV
+    valid_flat = np.nonzero(both_ok.ravel())[0]
+    rng_chk = np.random.default_rng(42)
+    sample_idx = rng_chk.choice(valid_flat, size=min(500, len(valid_flat)), replace=False)
+    q = torch.as_tensor(obs_desc_proj[100][0, sample_idx], device=args.device)
+    m = torch.as_tensor(tables_uav.map_desc[100][valid_flat], device=args.device)
+    sim = q @ m.T
+    top1_cell = valid_flat[sim.argmax(dim=1).cpu().numpy()]
+    ncols = tables_uav.grid_shape[1]
+    dr = (top1_cell // ncols) - (sample_idx // ncols)
+    dc = (top1_cell % ncols) - (sample_idx % ncols)
+    dist_m = np.hypot(dr, dc) * CELL_M
+    print(f"  [Sanity check retrieval 100m, {len(sample_idx)} queries / {len(valid_flat)} cells]: "
+          f"top1_exato={(top1_cell == sample_idx).mean()*100:.1f}% | top1<=100m={(dist_m <= 100).mean()*100:.1f}%", flush=True)
+
+    W = args.window_cells
+    cfg = RealisticConfig(window_cells=W, min_window_valid=args.min_window_valid)
     env = RealisticBatchedEnv(tables_uav, cfg, device=args.device)
-    print(f"  Janelas válidas de 128x128 (min_valid={args.min_window_valid}): {len(env.windows)}", flush=True)
+    print(f"  Janelas válidas de {W}x{W} ({W*25}m, min_valid={args.min_window_valid}): {len(env.windows)}", flush=True)
 
     seeds = [2024 + i for i in range(args.n_episodes)]
     frames = []
 
     print("4/4 Rodando avaliação pareada (5 heurísticas + 10 seeds PPO zero-shot)...", flush=True)
     for name in ("random", "greedy_map", "lawnmower", "straight", "straight_150"):
-        env_run = RealisticBatchedEnv(tables_uav, RealisticConfig(window_cells=128, min_window_valid=args.min_window_valid, altitude_actions=(name == "straight_150")), device=args.device)
+        env_run = RealisticBatchedEnv(
+            tables_uav,
+            RealisticConfig(window_cells=W, min_window_valid=args.min_window_valid, altitude_actions=(name == "straight_150")),
+            device=args.device,
+        )
         env_run = run_policy(env_run, BASELINES[name](), seeds)
         df = _episodes(env_run, name, -1, "canoas_uav", "C1").assign(split="test", mode="—")
         frames.append(df)
-        print(f"  [baseline] {name:14s}: succ={df['success'].mean()*100:5.1f}% | false={df['false_loc'].mean()*100:4.1f}% | time={df['flight_time_s'].mean():5.1f}s", flush=True)
+        succ_t = df.loc[df["success"], "flight_time_s"].mean() if df["success"].any() else float("nan")
+        print(f"  [baseline] {name:14s}: succ={df['success'].mean()*100:5.1f}% | false={df['false_loc'].mean()*100:4.1f}% | time_succ={succ_t:5.1f}s", flush=True)
 
-    directory = work_dir(args.out_root, "dinov2_vits14_ftA", "A")
+    class PaddedAdapter(PolicyAdapter):
+        """Envolve a observação WxW em padding central 128x128 para avaliar checkpoints PPO treinados em 128x128."""
+
+        def observe(self, env_cur: RealisticBatchedEnv) -> dict[str, torch.Tensor]:
+            obs = super().observe(env_cur)
+            if env_cur.W == 128:
+                return obs
+            pad_total = 128 - env_cur.W
+            p0 = pad_total // 2
+            p1 = pad_total - p0
+            obs["map"] = torch.nn.functional.pad(obs["map"], (p0, p1, p0, p1), value=0.0)
+            return obs
+
     for seed_num in range(10):
         run_dir = resolve_run_dir(directory, f"mx_A_ppo_s{seed_num}", include_invalid_gate=True)
         if run_dir is None:
             continue
         for mode in ("sampled", "argmax"):
             env_run = RealisticBatchedEnv(tables_uav, cfg, device=args.device)
-            net = build_network(env_run, PPOTrainConfig(change_prior_input=False), args.device)
+            # Constrói a rede com shape 128x128 (mesmo dos checkpoints de Taquari)
+            dummy_env = RealisticBatchedEnv(
+                tables_uav,
+                RealisticConfig(window_cells=128, min_window_valid=0.05),
+                device=args.device,
+            )
+            net = build_network(dummy_env, PPOTrainConfig(change_prior_input=False), args.device)
+            del dummy_env
             net.load_state_dict(torch.load(run_dir / "final_model.pt", map_location=args.device))
-            policy = NetworkPolicy(net.eval(), PolicyAdapter(False), deterministic=(mode == "argmax"))
+            policy = NetworkPolicy(net.eval(), PaddedAdapter(False), deterministic=(mode == "argmax"))
             env_run = run_policy(env_run, policy, seeds)
             df = _episodes(env_run, "ppo", seed_num, "canoas_uav", "C1").assign(split="test", mode=mode, run=run_dir.name)
             frames.append(df)
