@@ -1,0 +1,93 @@
+{
+  "flight": "UFRGS_VET_voo_100m",
+  "n_queries": 28,
+  "grid_step_m": 25.0,
+  "map_footprint_m": 64.0,
+  "n_map_cells": 289,
+  "maps": {
+    "2018_recent": {
+      "gem": {
+        "top1_35m_pct": 17.9,
+        "top5_35m_pct": 50.0,
+        "mean_true_cos": 0.8771,
+        "mean_hard_neg_cos": 0.9331,
+        "margin_cos": -0.0561,
+        "passive_filter": {
+          "final_err_m": 81.9,
+          "mean_last5_err_m": 51.7,
+          "median_err_m": 123.0,
+          "converged_within_35m": false
+        }
+      },
+      "grid4": {
+        "top1_35m_pct": 32.1,
+        "top5_35m_pct": 50.0,
+        "mean_true_cos": 0.7838,
+        "mean_hard_neg_cos": 0.8401,
+        "margin_cos": -0.0563,
+        "passive_filter": {
+          "final_err_m": 81.9,
+          "mean_last5_err_m": 46.0,
+          "median_err_m": 39.1,
+          "converged_within_35m": false
+        }
+      }
+    },
+    "2012_6y_old": {
+      "gem": {
+        "top1_35m_pct": 53.6,
+        "top5_35m_pct": 82.1,
+        "mean_true_cos": 0.9409,
+        "mean_hard_neg_cos": 0.9498,
+        "margin_cos": -0.0089,
+        "passive_filter": {
+          "final_err_m": 14.7,
+          "mean_last5_err_m": 16.7,
+          "median_err_m": 18.9,
+          "converged_within_35m": true
+        }
+      },
+      "grid4": {
+        "top1_35m_pct": 78.6,
+        "top5_35m_pct": 85.7,
+        "mean_true_cos": 0.8592,
+        "mean_hard_neg_cos": 0.8678,
+        "margin_cos": -0.0086,
+        "passive_filter": {
+          "final_err_m": 23.5,
+          "mean_last5_err_m": 24.5,
+          "median_err_m": 18.8,
+          "converged_within_35m": true
+        }
+      }
+    },
+    "2002_16y_old": {
+      "gem": {
+        "top1_35m_pct": 14.3,
+        "top5_35m_pct": 39.3,
+        "mean_true_cos": 0.8407,
+        "mean_hard_neg_cos": 0.9093,
+        "margin_cos": -0.0686,
+        "passive_filter": {
+          "final_err_m": 81.9,
+          "mean_last5_err_m": 58.1,
+          "median_err_m": 60.2,
+          "converged_within_35m": false
+        }
+      },
+      "grid4": {
+        "top1_35m_pct": 25.0,
+        "top5_35m_pct": 42.9,
+        "mean_true_cos": 0.7425,
+        "mean_hard_neg_cos": 0.8165,
+        "margin_cos": -0.074,
+        "passive_filter": {
+          "final_err_m": 81.9,
+          "mean_last5_err_m": 51.7,
+          "median_err_m": 59.8,
+          "converged_within_35m": false
+        }
+      }
+    }
+  }
+}

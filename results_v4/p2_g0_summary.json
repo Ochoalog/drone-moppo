@@ -1,0 +1,37 @@
+{
+  "per_source": {
+    "leste_20240525_15cm": {
+      "valid_px": 2067045,
+      "valid_km2": 0.77
+    },
+    "oeste_20240525_15cm": {
+      "valid_px": 5342653,
+      "valid_km2": 1.99
+    },
+    "leste_20240526_4cm": {
+      "valid_px": 6541133,
+      "valid_km2": 2.437
+    }
+  },
+  "total_overlap_km2": 5.167,
+  "valid_25m_cells": 8063,
+  "grid_shape_25m": [
+    85,
+    247
+  ],
+  "valid_windows_stride4": {
+    "32x32 (800m)": 393,
+    "40x40 (1000m)": 339,
+    "48x48 (1200m)": 262
+  },
+  "shift_leste_m": {
+    "dx_m": 3.04,
+    "dy_m": -4.91,
+    "response": 0.2938
+  },
+  "shift_oeste_m": {
+    "dx_m": 3.97,
+    "dy_m": -3.75,
+    "response": 0.3859
+  }
+}

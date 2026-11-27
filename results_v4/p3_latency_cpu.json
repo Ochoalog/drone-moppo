@@ -1,0 +1,31 @@
+{
+  "device": "cpu",
+  "cpu_threads": 4,
+  "grid": "128x128",
+  "descriptor_dim": 256,
+  "dinov2_vits14_grid4_ms": {
+    "mean_ms": 106.19,
+    "std_ms": 6.1,
+    "p50_ms": 105.84,
+    "p95_ms": 115.92,
+    "n_runs": 20
+  },
+  "histogram_filter_ms": {
+    "mean_ms": 2.14,
+    "std_ms": 0.6,
+    "p50_ms": 1.93,
+    "p95_ms": 3.47,
+    "n_runs": 50
+  },
+  "ppo_policy_ms": {
+    "mean_ms": 0.9,
+    "std_ms": 0.42,
+    "p50_ms": 0.8,
+    "p95_ms": 1.79,
+    "n_runs": 50
+  },
+  "total_step_mean_ms": 109.23,
+  "total_step_p95_ms": 121.18,
+  "step_budget_s": 6.0,
+  "budget_utilization_pct": 1.82
+}

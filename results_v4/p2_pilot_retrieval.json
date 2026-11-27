@@ -1,0 +1,23 @@
+{
+  "n_cells": 643,
+  "spacing_m": 75.0,
+  "footprint_m": 180.0,
+  "descriptors": {
+    "gem": {
+      "top1_exact_pct": 10.1,
+      "top1_within_100m_pct": 20.8,
+      "top5_within_100m_pct": 39.0,
+      "mean_true_cos": 0.9549,
+      "mean_hard_neg_cos": 0.9645,
+      "margin_cos": -0.0096
+    },
+    "grid4": {
+      "top1_exact_pct": 49.5,
+      "top1_within_100m_pct": 54.3,
+      "top5_within_100m_pct": 70.1,
+      "mean_true_cos": 0.922,
+      "mean_hard_neg_cos": 0.9237,
+      "margin_cos": -0.0017
+    }
+  }
+}

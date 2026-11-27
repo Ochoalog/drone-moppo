@@ -22,5 +22,6 @@ results_mo/pptx_assets/
 # specs v3: geradas de forma determinística (manifesto commitado; ver DECISIONS_V3.md V14)
 colab/specs/v3_*.parquet
 
-# artefatos v3 baixados do Drive (prior, descritores): fora do git
+# artefatos v3/v4 baixados do Drive ou OpenAerialMap (prior, descritores, GeoTIFFs): fora do git
 data_v3/
+data_v4/
