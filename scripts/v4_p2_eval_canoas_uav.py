@@ -197,7 +197,7 @@ def main() -> None:
     parser.add_argument("--out-root", type=Path, required=True, help="ex.: /content/drive/MyDrive/drone_v3")
     parser.add_argument("--results-dir", type=Path, required=True, help="pasta de saída dos CSVs")
     parser.add_argument("--n-episodes", type=int, default=1000)
-    parser.add_argument("--min-window-valid", type=float, default=0.15)
+    parser.add_argument("--min-window-valid", type=float, default=0.08)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
@@ -218,6 +218,8 @@ def main() -> None:
     tables_uav = copy.copy(tables_sat)
     tables_uav.obs_desc = obs_desc
     tables_uav.obs_ok = obs_ok
+    both_ok = tables_uav.map_ok & tables_uav.obs_ok
+    print(f"  Máscaras: map_ok={int(tables_uav.map_ok.sum())}, obs_ok={int(tables_uav.obs_ok.sum())}, both={int(both_ok.sum())}", flush=True)
 
     cfg = RealisticConfig(window_cells=128, min_window_valid=args.min_window_valid)
     env = RealisticBatchedEnv(tables_uav, cfg, device=args.device)
