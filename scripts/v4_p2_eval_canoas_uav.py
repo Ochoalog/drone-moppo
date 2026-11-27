@@ -159,6 +159,7 @@ def extract_uav_obs_descriptors(
         vfrac_all = np.zeros((N_OBS_VARIANTS, n_cells), dtype=np.float32)
         for v in range(N_OBS_VARIANTS):
             spec_df = pd.DataFrame({
+                "crop_id": np.arange(len(cand_idx), dtype=np.int64) + v * len(cand_idx),
                 "x": cx[cand_idx] + UAV_DX_M + rng.uniform(-JITTER_M, JITTER_M, len(cand_idx)),
                 "y": cy[cand_idx] + UAV_DY_M + rng.uniform(-JITTER_M, JITTER_M, len(cand_idx)),
                 "footprint_m": fp,
