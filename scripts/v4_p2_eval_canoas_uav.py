@@ -30,7 +30,7 @@ from dal.v3.agents.baselines import BASELINES, run_policy
 from dal.v3.agents.ppo_batched import NetworkPolicy, PolicyAdapter, PPOTrainConfig, build_network
 from dal.v3.descriptors.extract import DinoV2Extractor
 from dal.v3.envs.realistic_env import RealisticBatchedEnv, RealisticConfig
-from dal.v3.jobs import _episodes, load_site_tables, resolve_run_dir, work_dir
+from dal.v3.jobs import _episodes, load_pca, load_site_tables, resolve_run_dir, work_dir
 from dal.v3.sensor.render import RasterGeoref, batch_from_spec, render_crops
 from dal.v3.sensor.specs import (
     ALTITUDES_M,
@@ -214,9 +214,13 @@ def main() -> None:
 
     print("3/4 Carregando tabelas canoas (mapa Maxar pré-evento + calibração Taquari fold A)...", flush=True)
     job = {"descriptor": "dinov2_vits14_ftA", "fold": "A", "feature": "ft"}
+    directory = work_dir(args.out_root, "dinov2_vits14_ftA", "A")
     tables_sat, _ = load_site_tables(job, args.out_root, "canoas", "C1", "test", args.device)
+    # Aplica a mesma PCA de Taquari (256 -> 128 dim + L2 norm) usada no map_desc de tables_sat
+    pca = load_pca(directory, ALTITUDES_M)
+    obs_desc_proj = {alt: pca[alt].transform(obs_desc[alt]) for alt in ALTITUDES_M}
     tables_uav = copy.copy(tables_sat)
-    tables_uav.obs_desc = obs_desc
+    tables_uav.obs_desc = obs_desc_proj
     tables_uav.obs_ok = obs_ok
     both_ok = tables_uav.map_ok & tables_uav.obs_ok
     print(f"  Máscaras: map_ok={int(tables_uav.map_ok.sum())}, obs_ok={int(tables_uav.obs_ok.sum())}, both={int(both_ok.sum())}", flush=True)
