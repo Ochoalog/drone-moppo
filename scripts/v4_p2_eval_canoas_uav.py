@@ -36,6 +36,7 @@ from dal.v3.sensor.specs import (
     ALTITUDES_M,
     BLUR_SIGMA_RANGE,
     BRIGHTNESS_RANGE,
+    CELL_M,
     CONTRAST_RANGE,
     JITTER_M,
     N_OBS_VARIANTS,
