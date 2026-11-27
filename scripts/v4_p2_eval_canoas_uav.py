@@ -214,7 +214,7 @@ def main() -> None:
 
     print("3/4 Carregando tabelas canoas (mapa Maxar pré-evento + calibração Taquari fold A)...", flush=True)
     job = {"descriptor": "dinov2_vits14_ftA", "fold": "A", "feature": "ft"}
-    tables_sat, _ = load_site_tables(job, args.out_root, "canoas", "poa_pre_feb24", "test", args.device)
+    tables_sat, _ = load_site_tables(job, args.out_root, "canoas", "C1", "test", args.device)
     tables_uav = copy.copy(tables_sat)
     tables_uav.obs_desc = obs_desc
     tables_uav.obs_ok = obs_ok
@@ -230,7 +230,7 @@ def main() -> None:
     for name in ("random", "greedy_map", "lawnmower", "straight", "straight_150"):
         env_run = RealisticBatchedEnv(tables_uav, RealisticConfig(window_cells=128, min_window_valid=args.min_window_valid, altitude_actions=(name == "straight_150")), device=args.device)
         env_run = run_policy(env_run, BASELINES[name](), seeds)
-        df = _episodes(env_run, name, -1, "canoas_uav", "poa_pre_feb24").assign(split="test", mode="—")
+        df = _episodes(env_run, name, -1, "canoas_uav", "C1").assign(split="test", mode="—")
         frames.append(df)
         print(f"  [baseline] {name:14s}: succ={df['success'].mean()*100:5.1f}% | false={df['false_loc'].mean()*100:4.1f}% | time={df['flight_time_s'].mean():5.1f}s", flush=True)
 
@@ -245,7 +245,7 @@ def main() -> None:
             net.load_state_dict(torch.load(run_dir / "final_model.pt", map_location=args.device))
             policy = NetworkPolicy(net.eval(), PolicyAdapter(False), deterministic=(mode == "argmax"))
             env_run = run_policy(env_run, policy, seeds)
-            df = _episodes(env_run, "ppo", seed_num, "canoas_uav", "poa_pre_feb24").assign(split="test", mode=mode, run=run_dir.name)
+            df = _episodes(env_run, "ppo", seed_num, "canoas_uav", "C1").assign(split="test", mode=mode, run=run_dir.name)
             frames.append(df)
         print(f"  [ppo] seed {seed_num}: sampled={frames[-2]['success'].mean()*100:5.1f}% | argmax={frames[-1]['success'].mean()*100:5.1f}%", flush=True)
 
