@@ -1,0 +1,124 @@
+{
+  "n_windows": 64,
+  "n_episodes": 1000,
+  "methods": [
+    {
+      "key": "straight",
+      "success_pct": 35.5,
+      "ci_low_pct": 30.7,
+      "ci_high_pct": 40.2,
+      "false_loc_pct": 0.0,
+      "time_succ_s": 367.2,
+      "delta_vs_straight_pp": null,
+      "delta_vs_random_pp": {
+        "estimate_pp": 23.6,
+        "low_pp": 19.2,
+        "high_pp": 28.1
+      }
+    },
+    {
+      "key": "lawnmower",
+      "success_pct": 25.3,
+      "ci_low_pct": 21.7,
+      "ci_high_pct": 28.6,
+      "false_loc_pct": 0.0,
+      "time_succ_s": 384.2,
+      "delta_vs_straight_pp": {
+        "estimate_pp": -10.2,
+        "low_pp": -14.0,
+        "high_pp": -6.1
+      },
+      "delta_vs_random_pp": {
+        "estimate_pp": 13.4,
+        "low_pp": 10.2,
+        "high_pp": 16.6
+      }
+    },
+    {
+      "key": "straight_150",
+      "success_pct": 18.1,
+      "ci_low_pct": 14.3,
+      "ci_high_pct": 21.9,
+      "false_loc_pct": 0.0,
+      "time_succ_s": 387.9,
+      "delta_vs_straight_pp": {
+        "estimate_pp": -17.4,
+        "low_pp": -20.5,
+        "high_pp": -14.1
+      },
+      "delta_vs_random_pp": {
+        "estimate_pp": 6.2,
+        "low_pp": 2.8,
+        "high_pp": 9.4
+      }
+    },
+    {
+      "key": "random",
+      "success_pct": 11.9,
+      "ci_low_pct": 9.5,
+      "ci_high_pct": 14.2,
+      "false_loc_pct": 0.0,
+      "time_succ_s": 370.9,
+      "delta_vs_straight_pp": {
+        "estimate_pp": -23.6,
+        "low_pp": -28.0,
+        "high_pp": -19.4
+      },
+      "delta_vs_random_pp": null
+    },
+    {
+      "key": "ppo@sampled",
+      "success_pct": 11.7,
+      "ci_low_pct": 7.8,
+      "ci_high_pct": 16.0,
+      "false_loc_pct": 0.03,
+      "time_succ_s": 349.6,
+      "delta_vs_straight_pp": {
+        "estimate_pp": -23.8,
+        "low_pp": -29.8,
+        "high_pp": -18.3
+      },
+      "delta_vs_random_pp": {
+        "estimate_pp": -0.2,
+        "low_pp": -4.9,
+        "high_pp": 4.5
+      }
+    },
+    {
+      "key": "ppo@argmax",
+      "success_pct": 9.1,
+      "ci_low_pct": 4.6,
+      "ci_high_pct": 13.8,
+      "false_loc_pct": 0.07,
+      "time_succ_s": 316.3,
+      "delta_vs_straight_pp": {
+        "estimate_pp": -26.4,
+        "low_pp": -32.8,
+        "high_pp": -20.1
+      },
+      "delta_vs_random_pp": {
+        "estimate_pp": -2.8,
+        "low_pp": -7.9,
+        "high_pp": 2.4
+      }
+    },
+    {
+      "key": "greedy_map",
+      "success_pct": 4.4,
+      "ci_low_pct": 2.8,
+      "ci_high_pct": 6.2,
+      "false_loc_pct": 0.1,
+      "time_succ_s": 312.5,
+      "delta_vs_straight_pp": {
+        "estimate_pp": -31.1,
+        "low_pp": -36.3,
+        "high_pp": -25.9
+      },
+      "delta_vs_random_pp": {
+        "estimate_pp": -7.5,
+        "low_pp": -10.3,
+        "high_pp": -4.6
+      }
+    }
+  ]
+}

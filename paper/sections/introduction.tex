@@ -11,7 +11,8 @@ This paper asks a simple question: \emph{when does learning to act pay off?} A l
 Our contributions are:
 \begin{itemize}
 \item An adaptation of the ANL design to UAV localization over outdated post-flood maps, with two environments: one with a weak hand-crafted descriptor, and one with a fine-tuned foundation-model descriptor, altitude-dependent footprints, odometry drift and flight time.
-\item A paired comparison of belief-space PPO with five heuristics. With ambiguous perception, the policy matches the straight-line heuristic in success and is more efficient, but takes more risk of false localization (Section~\ref{sec:rq1}). Planning on the predictions of the outdated map is the weakest informed strategy (Section~\ref{sec:rq2}).
+\item A paired comparison of belief-space PPO with five heuristics. With ambiguous perception, the policy matches the straight-line heuristic in success and is more efficient, but takes more risk of false localization (Section~\ref{sec:rq1}), whereas localization degrades monotonically with map--observation change (Section~\ref{sec:rq2}) and planning on predictions from the outdated map is the weakest informed strategy (Sections~\ref{sec:rq1} and~\ref{sec:rq4}).
 \item A negative result for preference-conditioned multi-objective RL in the style of AMOR~\cite{alegre2025amor}: the conditioning was too weak to control the efficiency--risk trade-off (Section~\ref{sec:rq3}).
 \item Evidence, from an exploratory experiment with controlled perceptual ambiguity, that the value of the learned policy grows with ambiguity relative to random motion, but not relative to systematic coverage, which degrades even less (Section~\ref{sec:rq4}).
+\item Real-UAV cross-view validation on post-flood UAV orthomosaics (Canoas, May 2024) and three raw drone flights against outdated satellite maps, together with a CPU latency benchmark ($109.2$~ms/step) confirming real-time onboard feasibility (Section~\ref{sec:uav}).
 \end{itemize}
